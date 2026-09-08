@@ -174,6 +174,21 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .drill{list-style:none;margin:10px 0 0;padding:0}
+  .drill li{display:flex;gap:10px;padding:10px 0;border-top:2px solid #16222F}
+  .drill li:first-child{border-top:0}
+  .dwk{font-family:var(--big);font-weight:700;font-size:16px;color:var(--amber);width:46px;flex:none;
+    text-shadow:2px 2px 0 var(--edge)}
+  .dbody{flex:1;min-width:0}
+  .dplayer{font-weight:700;font-size:16px;word-wrap:break-word}
+  .dplayer em{font-style:normal;font-family:var(--pix);font-size:8px;color:var(--amber);margin-left:4px}
+  .dprop{font-size:16px;color:var(--dim);line-height:1.5}
+  .dnum{font-size:16px;font-weight:700;margin-top:3px}
+  .dnum.h{color:var(--green)} .dnum.m{color:var(--red)} .dnum.v{color:var(--void)}
+  .dfin{font-family:var(--pix);font-size:8px;color:var(--dim);margin-top:4px;line-height:1.6}
+  td button.drillcell{background:none;border:0;color:var(--chalk);font-family:var(--pix);font-size:8px;
+    padding:4px 2px;text-decoration:underline}
+  td button.drillcell:active{color:var(--amber)}
   .plist{list-style:none;margin:6px 0 0;padding:0;border:3px solid var(--edge);background:#0F1926;max-height:250px;overflow-y:auto}
   .plist li{border-top:2px solid #16222F}
   .plist li:first-child{border-top:0}
@@ -697,7 +712,7 @@ const BADGES = {
 
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
-                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null };
+                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null };
 
 /* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
    Shared documents live in D1 behind /api/kv, with a version on every write so two
@@ -888,10 +903,55 @@ async function hash(pin){
   }catch(e){ return "plain:"+pin; }
 }
 
+/* Roughly how much each stat swings from game to game, so a half-yard miss on a
+   79.5 line and a half-touchdown miss on 2.5 stop counting the same. These are my
+   estimates, not measured from your results, and they are tunable once you have a
+   season of grades to check them against. */
+const SPREADS = [
+  [/pass\s*yards|pass\+rush/i, 70], [/pass\s*td/i, 1], [/pass\s*attempts/i, 8],
+  [/completions/i, 6], [/interceptions/i, 0.8],
+  [/rush\+rec/i, 35], [/rush\s*yards/i, 30], [/rush\s*attempts/i, 5],
+  [/longest\s*rec/i, 12], [/longest\s*rush/i, 10],
+  [/receiving\s*yards/i, 30], [/receptions/i, 2],
+  [/fantasy/i, 7], [/kicking/i, 3.5], [/tackle/i, 3], [/sack/i, 0.8]
+];
+function spreadFor(stat, line){
+  const s = String(stat || "");
+  for(const [re, v] of SPREADS) if(re.test(s)) return v;
+  const l = Math.abs(num(line) || 0);          /* unknown stat: a third of its line */
+  return Math.max(0.5, l * 0.35);
+}
+const sw1 = v => v === null ? "-" : (Math.round(v*100)/100).toFixed(2);
+
+/* every graded leg for one member, newest first */
+function legsFor(id, kind){
+  const out = [];
+  for(let w = DEADLINES.length - 1; w >= 0; w--){
+    if(!isLocked(w)) continue;
+    const p = (picksOf(w) || {})[id];
+    if(!p || !p.result) continue;
+    if(kind === "H" && p.result !== "H") continue;
+    if(kind === "M" && p.result !== "M") continue;
+    const mg = margin(p), off = mg === null ? null : Math.abs(mg);
+    const l = Math.abs(num(p.line) || 0);
+    out.push({w:w, p:p, off:off,
+      pct: (off !== null && l > 0) ? (off/l)*100 : null,
+      swing: off === null ? null : off / spreadFor(p.stat, p.line)});
+  }
+  return out;
+}
+
+/* margin statistics: hit rate, and how far the average leg lands from its line */
+const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
+const pct1 = v => v === null ? "-" : (Math.round(v*10)/10) + "%";
+const num1 = v => v === null ? "-" : String(Math.round(v*10)/10);
+const hitRate = r => (r.H + r.M) ? (r.H / (r.H + r.M)) * 100 : null;
+
 /* ---------- records, badges and moments, all derived from the grades ---------- */
 function analyze(){
   const members = state.roster.members;
-  const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0, badges:{}, cur:0, best:0});
+  const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0,
+    badges:{}, cur:0, best:0, hitPct:[], missPct:[], hitAbs:[], missAbs:[], hitSw:[], missSw:[]});
   const moments = [];
   const give = (id, key, w, detail) => {
     rec[id].badges[key] = (rec[id].badges[key]||0) + 1;
@@ -910,8 +970,21 @@ function analyze(){
       const leg = p.player + " " + p.side + " " + p.line + " " + p.stat;
       const mg = margin(p);
 
-      if(p.result === "H"){ r.H++; hits.push(m.id); r.cur = r.cur > 0 ? r.cur+1 : 1; }
-      else if(p.result === "M"){ r.M++; misses.push(m.id); r.cur = r.cur < 0 ? r.cur-1 : -1; }
+      /* how far off the line it landed, in raw units and as a share of the line */
+      const lineAbs = Math.abs(num(p.line) || 0);
+      const off = mg === null ? null : Math.abs(mg);
+      const offPct = (off !== null && lineAbs > 0) ? (off / lineAbs) * 100 : null;
+
+      const swing = off === null ? null : off / spreadFor(p.stat, p.line);
+
+      if(p.result === "H"){ r.H++; hits.push(m.id); r.cur = r.cur > 0 ? r.cur+1 : 1;
+        if(off !== null) r.hitAbs.push(off);
+        if(offPct !== null) r.hitPct.push(offPct);
+        if(swing !== null) r.hitSw.push(swing); }
+      else if(p.result === "M"){ r.M++; misses.push(m.id); r.cur = r.cur < 0 ? r.cur-1 : -1;
+        if(off !== null) r.missAbs.push(off);
+        if(offPct !== null) r.missPct.push(offPct);
+        if(swing !== null) r.missSw.push(swing); }
       else if(p.result === "V"){ r.V++; }
       r.best = Math.max(r.best, r.cur);
 
@@ -1050,7 +1123,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-08d</span></p>';
+  + '<br><span class="build">build 2026-09-08f</span></p>';
 }
 
 function signInCard(){
@@ -1260,16 +1333,68 @@ function foundBlock(id, p){
        + '<button data-usefound="'+id+'">Use it</button></div>';
 }
 
+function drillCard(){
+  if(!state.drill) return "";
+  const {id, kind} = state.drill;
+  const legs = legsFor(id, kind);
+  const label = kind === "H" ? "hits" : kind === "M" ? "misses" : "graded legs";
+  return '<div class="card"><h3>' + esc(memberName(id)) + ", " + label + '</h3>'
+  + '<p class="hint">' + (legs.length ? legs.length + ' of them, newest first.' : 'Nothing here yet.') + '</p>'
+  + (legs.length ? '<ul class="drill">' + legs.map(L => {
+      const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
+      return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
+        + '<div class="dplayer">' + esc(p.player) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
+        + '<div class="dprop">' + propText(p) + '</div>'
+        + '<div class="dnum ' + cls + '">'
+        + (p.result === "V" ? "landed on the number"
+           : (p.result === "H" ? "hit by " : "missed by ") + num1(L.off)
+             + (L.pct !== null ? ", " + pct1(L.pct) : "")
+             + (L.swing !== null ? ", " + sw1(L.swing) + " swings" : ""))
+        + '</div>'
+        + (p.actual != null ? '<div class="dfin">final ' + esc(trim1(num(p.actual))) + '</div>' : "")
+        + '</div></li>';
+    }).join("") + '</ul>' : "")
+  + '<button class="btn ghost" id="closedrill">Close</button></div>';
+}
+
 function viewSeason(){
   const a = analyze(), members = state.roster.members;
   const streak = r => r.cur > 0 ? r.cur+"H" : r.cur < 0 ? (-r.cur)+"M" : "0";
 
+  const cell = (id,kind,text) => text === "-" ? "-"
+    : '<button class="drillcell" data-drill="' + id + ':' + kind + '">' + text + '</button>';
+  const face = r => avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24);
+  const byRate = a.table.slice().sort((x,y) => (hitRate(y)===null?-1:hitRate(y)) - (hitRate(x)===null?-1:hitRate(x)));
+
   const table = '<div class="card"><h3>Records</h3>'
   + '<p class="hint">Every graded leg since Week 1.</p><div class="scroller">'
-  + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
-  + a.table.map(r=>'<tr><td>'+avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M+'</td><td>'+r.V+'</td><td>'+r.skip
+  + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
+  + byRate.map(r=>'<tr><td>'+face(r)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M
+      +'</td><td>'+pct1(hitRate(r))+'</td><td>'+r.V+'</td><td>'+r.skip
       +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
-  + '</table></div></div>';
+  + '</table></div></div>'
+
+  + '<div class="card"><h3>Margins</h3>'
+  + '<p class="hint">Clear is the cushion on hits, short is the gap on misses. Swing measures that '
+  + 'gap against how much the stat moves week to week, so half a touchdown on a 2.5 line counts as a '
+  + 'real miss and half a yard on 79.5 counts as bad luck. Tap any number to see the legs behind it.</p>'
+  + '<div class="scroller">'
+  + '<table><tr><th>Player</th><th>Clear</th><th>Short</th><th>Swing +</th><th>Swing -</th></tr>'
+  + a.table.map(r=>'<tr><td>'+face(r)+' '+esc(r.name)+'</td>'
+      +'<td>'+cell(r.id,"H",num1(avg(r.hitAbs)))+'</td><td>'+cell(r.id,"M",num1(avg(r.missAbs)))+'</td>'
+      +'<td>'+cell(r.id,"H",sw1(avg(r.hitSw)))+'</td><td>'+cell(r.id,"M",sw1(avg(r.missSw)))+'</td></tr>').join("")
+  + '</table></div>'
+  + (function(){
+      const allH = [], allM = [], allHp = [], allMp = [];
+      a.table.forEach(r => { allH.push(...r.hitAbs); allM.push(...r.missAbs);
+                             allHp.push(...r.hitPct); allMp.push(...r.missPct); });
+      const H = a.table.reduce((s,r)=>s+r.H,0), M = a.table.reduce((s,r)=>s+r.M,0);
+      if(!H && !M) return '';
+      return '<p class="hint" style="margin-top:12px">The pool is hitting '
+        + pct1((H/(H+M))*100) + ' overall. Winners clear by ' + pct1(avg(allHp))
+        + ' on average, losers come up ' + pct1(avg(allMp)) + ' short.</p>';
+    })()
+  + '</div>';
 
   const cases = '<div class="card"><h3>Trophy case</h3>'
   + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
@@ -1298,7 +1423,7 @@ function viewSeason(){
       : '<p class="hint" style="margin-top:10px">Nothing logged yet. Grade a week and the good ones show up here.</p>')
   + '</div>';
 
-  return topbar("season") + table + cases + feed
+  return topbar("season") + table + drillCard() + cases + feed
   + '<p class="footnote">Records and badges are recalculated from the grades every time this page opens, so fixing a wrong grade fixes the history with it.</p>';
 }
 function wireSeason(){
