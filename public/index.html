@@ -119,8 +119,8 @@
     padding:12px;margin-bottom:16px;font-size:16px;color:#FFD98A;line-height:1.7}
   .banner b{display:block;font-family:var(--pix);font-size:8px;color:var(--amber);margin-bottom:6px}
   .banner .linkbtn{margin-top:8px;display:block}
-  .rowname svg{vertical-align:-4px;margin-right:2px}
-  td svg{vertical-align:-4px;margin-right:4px}
+  .rowname svg{vertical-align:-6px;margin-right:4px}
+  td svg{vertical-align:-6px;margin-right:5px}
   .rcard{border:4px solid #fff;background:#151F2D;box-shadow:7px 7px 0 rgba(0,0,0,.65);overflow:hidden}
   .rcard.hit{border-color:#3E9E6B}
   .rcard.miss{border-color:#9B4038}
@@ -404,50 +404,160 @@ Object.keys(OVER24).forEach(k=>{
   POSES[k]=BASE24.map((row,i)=> OVER24[k][i] !== undefined ? OVER24[k][i] : row);
 });
 
-const HAIRC="#33261A", EYE="#141C2B", WHITE="#F4F6F8", MOUTH="#8A4038", DARK="#1A2430";
-const SKINS=["#F2CCA4","#DDA96C","#B47F4C","#8B5A32","#5C3A1F"];
-const B20=[
-"....................","......SSSSSSSS......",".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",
-".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",
-".....SSSSSSSSSS.....","......SSSSSSSS......",".......SSSSSS.......","........SSSS........",
-"....JJJJJJJJJJJJ....","..JJJJJJJJJJJJJJJJ..",".JJJJJJJJJJJJJJJJJJ.",".JJTTTTTTTTTTTTTTJJ.",
-".JJTTTTTTTTTTTTTTJJ.",".JJJJJJJJJJJJJJJJJJ.",".JJJJJJJJJJJJJJJJJJ.","...................."];
-const E20="....................";
-const pad20=r=>{const o=r.slice();while(o.length<20)o.push(E20);return o;};
-const FACES20=[
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......WWW..WWW......","......EEW..EEW......",E20,"........MMMM........"]),
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......EEE..EEE......",E20,E20,"........MMMM........"]),
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......DDDDDDDD......","......DDDDDDDD......",E20,"........MMMM........"]),
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......WWW..WWW......","......EEW..EEW......",E20,".......MMMMMM.......","......GGGGGGGG......",".......GGGGGG......."])];
-const HATS20=[
- pad20(["......HHHHHHHH......",".....HHHHHHHHHH.....","....HHHHHHHHHHHH....","....HHH......HHH....","....HH........HH....","....HH........HH....","....HH........HH....","....HHFFFFFFFFHH....","....HH.FFFFFF.HH...."]),
- pad20([E20,"......HHHHHHHH......",".....HHHHHHHHHH.....","....HHHHHHHHHHHH....","....HHHHHHHHHHHHHHH."]),
- pad20(["......HHHHHHHH......",".....HHHHHHHHHH.....",".....HHHHHHHHHH.....","....TTTTTTTTTTTT...."]),
- pad20([E20,"......HHHHHHHH......",".....HHHHHHHHHH.....",".....HH......HH....."]),
- pad20([".....HHHHHHHHHH.....","....HHHHHHHHHHHH....","....HHHHHHHHHHHH....","....HH........HH....","....HH........HH...."]),
- pad20([E20])];
-const HATNAMES=["Helmet","Ball cap","Beanie","Short hair","Big hair","Bald"];
-const FACENAMES=["Level","Squint","Shades","Grin"];
-const LOOKMAX={hat:6, face:4, pal:8, skin:5};
-function defaultLook(name){return {hat:hashIdx(name+"|h",6), face:hashIdx(name+"|f",4), pal:hashIdx(name,8), skin:2};}
+/* ---- member portraits, 24x24 -------------------------------------------------
+   Redrawn with the outline-and-shade approach those old handheld sprites use:
+   a dark keyline around the whole figure, a shadow tone down one side of the face
+   and across the bottom of the jersey, and eyes built from a white, a pupil and a
+   highlight rather than a solid block. */
+const OUTL = "#1B2130", EYE = "#10151F", WHITE = "#F6F8FA", GLINT = "#FFFFFF",
+      MOUTH = "#7E3B33", HAIRC = "#33261A", HAIRL = "#4C3A27", SHADE_D = "#1A2430";
+const SKINS = ["#F4D2AC","#E0AE74","#B8834F","#8E5C33","#5F3C21"];
+
+/* darken any color so shading follows whatever palette is in play */
+function shade(hex, f){
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+  return "#" + [r,g,b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2,"0")).join("");
+}
+
+const BUST24 = [
+"........................",
+".......OOOOOOOOOO.......",
+"......OSSSSSSSSSSO......",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+"......OSSSSSSSSSKO......",
+".......OOOOOOOOOO.......",
+".........OSSSSKO........",
+"....OOOOOOOOOOOOOOOO....",
+"...OJJJJJJJJJJJJJJJJO...",
+"..OJJJTTTTTTTTTTTTJJJO..",
+"..OJJJTTTTTTTTTTTTJJJO..",
+"..OJJJJJJJJJJJJJJJJJJO..",
+"..OJJJJJJJJJJJJJJJJJJO..",
+"..OVVVVVVVVVVVVVVVVVVO..",
+"..OOOOOOOOOOOOOOOOOOOO..",
+"........................"];
+
+const E24 = "........................";
+const pad24 = r => { const o = r.slice(); while(o.length < 24) o.push(E24); return o; };
+
+/* eyes sit at cols 7-9 and 14-16, so every face variant lines up with the head */
+const FACES24 = [
+  /* level */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    ".......WWW....WWW.......",
+    ".......WEW....WEW.......",
+    ".......GWW....GWW.......",
+    E24,
+    "..........MMMM.........."]),
+  /* squint */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    "........B......B........",
+    ".......WEW....WEW.......",
+    E24,E24,
+    "..........MMMM.........."]),
+  /* shades */ pad24([E24,E24,E24,E24,E24,E24,
+    "......DDDDDDDDDDDD......",
+    "......DGDDDDDDGDDD......",
+    "......DDDDDDDDDDDD......",
+    E24,E24,
+    "..........MMMM.........."]),
+  /* grin */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    ".......WWW....WWW.......",
+    ".......WEW....WEW.......",
+    ".......GWW....GWW.......",
+    E24,
+    ".........MMMMMM.........",
+    "......GGGGGGGGGGGG......",
+    ".......GGGGGGGGGG......."])
+];
+
+const HATS24 = [
+  /* helmet */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHHHHTTTTHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO.....",
+    ".....OHH........HHO.....",
+    ".....OHH........HHO.....",
+    ".....OHHFFFFFFFFHHO.....",
+    ".....OHHFFFFFFFFHHO.....",
+    ".....OHH........HHO....."]),
+  /* ball cap */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHLLHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHHHHO.."]),
+  /* beanie */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHLLHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OTTTTTTTTTTTTO....."]),
+  /* short hair */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHLLHHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO....."]),
+  /* big hair */ pad24([
+    "......OOOOOOOOOOOO......",
+    "....OHHHHHHHHHHHHHHO....",
+    "....OHHLLHHHHHHHHHHO....",
+    "....OHHHHHHHHHHHHHHO....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO....."]),
+  /* bald */ pad24([E24])
+];
+
+const HATNAMES = ["Helmet","Ball cap","Beanie","Short hair","Big hair","Bald"];
+const FACENAMES = ["Level","Squint","Shades","Grin"];
+const LOOKMAX = {hat:6, face:4, pal:8, skin:5};
+
+/* weighted so most people start with visible eyes; shades is 1 in 8, not 1 in 4 */
+const FACE_WEIGHTS = [0,1,3,0,1,3,0,2];
+function defaultLook(name){
+  return {hat: hashIdx(name+"|h",6), face: FACE_WEIGHTS[hashIdx(name+"|f",8)],
+          pal: hashIdx(name,8), skin: 2};
+}
 function lookOf(m){
-  const d=defaultLook(m.name||""), l=m.look||{};
+  const d = defaultLook(m.name||""), l = m.look||{};
   return {hat:Number.isInteger(l.hat)?l.hat:d.hat, face:Number.isInteger(l.face)?l.face:d.face,
           pal:Number.isInteger(l.pal)?l.pal:d.pal, skin:Number.isInteger(l.skin)?l.skin:d.skin};
 }
-function avatarSVG(look,px){
-  const g=B20.map(r=>r.split(""));
-  const lay=rows=>rows.forEach((r,y)=>r.split("").forEach((c,x)=>{if(c!==".")g[y][x]=c;}));
-  lay(FACES20[look.face%4]); lay(HATS20[look.hat%6]);
-  const pal=PALETTES[look.pal%8], hairish=look.hat>=3;
-  return gridSVG(g.map(r=>r.join("")),{S:SKINS[look.skin%5],J:pal.j,T:pal.t,
-    H:hairish?HAIRC:pal.h,F:MASK,E:EYE,W:WHITE,D:DARK,M:MOUTH,B:HAIRC,G:HAIRC},px,"sprite");
+function avatarSVG(look, px){
+  const g = BUST24.map(r => r.split(""));
+  const lay = rows => rows.forEach((r,y) => r.split("").forEach((c,x) => { if(c !== ".") g[y][x] = c; }));
+  lay(FACES24[look.face % 4]);
+  lay(HATS24[look.hat % 6]);
+  const pal = PALETTES[look.pal % 8], hairish = look.hat >= 3;
+  const skin = SKINS[look.skin % 5];
+  return gridSVG(g.map(r => r.join("")), {
+    O: OUTL, S: skin, K: shade(skin, .82),
+    J: pal.j, V: shade(pal.j, .78), T: pal.t,
+    H: hairish ? HAIRC : pal.h, L: hairish ? HAIRL : shade(pal.h, 1.25),
+    F: "#D9DEE5", W: WHITE, E: EYE, G: GLINT, D: SHADE_D, B: HAIRC, M: MOUTH
+  }, px, "sprite");
 }
-const avatarFor=(m,px)=>avatarSVG(lookOf(m),px);
-const lookDesc=l=>HATNAMES[l.hat%6]+", "+FACENAMES[l.face%4];
+const avatarFor = (m,px) => avatarSVG(lookOf(m), px);
+const lookDesc = l => HATNAMES[l.hat % 6] + ", " + FACENAMES[l.face % 4];
+
 const POSTAG={qb:"QB",rb:"RB",wr:"WR",k:"K",def:"DEF",stand:"?"};
 const posTag=stat=>stat?POSTAG[poseFor(stat)]:"?";
 const posTint=stat=>(stat&&poseFor(stat)==="def")?"#A8443A":"#2E6FA8";
+
 
 const HELM=["..HHHH..",".HHHHHH.",".HHSSHH.",".HFFFFH.",".HFFFF..","..HHH...","........","........"];
 
@@ -892,7 +1002,7 @@ function signInCard(){
   return '<div class="card"><h3>Which one are you?</h3>'
   + '<p class="hint">Each person gets their own slot and code, so nobody can post a leg for you.</p>'
   + '<div class="whoami">'+state.roster.members.map(m=>
-      '<button data-claim="'+m.id+'">'+avatarFor(m,40)+'<span>'+esc(m.name)
+      '<button data-claim="'+m.id+'">'+avatarFor(m,48)+'<span>'+esc(m.name)
       +'<small>'+(m.pinHash?"sign in":"unclaimed")+'</small></span></button>').join("")
   + '</div></div>';
 }
@@ -1028,7 +1138,7 @@ function lineupCard(w, locked){
       body = '<div class="player">'+esc(p.player)+'</div><span class="tag in">Locked in</span>';
     }
     return '<li><div class="spritebox">'+art+'</div><div class="leg">'
-      + '<div class="rowname">'+avatarFor(m,20)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
+      + '<div class="rowname">'+avatarFor(m,24)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
   }).join("");
 
   return '<div class="card"><h3>Week '+(w+1)+' lineup</h3>'
@@ -1090,7 +1200,7 @@ function viewSeason(){
   const table = '<div class="card"><h3>Records</h3>'
   + '<p class="hint">Every graded leg since Week 1.</p><div class="scroller">'
   + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
-  + a.table.map(r=>'<tr><td>'+avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},20)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M+'</td><td>'+r.V+'</td><td>'+r.skip
+  + a.table.map(r=>'<tr><td>'+avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M+'</td><td>'+r.V+'</td><td>'+r.skip
       +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
   + '</table></div></div>';
 
@@ -1098,7 +1208,7 @@ function viewSeason(){
   + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
   + members.map(m=>{
       const b = a.rec[m.id].badges, keys = Object.keys(b);
-      return '<div class="case"><div class="spritebox">'+avatarFor(m,40)+'</div><div><h4>'+esc(m.name.toUpperCase())+'</h4>'
+      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div><h4>'+esc(m.name.toUpperCase())+'</h4>'
       + (keys.length ? keys.map(k=>'<span class="tag badge">'+esc(BADGES[k].name)+(b[k]>1?" x"+b[k]:"")+'</span>').join("")
                      : '<span class="hint">Nothing yet.</span>')
       + '</div></div>';
@@ -1179,7 +1289,7 @@ function viewCard(){
     }
     const art = p ? sprite(p.player, locked ? p.stat : null, 72, false, p.team) : sprite(m.name, null, 72, true);
     return '<div class="rcard' + cls + '">'
-      + '<div class="rtop">' + avatarFor(m, 20) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
+      + '<div class="rtop">' + avatarFor(m, 24) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
       + '<div class="rport" style="background-color:' + tint + '"><span class="rpos">' + tag + (p && p.team && locked ? ' <em>' + esc(p.team) + '</em>' : '') + '</span>' + art + '</div>'
       + '<div class="rname">' + esc(name.toUpperCase()) + '</div>'
       + '<div class="rprop">' + (prop || "&nbsp;") + '</div>'
@@ -1232,7 +1342,7 @@ function viewSettings(){
   + (state.err?'<p class="err">'+esc(state.err)+'</p>':"") + '</div>'
   + (state.me ? '<div class="card"><h3>Your look</h3>'
       + '<p class="hint">Only you can change yours. It rides along next to your picks all season.</p>'
-      + '<div class="preview"><div class="spritebox" id="lookbox">'+avatarSVG(currentLook(),60)+'</div>'
+      + '<div class="preview"><div class="spritebox" id="lookbox">'+avatarSVG(currentLook(),72)+'</div>'
       + '<div class="cap"><b>'+esc(memberName(state.me).toUpperCase())+'</b>'
       + '<span id="lookdesc">'+esc(lookDesc(currentLook()))+'</span></div></div>'
       + '<div class="row-btns" style="margin-top:10px">'
@@ -1292,7 +1402,7 @@ function wireSettings(){
       const l = currentLook();
       l[k] = (l[k] + 1) % LOOKMAX[k];
       const box = document.getElementById("lookbox"), d = document.getElementById("lookdesc");
-      if(box) box.innerHTML = avatarSVG(l, 60);
+      if(box) box.innerHTML = avatarSVG(l, 72);
       if(d) d.textContent = lookDesc(l);
       state.lookMsg = null;
     };
