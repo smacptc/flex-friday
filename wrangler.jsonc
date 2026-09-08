@@ -4,19 +4,19 @@
   "main": "worker.js",
   "compatibility_date": "2026-09-01",
 
-  // index.html and anything else in ./public is served straight from the edge.
+  // index.html is served straight from the edge. The icons are handled in worker.js.
   "assets": {
     "directory": "./public",
     "binding": "ASSETS"
   },
 
-  // Paste your database id below. Cloudflare dashboard, Storage & Databases, D1,
-  // click flex-friday, and copy the Database ID shown on that page.
+  // Your database id is already filled in below. Do not replace this file with an
+  // older copy, or the id goes missing and the deploy fails with error 10021.
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "flex-friday",
-      "database_id": "PASTE_YOUR_DATABASE_ID_HERE"
+      "database_id": "5707012f-0ebc-4dd8-9236-664109b8c882"
     }
   ]
 }
