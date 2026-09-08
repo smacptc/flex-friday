@@ -1,0 +1,1801 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flex Friday</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --night:#131E2C; --panel:#1D2C3F; --panel2:#27394F; --edge:#080F17;
+    --chalk:#F0F4F8; --dim:#93A6BA;
+    --turf:#2F7D4F; --amber:#FFC53D; --red:#E2574C; --green:#4CC17E; --void:#8FA3B8;
+    --pix:"Press Start 2P","Courier New",monospace;
+    --big:"Silkscreen","Press Start 2P",monospace;
+    --body:"Silkscreen","Courier New",monospace;
+  }
+  *{box-sizing:border-box;font-synthesis:none}
+  body,button,input,textarea,table{-webkit-font-smoothing:none;-moz-osx-font-smoothing:grayscale;font-smooth:never}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--night);
+    color:var(--chalk);font-family:var(--body);font-size:16px;line-height:1.5;letter-spacing:0;
+  }
+  svg{image-rendering:pixelated}
+  .sprite{display:block}
+  .sprite.dim{opacity:.85}
+  .wrap{max-width:640px;margin:0 auto;padding:16px 14px 64px}
+  button{font-family:var(--pix);font-size:8px;line-height:1.5;cursor:pointer}
+  button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+  input{font-family:var(--body);font-size:16px}
+  h1,h2,h3,h4{margin:0;font-family:var(--pix);font-weight:400;line-height:1.5}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0 16px;flex-wrap:wrap}
+  .poolname{font-family:var(--big);font-weight:700;font-size:24px;color:#fff;letter-spacing:1px;text-transform:uppercase;text-shadow:3px 3px 0 #000}
+  .navlinks{display:flex;gap:8px}
+  .linkbtn{background:var(--panel2);border:2px solid var(--edge);color:var(--chalk);padding:6px 8px;font-size:8px}
+  .linkbtn:active{transform:translate(2px,2px)}
+
+  .board{
+    background:var(--turf);
+    background-image:repeating-linear-gradient(90deg,transparent 0 34px,rgba(255,255,255,.14) 34px 36px);
+    border:3px solid var(--edge);box-shadow:6px 6px 0 var(--edge);padding:16px 14px 14px;color:#fff
+  }
+  .weekrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+  .weekrow h2{font-family:var(--big);font-weight:700;font-size:24px;letter-spacing:1px;text-transform:uppercase;text-shadow:3px 3px 0 #000}
+  .weeknav{display:flex;gap:6px}
+  .weeknav button{width:34px;height:34px;border:2px solid var(--edge);background:rgba(0,0,0,.28);color:#fff;padding:0;font-size:8px}
+  .weeknav button:disabled{opacity:.3;cursor:default}
+  .clock{font-family:var(--big);font-weight:700;font-size:32px;color:#fff;
+    letter-spacing:1px;text-transform:uppercase;text-shadow:4px 4px 0 rgba(0,0,0,.55);margin:14px 0 6px}
+  .clocklabel{font-size:16px;color:rgba(255,255,255,.9)}
+  .fill{display:flex;gap:2px;margin-top:12px}
+  .fill i{flex:1;height:10px;background:rgba(0,0,0,.3);border:1px solid rgba(0,0,0,.35)}
+  .fill i.on{background:var(--amber)}
+
+  .card{background:var(--panel);border:4px solid #fff;box-shadow:8px 8px 0 rgba(0,0,0,.65);padding:14px;margin-top:20px}
+  .card h3{font-family:var(--big);font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;text-transform:uppercase;text-shadow:3px 3px 0 var(--edge);margin-bottom:8px}
+  .hint{color:var(--dim);font-size:16px}
+  .rule{background:#16222F;border-left:6px solid var(--amber);padding:8px 10px;margin:10px 0 0;font-size:16px}
+
+  label{display:block;font-family:var(--pix);font-size:8px;color:var(--dim);margin:14px 0 6px}
+  input[type=text],input[type=password],textarea{width:100%;padding:11px;border:4px solid var(--edge);background:#0F1926;color:var(--chalk)}
+  textarea{font-family:var(--body);font-size:16px;line-height:1.5;resize:vertical}
+  .two{display:grid;grid-template-columns:1fr 96px;gap:10px}
+  .side{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+  .side button{border:3px solid #fff;background:var(--panel2);color:var(--dim);padding:11px 4px;font-family:var(--big);font-weight:700;font-size:16px}
+  .side button[aria-pressed=true]{background:var(--amber);color:#1A1206}
+
+  .btn{background:var(--amber);color:#1A1206;border:4px solid var(--edge);box-shadow:6px 6px 0 var(--edge);
+    padding:11px 14px;margin-top:16px;font-family:var(--big);font-weight:700;font-size:16px;text-shadow:2px 2px 0 rgba(0,0,0,.35);letter-spacing:1px;text-transform:uppercase}
+  .btn:active{transform:translate(6px,6px);box-shadow:none}
+  .btn.ghost{background:var(--panel2);color:var(--chalk)}
+  .btn.wide{width:100%}
+  .btn:disabled{background:#4A5768;color:#94A3B4;cursor:default;box-shadow:4px 4px 0 var(--edge)}
+  .row-btns{display:flex;gap:10px;flex-wrap:wrap}
+
+  .whoami{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+  .whoami button{background:var(--panel2);border:3px solid var(--edge);padding:10px 8px;text-align:left;
+    font-family:var(--body);font-size:16px;color:var(--chalk);display:flex;align-items:center;gap:8px}
+  .whoami button:active{transform:translate(2px,2px)}
+  .whoami small{display:block;color:var(--dim);font-size:8px}
+
+  .preview{display:flex;align-items:center;gap:14px;margin-top:12px;background:#16222F;border:4px solid var(--edge);padding:12px}
+  .preview .cap{font-family:var(--pix);font-size:8px;color:var(--dim)}
+  .preview .cap b{display:block;color:var(--amber);font-size:8px;margin-bottom:4px}
+
+  ul.legs{list-style:none;margin:8px 0 0;padding:0}
+  ul.legs li{display:flex;gap:10px;padding:12px 0;border-top:2px solid #16222F}
+  ul.legs li:first-child{border-top:0}
+  .spritebox{width:60px;flex:none;background:#22496E;border:2px solid var(--edge);padding:3px;display:flex;align-items:center;justify-content:center;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.10) 0 5px,rgba(255,255,255,0) 5px 10px)}
+  .leg{flex:1;min-width:0}
+  .rowname{font-family:var(--big);font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;text-transform:uppercase;text-shadow:2px 2px 0 var(--edge);margin-bottom:5px}
+  .rowname span{color:var(--dim)}
+  .leg .player{font-weight:700;word-wrap:break-word}
+  .leg .prop{font-size:16px}
+  .leg .note{color:var(--dim);font-size:16px;word-wrap:break-word}
+  .miss{color:var(--red)}
+  .tag{display:inline-block;font-family:var(--pix);font-size:8px;padding:5px 6px;border:2px solid var(--edge);
+    background:var(--panel2);color:var(--dim);margin:2px 4px 2px 0}
+  .tag.in{background:#1C4634;color:var(--green)}
+  .tag.badge{background:#3D3113;color:var(--amber)}
+  .more{color:var(--green);font-weight:700}
+  .less{color:var(--red);font-weight:700}
+  .margin{font-size:16px;font-weight:700;margin-top:5px}
+  .margin.h{color:var(--green)} .margin.m{color:var(--red)} .margin.v{color:var(--void)}
+  .marks{display:flex;gap:5px;margin-top:8px;align-items:center;flex-wrap:wrap}
+  .marks button{border:2px solid var(--edge);background:var(--panel2);color:var(--dim);padding:0 9px;height:30px;font-size:8px}
+  .marks button.on[data-r="H"]{background:var(--green);color:#08150E}
+  .marks button.on[data-r="M"]{background:var(--red);color:#1B0806}
+  .marks button.on[data-r="V"]{background:var(--void);color:#131E2C}
+  .marks input{width:84px;padding:4px 6px;height:30px;border:2px solid var(--edge);background:#0F1926;color:var(--chalk)}
+  .found{background:#2C2408;border:2px solid var(--amber);padding:8px;margin-top:8px;font-size:16px;color:var(--amber)}
+  .found b{font-size:16px}
+  .found button{margin-left:8px;border:2px solid var(--edge);background:var(--amber);color:#1A1206;padding:4px 7px;font-size:8px}
+  .found.thin{background:#16222F;border-color:var(--edge);color:var(--dim)}
+  .pulling{color:var(--amber);font-size:16px;margin-top:10px}
+
+  .banner{background:#3D2411;border:3px solid #fff;box-shadow:6px 6px 0 rgba(0,0,0,.65);
+    padding:12px;margin-bottom:16px;font-size:16px;color:#FFD98A;line-height:1.7}
+  .banner b{display:block;font-family:var(--pix);font-size:8px;color:var(--amber);margin-bottom:6px}
+  .banner .linkbtn{margin-top:8px;display:block}
+  .rowname svg{vertical-align:-6px;margin-right:4px}
+  td svg{vertical-align:-6px;margin-right:5px}
+  .rcard{border:4px solid #fff;background:#151F2D;box-shadow:7px 7px 0 rgba(0,0,0,.65);overflow:hidden}
+  .rcard.hit{border-color:#3E9E6B}
+  .rcard.miss{border-color:#9B4038}
+  .rcard.void{border-color:#6B7684}
+  .rtop{background:#0C1622;display:flex;align-items:center;gap:6px;padding:4px 6px;
+    font-family:var(--big);font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;
+    text-transform:uppercase;text-shadow:2px 2px 0 #000;line-height:1.3}
+  .rtop svg{flex:none}
+  .rport{position:relative;display:flex;align-items:flex-end;justify-content:center;height:84px;
+    border-bottom:3px solid var(--edge);
+    background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.10) 0 5px,rgba(255,255,255,0) 5px 10px)}
+  .rpos em{font-style:normal;color:#FFD98A}
+  .rpos{position:absolute;left:5px;top:3px;font-family:var(--big);font-weight:700;font-size:16px;
+    color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.65);letter-spacing:1px}
+  .rname{background:#59636F;color:#fff;font-family:var(--big);font-weight:700;font-size:16px;
+    letter-spacing:1px;text-align:center;padding:3px 4px;text-shadow:2px 2px 0 rgba(0,0,0,.6);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .rprop{background:#2B3441;color:#C2CEDA;font-size:16px;text-align:center;padding:4px 5px;line-height:1.35}
+  .rbar{height:11px;background:#0C1622;border-top:2px solid var(--edge)}
+  .rbar i{display:block;height:100%}
+  .rfin{background:#0C1622;color:#93A6BA;font-family:var(--pix);font-size:8px;
+    text-align:center;padding:5px 3px;line-height:1.5}
+  .rcard.hit .rfin{color:#8FE8B4}
+  .rcard.miss .rfin{color:#FFA79E}
+  .cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+  .bigcount{font-family:var(--big);font-weight:700;letter-spacing:1px;font-size:48px;color:#fff;text-shadow:4px 4px 0 #000;margin:14px 0 6px}
+  /* ---- the field ------------------------------------------------------- */
+  .field{position:fixed;inset:0;z-index:-2;background:#2E7245;overflow:hidden}
+  .field::after{content:"";position:absolute;inset:0;background:rgba(6,14,10,.42)}
+  .turf{position:absolute;inset:0;display:flex;
+    background-image:repeating-linear-gradient(90deg,rgba(255,255,255,.05) 0 64px,rgba(0,0,0,.06) 64px 128px)}
+  .turf::before,.turf::after{content:"";position:absolute;left:0;right:0;height:0;
+    border-top:3px dashed rgba(255,255,255,.5)}
+  .turf::before{top:34%} .turf::after{top:66%}
+  .yard{flex:1;border-right:4px solid rgba(255,255,255,.75);position:relative}
+  .yard.first{border-left:4px solid rgba(255,255,255,.75)}
+  .yn{position:absolute;left:50%;transform:translateX(-50%);
+    font-family:var(--big);font-weight:700;font-size:32px;color:rgba(255,255,255,.8);
+    letter-spacing:1px;text-shadow:3px 3px 0 rgba(0,0,0,.35);line-height:1}
+  .yn.top{top:16px} .yn.bot{bottom:16px}
+  @media (max-width:520px){ .yn{font-size:16px} .yard{border-right-width:3px} }
+  .steps{list-style:none;margin:12px 0 0;padding:0;counter-reset:s}
+  .steps li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:2px solid #16222F}
+  .steps li:first-child{border-top:0}
+  .steps b{font-family:var(--big);font-weight:700;font-size:16px;color:var(--amber);width:20px;flex:none;
+    text-shadow:2px 2px 0 var(--edge)}
+  .stepbody{flex:1;min-width:0}
+  .stepname{font-weight:700;font-size:16px;word-wrap:break-word}
+  .stepprop{font-size:16px;color:var(--dim);line-height:1.5}
+  .stepcopy{border:3px solid var(--edge);background:var(--panel2);color:var(--chalk);
+    font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
+  .stepcopy:active{transform:translate(2px,2px)}
+  a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .scroller{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{text-align:right;padding:8px 5px;border-bottom:2px solid #16222F;font-family:var(--pix);font-size:8px;white-space:nowrap}
+  th{color:var(--dim);font-size:8px}
+  th:first-child,td:first-child{text-align:left}
+  td:first-child{color:var(--amber)}
+
+  .case{padding:12px 0;border-top:2px solid #16222F;display:flex;gap:10px;align-items:flex-start}
+  .case:first-of-type{border-top:0}
+  .case h4{font-family:var(--big);font-weight:700;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 var(--edge);margin-bottom:6px}
+  .feed{list-style:none;margin:10px 0 0;padding:0}
+  .feed li{padding:10px 0;border-top:2px solid #16222F}
+  .feed .fl{font-family:var(--pix);font-size:8px;color:var(--amber);display:block;margin-bottom:4px}
+  .feed .fd{font-size:16px;color:var(--dim)}
+  .legend{font-size:16px;color:var(--dim);line-height:1.9;margin-top:12px}
+  .legend b{color:var(--amber)}
+
+  .err{color:var(--red);font-size:16px;margin-top:10px}
+  .ok{color:var(--green);font-size:16px;margin-top:10px}
+  .warn{color:var(--red);font-size:16px;margin-top:6px;min-height:1.2em}
+  .center{text-align:center;padding:40px 0;color:var(--dim);font-family:var(--pix);font-size:8px}
+  .footnote{color:var(--dim);font-size:16px;margin-top:22px;line-height:1.8}
+  @media (max-width:400px){ .clock{font-size:24px} .bigcount{font-size:32px} .poolname{font-size:16px} }
+  @media (max-width:420px){ .spritebox{width:42px} .whoami{grid-template-columns:1fr} }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="field" aria-hidden="true"><div class="turf" id="turf"></div></div>
+<div class="wrap" id="app"><p class="center">LOADING&hellip;</p></div>
+
+<script>
+/* Home-jersey color, trim, and helmet shell for all 32 clubs. Colors only, no marks or logos. */
+const TEAMS=[
+["ARI","Arizona Cardinals","#97233F","#FFFFFF","#97233F"],
+["ATL","Atlanta Falcons","#A71930","#000000","#000000"],
+["BAL","Baltimore Ravens","#241773","#9E7C0C","#241773"],
+["BUF","Buffalo Bills","#00338D","#C60C30","#00338D"],
+["CAR","Carolina Panthers","#0085CA","#FFFFFF","#101820"],
+["CHI","Chicago Bears","#0B162A","#C83803","#0B162A"],
+["CIN","Cincinnati Bengals","#FB4F14","#000000","#FB4F14"],
+["CLE","Cleveland Browns","#311D00","#FF3C00","#FF3C00"],
+["DAL","Dallas Cowboys","#003594","#869397","#869397"],
+["DEN","Denver Broncos","#002244","#FB4F14","#002244"],
+["DET","Detroit Lions","#0076B6","#B0B7BC","#0076B6"],
+["GB","Green Bay Packers","#203731","#FFB612","#203731"],
+["HOU","Houston Texans","#03202F","#A71930","#03202F"],
+["IND","Indianapolis Colts","#002C5F","#FFFFFF","#FFFFFF"],
+["JAX","Jacksonville Jaguars","#006778","#D7A22A","#101820"],
+["KC","Kansas City Chiefs","#E31837","#FFB81C","#E31837"],
+["LV","Las Vegas Raiders","#101820","#A5ACAF","#A5ACAF"],
+["LAC","Los Angeles Chargers","#0080C6","#FFC20E","#FFFFFF"],
+["LAR","Los Angeles Rams","#003594","#FFA300","#003594"],
+["MIA","Miami Dolphins","#008E97","#FC4C02","#008E97"],
+["MIN","Minnesota Vikings","#4F2683","#FFC62F","#4F2683"],
+["NE","New England Patriots","#002244","#C60C30","#B0B7BC"],
+["NO","New Orleans Saints","#101820","#D3BC8D","#D3BC8D"],
+["NYG","New York Giants","#0B2265","#A71930","#0B2265"],
+["NYJ","New York Jets","#125740","#FFFFFF","#125740"],
+["PHI","Philadelphia Eagles","#004C54","#A5ACAF","#004C54"],
+["PIT","Pittsburgh Steelers","#101820","#FFB612","#101820"],
+["SF","San Francisco 49ers","#AA0000","#B3995D","#B3995D"],
+["SEA","Seattle Seahawks","#002244","#69BE28","#002244"],
+["TB","Tampa Bay Buccaneers","#D50A0A","#34302B","#B1BABF"],
+["TEN","Tennessee Titans","#0C2340","#4B92DB","#FFFFFF"],
+["WAS","Washington Commanders","#5A1414","#FFB612","#FFB612"]
+].map(t=>({k:t[0],name:t[1],j:t[2],t:t[3],h:t[4]}));
+
+const TEAMBY={};
+TEAMS.forEach(t=>{
+  TEAMBY[t.k.toLowerCase()]=t;
+  TEAMBY[t.name.toLowerCase()]=t;
+  TEAMBY[t.name.split(" ").pop().toLowerCase()]=t;   /* "falcons" */
+});
+/* accepts ATL, Falcons, or Atlanta Falcons */
+function teamOf(v){
+  if(!v) return null;
+  const k=String(v).trim().toLowerCase();
+  return TEAMBY[k] || null;
+}
+const teamKey = v => { const t=teamOf(v); return t ? t.k : ""; };
+
+/* Player-to-team snapshot from the 2026 offseason, grouped by club so it can be audited
+   by eye. Starters are solid; the deeper a name sits on a depth chart, the shakier it is.
+   Everything here is overridable from Setup, and corrections sync to the whole pool. */
+const ROSTER_VERSION = "2026 season, checked Sep 6";
+const BY_TEAM = {
+ARI:["Kyler Murray","Jacoby Brissett","James Conner","Trey Benson","Emari Demercado","Marvin Harrison","Michael Wilson","Zay Jones","Greg Dortch","Trey McBride","Elijah Higgins","Chad Ryland","Budda Baker","Zaven Collins","Mack Wilson","Darius Robinson","Walter Nolen"],
+ATL:["Michael Penix","Kirk Cousins","Bijan Robinson","Tyler Allgeier","Drake London","Darnell Mooney","Ray-Ray McCloud","Kyle Pitts","Charlie Woerner","Younghoe Koo","Jessie Bates","Kaden Elliss","Jalon Walker","James Pearce","Divine Deablo"],
+BAL:["Lamar Jackson","Cooper Rush","Derrick Henry","Justice Hill","Keaton Mitchell","Zay Flowers","Rashod Bateman","DeAndre Hopkins","Devontez Walker","Mark Andrews","Isaiah Likely","Tyler Loop","Roquan Smith","Kyle Hamilton","Nnamdi Madubuike","Marlon Humphrey","Odafe Oweh"],
+BUF:["Josh Allen","Mitchell Trubisky","James Cook","Ray Davis","Ty Johnson","Keon Coleman","Khalil Shakir","Joshua Palmer","Curtis Samuel","Dalton Kincaid","Dawson Knox","Tyler Bass","Terrel Bernard","Matt Milano","Ed Oliver","Greg Rousseau","Christian Benford","Taron Johnson"],
+CAR:["Bryce Young","Andy Dalton","Rico Dowdle","Chuba Hubbard","Trevor Etienne","Tetairoa McMillan","Xavier Legette","Jalen Coker","Ja'Tavion Sanders","Tommy Tremble","Ryan Fitzgerald","Derrick Brown","Jaycee Horn","Tre'von Moehrig","Nic Scourton"],
+CHI:["Caleb Williams","Tyson Bagent","D'Andre Swift","Roschon Johnson","Kyle Monangai","DJ Moore","Rome Odunze","Luther Burden","Olamide Zaccheaus","Colston Loveland","Cole Kmet","Cairo Santos","Montez Sweat","Tremaine Edmunds","Jaylon Johnson","Kevin Byard","Grady Jarrett"],
+CIN:["Joe Burrow","Jake Browning","Chase Brown","Samaje Perine","Tahj Brooks","Ja'Marr Chase","Tee Higgins","Andrei Iosivas","Mike Gesicki","Noah Fant","Evan McPherson","Trey Hendrickson","Logan Wilson","Germaine Pratt","Geno Stone","Shemar Stewart"],
+CLE:["Joe Flacco","Dillon Gabriel","Shedeur Sanders","Quinshon Judkins","Jerome Ford","Dylan Sampson","Jerry Jeudy","Cedric Tillman","Isaiah Bond","David Njoku","Harold Fannin","Andre Szmyt","Myles Garrett","Grant Delpit","Denzel Ward","Mason Graham","Devin Bush"],
+DAL:["Dak Prescott","Joe Milton","Javonte Williams","Jaydon Blue","Miles Sanders","CeeDee Lamb","George Pickens","Jalen Tolbert","KaVontae Turpin","Jake Ferguson","Luke Schoonmaker","Brandon Aubrey","DaRon Bland","Trevon Diggs","Quinnen Williams","Kenny Clark","Osa Odighizuwa"],
+DEN:["Bo Nix","Jarrett Stidham","RJ Harvey","Jaleel McLaughlin","Tyler Badie","Courtland Sutton","Marvin Mims","Troy Franklin","Pat Bryant","Evan Engram","Adam Trautman","Wil Lutz","Patrick Surtain","Nik Bonitto","Jonathon Cooper","Zach Allen","Dre Greenlaw"],
+DET:["Jared Goff","Hendon Hooker","Jahmyr Gibbs","David Montgomery","Craig Reynolds","Amon-Ra St. Brown","Jameson Williams","Isaac TeSlaa","Kalif Raymond","Sam LaPorta","Brock Wright","Jake Bates","Aidan Hutchinson","Alex Anzalone","Brian Branch","Kerby Joseph","Jack Campbell"],
+GB:["Jordan Love","Malik Willis","Josh Jacobs","Emanuel Wilson","MarShawn Lloyd","Matthew Golden","Jayden Reed","Romeo Doubs","Dontayvion Wicks","Tucker Kraft","Luke Musgrave","Brandon McManus","Micah Parsons","Quay Walker","Xavier McKinney","Devonte Wyatt","Edgerrin Cooper"],
+HOU:["C.J. Stroud","Davis Mills","Joe Mixon","Nick Chubb","Woody Marks","Nico Collins","Christian Kirk","Jayden Higgins","Jaylin Noel","Dalton Schultz","Cade Stover","Ka'imi Fairbairn","Will Anderson","Danielle Hunter","Azeez Al-Shaair","Derek Stingley","Jalen Pitre"],
+IND:["Daniel Jones","Anthony Richardson","Jonathan Taylor","Khalil Herbert","DJ Giddens","Michael Pittman","Josh Downs","Alec Pierce","Adonai Mitchell","Tyler Warren","Mo Alie-Cox","Spencer Shrader","Zaire Franklin","Kwity Paye","Laiatu Latu","DeForest Buckner","Sauce Gardner"],
+JAX:["Trevor Lawrence","Nick Mullens","Travis Etienne","Tank Bigsby","Bhayshul Tuten","Brian Thomas","Travis Hunter","Dyami Brown","Jakobi Meyers","Brenton Strange","Hunter Long","Cam Little","Josh Hines-Allen","Travon Walker","Devin Lloyd","Foyesade Oluokun","Tyson Campbell"],
+KC:["Patrick Mahomes","Gardner Minshew","Isiah Pacheco","Kareem Hunt","Brashard Smith","Rashee Rice","Xavier Worthy","Hollywood Brown","Travis Kelce","Noah Gray","Harrison Butker","Chris Jones","Nick Bolton","Trent McDuffie","George Karlaftis","Bryan Cook"],
+LAC:["Justin Herbert","Trey Lance","Omarion Hampton","Najee Harris","Kimani Vidal","Ladd McConkey","Quentin Johnston","Keenan Allen","Tre Harris","Will Dissly","Oronde Gadsden","Cameron Dicker","Khalil Mack","Derwin James","Tuli Tuipulotu","Daiyan Henley","Denzel Perryman"],
+LAR:["Matthew Stafford","Jimmy Garoppolo","Kyren Williams","Blake Corum","Jarquez Hunter","Puka Nacua","Davante Adams","Tutu Atwell","Konata Mumpfield","Tyler Higbee","Terrance Ferguson","Joshua Karty","Jared Verse","Byron Young","Kobie Turner","Braden Fiske","Quentin Lake"],
+LV:["Geno Smith","Kenny Pickett","Ashton Jeanty","Raheem Mostert","Zamir White","Tre Tucker","Jack Bech","Dont'e Thornton","Brock Bowers","Michael Mayer","Daniel Carlson","Maxx Crosby","Malcolm Koonce","Jeremy Chinn","Elandon Roberts"],
+MIA:["Tua Tagovailoa","Zach Wilson","De'Von Achane","Jaylen Wright","Ollie Gordon","Tyreek Hill","Jaylen Waddle","Malik Washington","Nick Westbrook-Ikhine","Darren Waller","Julian Hill","Jason Sanders","Bradley Chubb","Jaelan Phillips","Zach Sieler","Jordyn Brooks","Minkah Fitzpatrick"],
+MIN:["J.J. McCarthy","Sam Howell","Aaron Jones","Jordan Mason","Ty Chandler","Justin Jefferson","Jordan Addison","Jalen Nailor","Rondale Moore","T.J. Hockenson","Josh Oliver","Will Reichard","Jonathan Greenard","Andrew Van Ginkel","Byron Murphy","Harrison Smith","Blake Cashman"],
+NE:["Drake Maye","Joshua Dobbs","Rhamondre Stevenson","TreVeyon Henderson","Antonio Gibson","Stefon Diggs","DeMario Douglas","Kayshon Boutte","Mack Hollins","Hunter Henry","Austin Hooper","Andres Borregales","Christian Gonzalez","Milton Williams","Harold Landry","Robert Spillane","Kyle Dugger"],
+NO:["Spencer Rattler","Tyler Shough","Alvin Kamara","Kendre Miller","Devin Neal","Chris Olave","Brandin Cooks","Devaughn Vele","Juwan Johnson","Foster Moreau","Blake Grupe","Cameron Jordan","Demario Davis","Alontae Taylor","Bryan Bresee","Chase Young"],
+NYG:["Jaxson Dart","Russell Wilson","Tyrone Tracy","Devin Singletary","Cam Skattebo","Malik Nabers","Wan'Dale Robinson","Darius Slayton","Jalin Hyatt","Theo Johnson","Daniel Bellinger","Graham Gano","Brian Burns","Dexter Lawrence","Abdul Carter","Bobby Okereke","Kayvon Thibodeaux"],
+NYJ:["Justin Fields","Tyrod Taylor","Breece Hall","Braelon Allen","Isaiah Davis","Garrett Wilson","Allen Lazard","Josh Reynolds","Mason Taylor","Jeremy Ruckert","Nick Folk","Will McDonald","Jamien Sherwood","Quincy Williams","Andre Cisco"],
+PHI:["Jalen Hurts","Tanner McKee","Saquon Barkley","Will Shipley","A.J. Brown","DeVonta Smith","Jahan Dotson","Dallas Goedert","Grant Calcaterra","Jake Elliott","Nolan Smith","Zack Baun","Jalen Carter","Quinyon Mitchell","Cooper DeJean","Jihaad Campbell"],
+PIT:["Aaron Rodgers","Mason Rudolph","Jaylen Warren","Kaleb Johnson","Kenneth Gainwell","DK Metcalf","Calvin Austin","Roman Wilson","Pat Freiermuth","Jonnu Smith","Chris Boswell","T.J. Watt","Alex Highsmith","Cameron Heyward","Patrick Queen","Joey Porter"],
+SF:["Brock Purdy","Mac Jones","Christian McCaffrey","Isaac Guerendo","Brian Robinson","Jauan Jennings","Ricky Pearsall","Demarcus Robinson","George Kittle","Luke Farrell","Eddy Pineiro","Nick Bosa","Fred Warner","Deommodore Lenoir","Mykel Williams","Ji'Ayir Brown"],
+SEA:["Sam Darnold","Drew Lock","Kenneth Walker","Zach Charbonnet","George Holani","Jaxon Smith-Njigba","Cooper Kupp","Rashid Shaheed","Tory Horton","AJ Barner","Elijah Arroyo","Jason Myers","Leonard Williams","Ernest Jones","Devon Witherspoon","Julian Love","Uchenna Nwosu"],
+TB:["Baker Mayfield","Teddy Bridgewater","Bucky Irving","Rachaad White","Sean Tucker","Mike Evans","Chris Godwin","Emeka Egbuka","Jalen McMillan","Cade Otton","Payne Durham","Chase McLaughlin","Lavonte David","Vita Vea","Antoine Winfield","Calijah Kancey","Haason Reddick"],
+TEN:["Cam Ward","Brandon Allen","Tony Pollard","Tyjae Spears","Kalel Mullings","Calvin Ridley","Tyler Lockett","Elic Ayomanor","Van Jefferson","Chig Okonkwo","Gunnar Helm","Joey Slye","Jeffery Simmons","L'Jarius Sneed","Cody Barton"],
+WAS:["Jayden Daniels","Marcus Mariota","Austin Ekeler","Chris Rodriguez","Jacory Croskey-Merritt","Terry McLaurin","Deebo Samuel","Luke McCaffrey","Noah Brown","Zach Ertz","John Bates","Matt Gay","Bobby Wagner","Frankie Luvu","Marshon Lattimore","Mike Sainristil","Dorance Armstrong"]
+};
+const ROSTER_SEED = {};
+Object.keys(BY_TEAM).forEach(k => BY_TEAM[k].forEach(n => { ROSTER_SEED[normName(n)] = k; }));
+
+/* Fact-checked against reporting on Sep 6 2026. The offseason moved a lot of people
+   after my snapshot was written, so these override the club lists above. */
+const VERIFIED_2026 = {
+"Kyler Murray":"MIN","Tua Tagovailoa":"ATL","Malik Willis":"MIA","Kirk Cousins":"LV",
+"Geno Smith":"NYJ","Deshaun Watson":"CLE","Fernando Mendoza":"LV","Jacoby Brissett":"ARI",
+"A.J. Brown":"NE","Jaylen Waddle":"DEN","Mike Evans":"SF","DJ Moore":"BUF",
+"Romeo Doubs":"NE","Travis Etienne":"NO","David Montgomery":"HOU","Kayshon Boutte":"HOU",
+"Chig Okonkwo":"WAS","Antonio Williams":"WAS","Omar Cooper":"NYJ","Kenyon Sadiq":"NYJ",
+"Jarquez Hunter":"MIA","Tutu Atwell":"LAR",
+"Myles Garrett":"LAR","Jared Verse":"CLE","Trent McDuffie":"LAR","Jaylen Watson":"LAR",
+"Osa Odighizuwa":"SF","Zaire Franklin":"GB","Tyree Wilson":"NO",
+"Jauan Jennings":"MIN","Justin Fields":"KC","Stefon Diggs":"WAS","Cooper Rush":"ATL"
+};
+/* Nothing outstanding: the four I could not place were confirmed and moved up. */
+const UNPLACED_2026 = [];
+Object.keys(VERIFIED_2026).forEach(n => { ROSTER_SEED[normName(n)] = VERIFIED_2026[n]; });
+UNPLACED_2026.forEach(n => { delete ROSTER_SEED[normName(n)]; });
+
+const TIGHT_SEED = {};
+Object.keys(ROSTER_SEED).forEach(k => { TIGHT_SEED[k.replace(/ /g,"")] = ROSTER_SEED[k]; });
+
+function teamForPlayer(name){
+  const k = normName(name);
+  if(!k) return "";
+  const tight = k.replace(/ /g,"");
+  const extra = (state.season && state.season.roster) || {};
+  const tightExtra = {};
+  Object.keys(extra).forEach(x => { tightExtra[x.replace(/ /g,"")] = extra[x]; });
+  return extra[k] || tightExtra[tight] || ROSTER_SEED[k] || TIGHT_SEED[tight] || "";
+}
+function rosterStamp(){
+  const n = Object.keys((state.season && state.season.roster) || {}).length;
+  return "Snapshot from the " + ROSTER_VERSION + ", " + Object.keys(ROSTER_SEED).length + " players"
+       + (n ? ", plus " + n + " correction" + (n === 1 ? "" : "s") : "");
+}
+function parseRosterPaste(text){
+  const out = {}, bad = [];
+  String(text || "").split(/[\n;]+/).forEach(line => {
+    const raw = line.trim();
+    if(!raw) return;
+    let name = "", teamStr = "";
+    const c = raw.lastIndexOf(","), d = raw.lastIndexOf(" - ");
+    if(c > 0){ name = raw.slice(0, c); teamStr = raw.slice(c + 1); }
+    else if(d > 0){ name = raw.slice(0, d); teamStr = raw.slice(d + 3); }
+    else {
+      const w = raw.split(/\s+/);
+      for(let take = 3; take >= 1; take--){
+        if(w.length <= take) continue;
+        const cand = w.slice(-take).join(" ");
+        if(teamOf(cand)){ name = w.slice(0, -take).join(" "); teamStr = cand; break; }
+      }
+    }
+    const t = teamOf(teamStr), who = normName(name);
+    if(!t || !who){ bad.push(raw); return; }
+    out[who] = t.k;
+  });
+  return {map: out, bad: bad};
+}
+
+/* pixel sprite engine, 16x16 grids drawn as run-length SVG rects */
+const SKIN="#C08457", MASK="#D9DEE5", PANTS="#E8EBEF", CLEAT="#1A2430", BALL="#8B5A2B";
+const PALETTES=[
+  {j:"#2F6FB5",t:"#FFFFFF",h:"#24568C"},{j:"#C4453A",t:"#F5E6C8",h:"#992F27"},
+  {j:"#2E9159",t:"#FFE08A",h:"#237045"},{j:"#F0A431",t:"#3A2A12",h:"#C98322"},
+  {j:"#7A56B5",t:"#E9DEF9",h:"#5E4090"},{j:"#1FA0B8",t:"#F1FBFD",h:"#177E92"},
+  {j:"#D25C97",t:"#FFF0F7",h:"#A84577"},{j:"#4A5768",t:"#E8C86E",h:"#37414F"}
+];
+const GREY={j:"#3A4757",t:"#4E5D70",h:"#313D4B"};
+/* 24x24 players: helmet stripe, facemask bars, eyes, shoulder pads with trim,
+   a number panel on the jersey, gloves, belt and cleats. */
+const BASE24=[
+"........................",  //0
+".......HHHHHHHHHH.......",  //1
+"......HHHHHHHHHHHH......",  //2
+".....HHHHHHHHHHHHHH.....",  //3
+".....HHHHHTTTTHHHHH.....",  //4
+".....HHSSSSSSSSSSHH.....",  //5
+".....HHSSEESSEESSHH.....",  //6
+".....HHFFFFFFFFFFHH.....",  //7
+"......HFFFFFFFFFFH......",  //8
+".........SSSSSS.........",  //9
+"....TTJJJJJJJJJJJJTT....",  //10
+"..JJTTJJJJJJJJJJJJTTJJ..",  //11
+"..JJJJJJNNNNNNNNJJJJJJ..",  //12
+"..GGJJJJNNNNNNNNJJJJGG..",  //13
+"....JJJJJJJJJJJJJJJJ....",  //14
+".....JJJJJJJJJJJJJJ.....",  //15
+"......TTTTTTTTTTTT......",  //16
+"......PPPPPPPPPPPP......",  //17
+"......PPPP....PPPP......",  //18
+"......PPPP....PPPP......",  //19
+"......PPPP....PPPP......",  //20
+".....PPPPP....PPPPP.....",  //21
+".....KKKK......KKKK.....",  //22
+"........................"]; //23
+const OVER24={
+ stand:{},
+ qb:{8:"......HFFFFFFFFFFH..BB..",9:".........SSSSSS...BBBB..",10:"....TTJJJJJJJJJJJJTTGG..",11:"..JJTTJJJJJJJJJJJJTTJJ.."},
+ rb:{13:"BBGGJJJJNNNNNNNNJJJJGG..",14:"BB..JJJJJJJJJJJJJJJJ....",15:".....JJJJJJJJJJJJJJ....."},
+ wr:{8:"..GG..HFFFFFFFFFFH..GG..",9:"..JJ.....SSSSSS...JJ....",10:"..JJTTJJJJJJJJJJJJTTJJ..",11:"....JJJJJJJJJJJJJJJJ...."},
+ k:{18:"......PPPP....PPPPPP....",19:"......PPPP.....PPPPPP...",20:"......PPPP.......PPPP...",21:".....PPPPP........KKKK..",22:".....KKKK.........BBBB.."},
+ def:{11:"GGJJTTJJJJJJJJJJJJTTJJGG",12:"GG..JJJJNNNNNNNNJJJJ..GG",17:".....PPPPPPPPPPPPPP.....",18:"....PPPP......PPPP......",22:"....KKKK........KKKK...."}
+};
+const POSES={};
+Object.keys(OVER24).forEach(k=>{
+  POSES[k]=BASE24.map((row,i)=> OVER24[k][i] !== undefined ? OVER24[k][i] : row);
+});
+
+/* ---- member portraits, 24x24 -------------------------------------------------
+   Redrawn with the outline-and-shade approach those old handheld sprites use:
+   a dark keyline around the whole figure, a shadow tone down one side of the face
+   and across the bottom of the jersey, and eyes built from a white, a pupil and a
+   highlight rather than a solid block. */
+const OUTL = "#1B2130", EYE = "#10151F", WHITE = "#F6F8FA", GLINT = "#FFFFFF",
+      MOUTH = "#7E3B33", HAIRC = "#33261A", HAIRL = "#4C3A27", SHADE_D = "#1A2430";
+const SKINS = ["#F4D2AC","#E0AE74","#B8834F","#8E5C33","#5F3C21"];
+
+/* darken any color so shading follows whatever palette is in play */
+function shade(hex, f){
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+  return "#" + [r,g,b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2,"0")).join("");
+}
+
+const BUST24 = [
+"........................",
+".......OOOOOOOOOO.......",
+"......OSSSSSSSSSSO......",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+"......OSSSSSSSSSKO......",
+".......OOOOOOOOOO.......",
+".........OSSSSKO........",
+"....OOOOOOOOOOOOOOOO....",
+"...OJJJJJJJJJJJJJJJJO...",
+"..OJJJTTTTTTTTTTTTJJJO..",
+"..OJJJTTTTTTTTTTTTJJJO..",
+"..OJJJJJJJJJJJJJJJJJJO..",
+"..OJJJJJJJJJJJJJJJJJJO..",
+"..OVVVVVVVVVVVVVVVVVVO..",
+"..OOOOOOOOOOOOOOOOOOOO..",
+"........................"];
+
+const E24 = "........................";
+const pad24 = r => { const o = r.slice(); while(o.length < 24) o.push(E24); return o; };
+
+/* eyes sit at cols 7-9 and 14-16, so every face variant lines up with the head */
+const FACES24 = [
+  /* level */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    ".......WWW....WWW.......",
+    ".......WEW....WEW.......",
+    ".......GWW....GWW.......",
+    E24,
+    "..........MMMM.........."]),
+  /* squint */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    "........B......B........",
+    ".......WEW....WEW.......",
+    E24,E24,
+    "..........MMMM.........."]),
+  /* shades */ pad24([E24,E24,E24,E24,E24,E24,
+    "......DDDDDDDDDDDD......",
+    "......DGDDDDDDGDDD......",
+    "......DDDDDDDDDDDD......",
+    E24,E24,
+    "..........MMMM.........."]),
+  /* grin */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    ".......WWW....WWW.......",
+    ".......WEW....WEW.......",
+    ".......GWW....GWW.......",
+    E24,
+    ".........MMMMMM.........",
+    "......GGGGGGGGGGGG......",
+    ".......GGGGGGGGGG......."])
+];
+
+const HATS24 = [
+  /* helmet */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHHHHTTTTHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO.....",
+    ".....OHH........HHO.....",
+    ".....OHH........HHO.....",
+    ".....OHHFFFFFFFFHHO.....",
+    ".....OHHFFFFFFFFHHO.....",
+    ".....OHH........HHO....."]),
+  /* ball cap */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHLLHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHHHHO.."]),
+  /* beanie */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHLLHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OTTTTTTTTTTTTO....."]),
+  /* short hair */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHLLHHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO....."]),
+  /* big hair */ pad24([
+    "......OOOOOOOOOOOO......",
+    "....OHHHHHHHHHHHHHHO....",
+    "....OHHLLHHHHHHHHHHO....",
+    "....OHHHHHHHHHHHHHHO....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO....."]),
+  /* bald */ pad24([E24])
+];
+
+const HATNAMES = ["Helmet","Ball cap","Beanie","Short hair","Big hair","Bald"];
+const FACENAMES = ["Level","Squint","Shades","Grin"];
+const LOOKMAX = {hat:6, face:4, pal:8, skin:5};
+
+/* weighted so most people start with visible eyes; shades is 1 in 8, not 1 in 4 */
+const FACE_WEIGHTS = [0,1,3,0,1,3,0,2];
+function defaultLook(name){
+  return {hat: hashIdx(name+"|h",6), face: FACE_WEIGHTS[hashIdx(name+"|f",8)],
+          pal: hashIdx(name,8), skin: 2};
+}
+function lookOf(m){
+  const d = defaultLook(m.name||""), l = m.look||{};
+  return {hat:Number.isInteger(l.hat)?l.hat:d.hat, face:Number.isInteger(l.face)?l.face:d.face,
+          pal:Number.isInteger(l.pal)?l.pal:d.pal, skin:Number.isInteger(l.skin)?l.skin:d.skin};
+}
+function avatarSVG(look, px){
+  const g = BUST24.map(r => r.split(""));
+  const lay = rows => rows.forEach((r,y) => r.split("").forEach((c,x) => { if(c !== ".") g[y][x] = c; }));
+  lay(FACES24[look.face % 4]);
+  lay(HATS24[look.hat % 6]);
+  const pal = PALETTES[look.pal % 8], hairish = look.hat >= 3;
+  const skin = SKINS[look.skin % 5];
+  return gridSVG(g.map(r => r.join("")), {
+    O: OUTL, S: skin, K: shade(skin, .82),
+    J: pal.j, V: shade(pal.j, .78), T: pal.t,
+    H: hairish ? HAIRC : pal.h, L: hairish ? HAIRL : shade(pal.h, 1.25),
+    F: "#D9DEE5", W: WHITE, E: EYE, G: GLINT, D: SHADE_D, B: HAIRC, M: MOUTH
+  }, px, "sprite");
+}
+const avatarFor = (m,px) => avatarSVG(lookOf(m), px);
+const lookDesc = l => HATNAMES[l.hat % 6] + ", " + FACENAMES[l.face % 4];
+
+const POSTAG={qb:"QB",rb:"RB",wr:"WR",k:"K",def:"DEF",stand:"?"};
+const posTag=stat=>stat?POSTAG[poseFor(stat)]:"?";
+const posTint=stat=>(stat&&poseFor(stat)==="def")?"#A8443A":"#2E6FA8";
+
+
+const HELM=["..HHHH..",".HHHHHH.",".HHSSHH.",".HFFFFH.",".HFFFF..","..HHH...","........","........"];
+
+function hashIdx(s,n){let h=0;s=String(s||"");for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))>>>0;return h%n;}
+function poseFor(stat){
+  const s=String(stat||"").toLowerCase();
+  if(/kick|field goal|extra point/.test(s))return"k";
+  if(/tackle|sack|interception rec|defen/.test(s))return"def";
+  if(/pass|complet|attempt.*pass|interceptions thrown/.test(s))return"qb";
+  if(/rush|carr/.test(s))return"rb";
+  if(/rec|catch|target/.test(s))return"wr";
+  return"rb";
+}
+function gridSVG(rows,colors,px,cls){
+  let out="",w=rows[0].length;
+  for(let y=0;y<rows.length;y++){
+    let x=0;
+    while(x<w){
+      const c=rows[y][x];
+      if(c==="."){x++;continue;}
+      let run=1; while(x+run<w&&rows[y][x+run]===c)run++;
+      out+='<rect x="'+x+'" y="'+y+'" width="'+run+'" height="1" fill="'+colors[c]+'"/>';
+      x+=run;
+    }
+  }
+  const scale = Math.max(1, Math.round(px / w));   /* whole pixels only */
+  px = scale * w;
+  return '<svg class="'+cls+'" width="'+px+'" height="'+px+'" viewBox="0 0 '+w+' '+rows.length
+    +'" shape-rendering="crispEdges" aria-hidden="true">'+out+'</svg>';
+}
+function sprite(name,stat,px,dim,team){
+  const tm=dim?null:teamOf(team);
+  const pal=tm?{j:tm.j,t:tm.t,h:tm.h}:(dim?GREY:PALETTES[hashIdx(name,PALETTES.length)]);
+  const rows=POSES[stat===null?"stand":poseFor(stat)];
+  return gridSVG(rows,{H:pal.h,J:pal.j,T:pal.t,N:pal.t,S:dim?"#55636F":SKIN,F:dim?"#46525E":MASK,
+    E:dim?"#3A4653":"#131A24",G:dim?"#3A4653":"#23282F",
+    P:dim?"#4A5866":PANTS,K:dim?"#2B3541":CLEAT,B:dim?"#4A5866":BALL},px,"sprite"+(dim?" dim":""));
+}
+function helmet(name,px){
+  const pal=PALETTES[hashIdx(name,PALETTES.length)];
+  return gridSVG(HELM,{H:pal.h,S:SKIN,F:MASK},px,"helm");
+}
+
+/* 2026 NFL, 18 weeks. Lineup locks 5:00 PM Eastern every Friday. */
+const DEADLINES = [
+  "2026-09-11T17:00:00-04:00","2026-09-18T17:00:00-04:00","2026-09-25T17:00:00-04:00",
+  "2026-10-02T17:00:00-04:00","2026-10-09T17:00:00-04:00","2026-10-16T17:00:00-04:00",
+  "2026-10-23T17:00:00-04:00","2026-10-30T17:00:00-04:00","2026-11-06T17:00:00-05:00",
+  "2026-11-13T17:00:00-05:00","2026-11-20T17:00:00-05:00","2026-11-27T17:00:00-05:00",
+  "2026-12-04T17:00:00-05:00","2026-12-11T17:00:00-05:00","2026-12-18T17:00:00-05:00",
+  "2026-12-25T17:00:00-05:00","2027-01-01T17:00:00-05:00","2027-01-08T17:00:00-05:00"
+].map(s => new Date(s).getTime());
+
+const STATS = ["Pass Yards","Pass TDs","Pass Attempts","Pass Completions","Interceptions Thrown",
+  "Rush Yards","Rush Attempts","Rush+Rec Yards","Pass+Rush Yards","Receiving Yards","Receptions",
+  "Longest Reception","Longest Rush","Fantasy Score","Kicking Points","Tackles+Assists","Sacks"];
+
+const POSENAME = {qb:"Quarterback",rb:"Ball carrier",wr:"Receiver",k:"Kicker",def:"Defense",stand:"Anybody"};
+
+const BADGES = {
+  razor:    {name:"Razor",         desc:"Hit by exactly 0.5, the thinnest margin there is"},
+  gutpunch: {name:"Gut punch",     desc:"Missed by exactly 0.5"},
+  cushion:  {name:"Cushion",       desc:"Cleared the line by 50 percent or more"},
+  backbone: {name:"Backbone",      desc:"The only leg that hit that week"},
+  cooler:   {name:"Cooler",        desc:"The only leg that missed that week"},
+  perfect:  {name:"Perfect card",  desc:"Part of a lineup where every leg hit"},
+  buzzer:   {name:"Buzzer beater", desc:"Posted in the last 15 minutes before the lock"},
+  earlybird:{name:"Early bird",    desc:"Posted three or more days early"},
+  heater:   {name:"Heater",        desc:"Three, five or ten hits in a row"},
+  freeze:   {name:"Deep freeze",   desc:"Three or five misses in a row"},
+  ghost:    {name:"Ghost",         desc:"Never got a leg in before the lock"}
+};
+
+const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
+const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
+                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null };
+
+/* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
+   Shared documents live in D1 behind /api/kv, with a version on every write so two
+   people saving at the same second cannot overwrite each other. Which member you are
+   is kept on your own device. */
+const API = "/api/kv";
+let STORE_MODE = "unknown";   /* live | memory */
+let STORE_WHY = "";
+const VERSIONS = {};
+const MEM = {};
+const errText = e => String((e && (e.message || e)) || "unknown error").slice(0, 140);
+const poolKey = () => { try { return localStorage.getItem("ff:poolkey") || ""; } catch(e){ return ""; } };
+
+async function initStorage(){
+  try{
+    const r = await fetch(API + "?key=ff:health", {cache:"no-store"});
+    const body = await r.text();
+
+    /* A healthy route returns JSON. If a page comes back instead, Pages served the
+       site for /api/kv, which means the functions folder never deployed. Say that,
+       rather than letting a JSON parse error surface. */
+    let data = null;
+    try{ data = JSON.parse(body); }catch(e){ data = null; }
+
+    if(data === null){
+      STORE_MODE = "memory";
+      STORE_WHY = r.status === 404
+        ? "There is no /api/kv route on this site, so the functions folder did not deploy."
+        : "/api/kv returned a web page instead of data, so the functions folder did not deploy.";
+      return;
+    }
+    if(r.ok && typeof data === "object" && "version" in data){
+      STORE_MODE = "live"; STORE_WHY = ""; return;
+    }
+    STORE_MODE = "memory";
+    STORE_WHY = "The server answered " + r.status
+      + (data && data.error ? ": " + data.error : ".")
+      + (data && data.error && /binding/i.test(data.error) ? " Add the D1 binding named DB, then redeploy." : "");
+  }catch(e){
+    STORE_MODE = "memory";
+    STORE_WHY = "Could not reach /api/kv. " + errText(e) + ".";
+  }
+}
+
+async function sget(key, shared){
+  if(!shared){
+    try{ const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }catch(e){ return null; }
+  }
+  if(STORE_MODE === "memory"){
+    const v = MEM[key];
+    return v === undefined ? null : JSON.parse(v);
+  }
+  try{
+    const r = await fetch(API + "?key=" + encodeURIComponent(key), {cache:"no-store"});
+    if(!r.ok) throw new Error("server said " + r.status);
+    const d = await r.json();
+    VERSIONS[key] = d.version || 0;
+    return d.value === null || d.value === undefined ? null : JSON.parse(d.value);
+  }catch(e){
+    STORE_MODE = "memory"; STORE_WHY = "Lost the server: " + errText(e);
+    return null;
+  }
+}
+
+/* returns {ok} or {conflict:true, value, version} */
+async function sput(key, val, shared){
+  const s = JSON.stringify(val);
+  if(!shared){ try{ localStorage.setItem(key, s); }catch(e){} return {ok:true}; }
+  if(STORE_MODE === "memory"){ MEM[key] = s; return {ok:true}; }
+  const headers = {"content-type":"application/json"};
+  const pk = poolKey(); if(pk) headers["x-pool-key"] = pk;
+  const r = await fetch(API, {method:"PUT", headers:headers,
+    body: JSON.stringify({key:key, value:s, ifVersion: VERSIONS[key] || 0})});
+  if(r.ok){ const d = await r.json(); VERSIONS[key] = d.version; return {ok:true}; }
+  if(r.status === 409){
+    const d = await r.json();
+    VERSIONS[key] = d.version;
+    return {conflict:true, value: d.value ? JSON.parse(d.value) : null};
+  }
+  const d = await r.json().catch(()=>({}));
+  throw new Error(d.error || ("server said " + r.status));
+}
+async function sset(key, val, shared){
+  const res = await sput(key, val, shared);
+  if(res.conflict) throw new Error("someone else set this up a second before you did, reload the page");
+  return true;
+}
+
+/* read, apply the change, write. On a clash, re-read and re-apply, so the duplicate
+   player check always runs against what is actually on the server. */
+async function casUpdate(key, seed, mutate){
+  for(let attempt = 0; attempt < 6; attempt++){
+    let cur = await sget(key, true);
+    if(cur === null) cur = seed();
+    if(key === SEASON_KEY && !cur.moments) cur.moments = [];
+    mutate(cur);
+    const res = await sput(key, cur, true);
+    if(res.ok) return cur;
+  }
+  throw new Error("too many people saving at once, try that again");
+}
+
+function banner(){
+  if(STORE_MODE === "live") return "";
+  const why = STORE_WHY ? (/[.!?]$/.test(STORE_WHY) ? STORE_WHY : STORE_WHY + ".") : "";
+  return '<div class="banner"><b>Nothing is being saved</b>' + esc(why)
+       + ' Everything you type stays on this screen and nobody else can see it.'
+       + '<button class="linkbtn" id="retrystore">Try again</button></div>';
+}
+
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const isLocked = w => Date.now() >= DEADLINES[w];
+const currentWeek = () => { const n = Date.now(); for(let i=0;i<DEADLINES.length;i++) if(DEADLINES[i] > n) return i; return DEADLINES.length-1; };
+const memberName = id => (state.roster.members.find(m=>m.id===id)||{}).name || "?";
+/* Only a commissioner enters final numbers. Pools built before this existed
+   fall back to the first name on the roster, which is whoever set it up. */
+function currentLook(){
+  if(!state.look){
+    const me = state.roster.members.find(m => m.id === state.me);
+    state.look = lookOf(me || {name:""});
+  }
+  return state.look;
+}
+function isAdmin(){
+  if(!state.me || !state.roster) return false;
+  const ms = state.roster.members;
+  if(!ms.some(m => m.admin)) return !!(ms[0] && ms[0].id === state.me);
+  const me = ms.find(m => m.id === state.me);
+  return !!(me && me.admin);
+}
+function commishName(){
+  const ms = state.roster.members, a = ms.filter(m => m.admin);
+  if(!a.length) return ms[0] ? ms[0].name : "the commissioner";
+  return a.map(m => m.name).join(" or ");
+}
+const picksOf = w => (state.season.weeks[w] && state.season.weeks[w].picks) || {};
+const myPick = w => state.me ? (picksOf(w)[state.me] || null) : null;
+const num = v => (v===null||v===undefined||v==="") ? null : (isNaN(parseFloat(v)) ? null : parseFloat(v));
+const trim1 = n => (Math.round(n*100)/100).toString();
+
+function normName(s){
+  return String(s||"").toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .replace(/[.'`\u2019-]/g," ")
+    .replace(/\s+(jr|sr|ii|iii|iv)\s*$/,"")
+    .replace(/[^a-z0-9 ]/g,"")
+    .replace(/\s+/g," ").trim();
+}
+/* compare with spaces stripped too, so "Ja'Marr Chase", "Ja Marr Chase" and
+   "JaMarr Chase" all count as the same man */
+const tightName = s => normName(s).replace(/ /g,"");
+function takenBy(w, player, exceptId){
+  const k = tightName(player); if(!k) return null;
+  const picks = picksOf(w);
+  for(const id in picks){ if(id !== exceptId && tightName(picks[id].player) === k) return id; }
+  return null;
+}
+function margin(p){
+  const a = num(p.actual), l = num(p.line);
+  if(a === null || l === null) return null;
+  return p.side === "More" ? a - l : l - a;
+}
+function marginText(p){
+  const m = margin(p);
+  if(m === null) return "";
+  if(m > 0) return "hit by " + trim1(m) + " (final " + trim1(num(p.actual)) + ")";
+  if(m < 0) return "missed by " + trim1(-m) + " (final " + trim1(num(p.actual)) + ")";
+  return "landed on the number, voided";
+}
+function deadlineText(w){
+  return new Date(DEADLINES[w]).toLocaleString(undefined,{weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
+}
+function countdown(w){
+  let ms = DEADLINES[w] - Date.now();
+  if(ms <= 0) return null;
+  const d = Math.floor(ms/86400000); ms -= d*86400000;
+  const h = Math.floor(ms/3600000);  ms -= h*3600000;
+  const m = Math.floor(ms/60000);    ms -= m*60000;
+  const s = Math.floor(ms/1000);
+  if(d > 0) return d+"d "+h+"h "+m+"m";
+  if(h > 0) return h+"h "+m+"m "+s+"s";
+  return m+"m "+s+"s";
+}
+async function hash(pin){
+  try{
+    const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode("ff|"+pin));
+    return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
+  }catch(e){ return "plain:"+pin; }
+}
+
+/* ---------- records, badges and moments, all derived from the grades ---------- */
+function analyze(){
+  const members = state.roster.members;
+  const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0, badges:{}, cur:0, best:0});
+  const moments = [];
+  const give = (id, key, w, detail) => {
+    rec[id].badges[key] = (rec[id].badges[key]||0) + 1;
+    moments.push({w:w, who:rec[id].name, label:BADGES[key].name, detail:detail});
+  };
+
+  for(let w=0; w<DEADLINES.length; w++){
+    if(!isLocked(w)) continue;
+    const picks = picksOf(w);
+    if(!Object.keys(picks).length) continue;
+    const hits = [], misses = [];
+
+    members.forEach(m => {
+      const r = rec[m.id], p = picks[m.id];
+      if(!p){ r.skip++; r.cur = 0; give(m.id,"ghost",w,"No leg in before the lock"); return; }
+      const leg = p.player + " " + p.side + " " + p.line + " " + p.stat;
+      const mg = margin(p);
+
+      if(p.result === "H"){ r.H++; hits.push(m.id); r.cur = r.cur > 0 ? r.cur+1 : 1; }
+      else if(p.result === "M"){ r.M++; misses.push(m.id); r.cur = r.cur < 0 ? r.cur-1 : -1; }
+      else if(p.result === "V"){ r.V++; }
+      r.best = Math.max(r.best, r.cur);
+
+      if(mg !== null && p.result === "H" && Math.abs(mg) === 0.5) give(m.id,"razor",w,leg+", "+marginText(p));
+      if(mg !== null && p.result === "M" && Math.abs(mg) === 0.5) give(m.id,"gutpunch",w,leg+", "+marginText(p));
+      const l = num(p.line);
+      if(mg !== null && p.result === "H" && l && Math.abs(l) > 0 && mg >= 2 && mg/Math.abs(l) >= 0.5) give(m.id,"cushion",w,leg+", "+marginText(p));
+
+      const early = DEADLINES[w] - (p.ts || DEADLINES[w]);
+      if(early <= 900000 && early >= 0) give(m.id,"buzzer",w,"Posted "+leg+" with minutes to spare");
+      else if(early >= 259200000) give(m.id,"earlybird",w,"Had "+leg+" in three days early");
+
+      if(p.result === "H" && (r.cur === 3 || r.cur === 5 || r.cur === 10)) give(m.id,"heater",w,r.cur+" hits in a row");
+      if(p.result === "M" && (r.cur === -3 || r.cur === -5)) give(m.id,"freeze",w,(-r.cur)+" misses in a row");
+    });
+
+    if(misses.length === 1 && hits.length >= 3) give(misses[0],"cooler",w,"The only leg to miss on a "+hits.length+" hit card");
+    if(hits.length === 1 && misses.length >= 3) give(hits[0],"backbone",w,"Carried a card that went 1 for "+(hits.length+misses.length));
+    if(misses.length === 0 && hits.length === members.length) hits.forEach(id => give(id,"perfect",w,"The card went "+hits.length+" for "+hits.length));
+  }
+
+  (state.season.moments||[]).forEach(mo => moments.push({w:mo.week, who:mo.by, label:"Noted", detail:mo.text, manual:true, id:mo.id}));
+  moments.sort((a,b) => b.w - a.w);
+  const table = members.map(m => rec[m.id]).sort((a,b) => b.H-a.H || a.M-b.M || b.best-a.best);
+  return {rec:rec, table:table, moments:moments};
+}
+
+async function boot(){
+  await initStorage();
+  const [roster, season, me] = await Promise.all([sget(ROSTER_KEY,true), sget(SEASON_KEY,true), sget(ME_KEY,false)]);
+  state.roster = roster;
+  state.season = season || {weeks:{}, moments:[]};
+  if(!state.season.moments) state.season.moments = [];
+  state.me = me && me.id ? me.id : null;
+  state.view = currentWeek();
+  if(state.me && roster && !roster.members.some(m=>m.id===state.me)) state.me = null;
+  state.screen = roster ? "main" : "setup";
+  render();
+  setInterval(tickClock, 1000);
+  setInterval(quietRefresh, 60000);
+}
+async function quietRefresh(){
+  if(!(state.screen === "card" || (state.screen === "main" && !isLocked(state.view)))) return;
+  const fresh = await sget(SEASON_KEY, true);
+  if(!fresh) return;
+  if(!fresh.moments) fresh.moments = [];
+  const changed = JSON.stringify(fresh.weeks[state.view]||{}) !== JSON.stringify(state.season.weeks[state.view]||{});
+  state.season = fresh;
+  if(changed) render();   /* the card recolors itself as grades land */
+}
+async function updateSeason(mutate){
+  /* seed from what is already loaded, so a dropped connection cannot blank the season */
+  state.season = await casUpdate(SEASON_KEY, () => state.season || {weeks:{}, moments:[]}, mutate);
+}
+async function updateRoster(mutate){
+  state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
+}
+
+function render(){
+  const app = document.getElementById("app");
+  let html, wire;
+  if(state.screen === "setup"){ html = viewSetup(); wire = wireSetup; }
+  else if(state.screen === "settings"){ html = viewSettings(); wire = wireSettings; }
+  else if(state.screen === "season"){ html = viewSeason(); wire = wireSeason; }
+  else if(state.screen === "card"){ html = viewCard(); wire = wireCard; }
+  else { html = viewMain(); wire = wireMain; }
+  app.innerHTML = banner() + html;
+  /* one missing element must never stop the rest of the screen from working */
+  try{ wire(); }catch(e){ console.error("wiring failed on " + state.screen + ":", e); }
+  const retry = document.getElementById("retrystore");
+  if(retry) retry.onclick = async () => {
+    retry.textContent = "Checking";
+    await initStorage();
+    if(STORE_MODE === "shared"){
+      const roster = await sget(ROSTER_KEY, true), season = await sget(SEASON_KEY, true);
+      if(roster) state.roster = roster;
+      if(season){ if(!season.moments) season.moments = []; state.season = season; }
+      if(state.roster) state.screen = "main";
+    }
+    render();
+  };
+}
+
+function viewSetup(){
+  return '<div class="topbar"><span class="poolname">FLEX FRIDAY</span></div>'
+  + '<div class="card"><h3>Set up the lineup</h3>'
+  + '<p class="hint">Do this once. Everyone else opens this page and claims their name.</p>'
+  + '<label for="pn">Pool name</label><input id="pn" type="text" value="Flex Friday" maxlength="40">'
+  + '<p class="hint">The first name is the commissioner. That person enters the final numbers each week, and can hand the job to someone else later.</p>'+ '<label>The six of you, in lineup order</label>'
+  + [0,1,2,3,4,5].map(i=>'<input id="n'+i+'" type="text" maxlength="18" placeholder="'+(i===0?"Your name":"Friend "+i)+'" style="margin-bottom:8px">').join("")
+  + '<button class="btn wide" id="go">Create the pool</button><p class="err" id="setuperr" hidden></p></div>'
+  + '<p class="footnote">One leg each builds the six-pick Flex lineup. Player names show as soon as they are claimed so nobody doubles up, but the stat, line and side stay hidden until Friday at 5.</p>';
+}
+function wireSetup(){
+  document.getElementById("go").onclick = async () => {
+    const names = [0,1,2,3,4,5].map(i=>document.getElementById("n"+i).value.trim()).filter(Boolean);
+    const err = document.getElementById("setuperr");
+    if(names.length < 2){ err.textContent = "Add at least two names to start."; err.hidden = false; return; }
+    const roster = { pool: document.getElementById("pn").value.trim() || "Flex Friday",
+      members: names.map((n,i)=>({id:"m"+i+"_"+Math.random().toString(36).slice(2,7), name:n, pinHash:null, admin:i===0})) };
+    try{
+      await sset(ROSTER_KEY, roster, true);
+      await sset(SEASON_KEY, {weeks:{}, moments:[]}, true);
+      state.roster = roster; state.season = {weeks:{}, moments:[]}; state.screen = "main"; render();
+    }catch(e){ err.textContent = "Could not create the pool: " + errText(e); err.hidden = false; }
+  };
+}
+
+function topbar(current){
+  return '<div class="topbar"><span class="poolname">'
+  + esc((current==="season"?"Season":current==="card"?"The card":(current==="settings"?"Settings":state.roster.pool)).toUpperCase())+'</span>'
+  + '<div class="navlinks">'
+  + (current==="main" ? '<button class="linkbtn" id="tocard">Card</button><button class="linkbtn" id="toseason">Season</button><button class="linkbtn" id="settings">Setup</button>'
+                      : '<button class="linkbtn" id="back">Back</button>')
+  + '</div></div>';
+}
+
+function viewMain(){
+  const w = state.view, locked = isLocked(w), r = state.roster;
+  const picks = picksOf(w), n = Object.keys(picks).length, size = r.members.length;
+  const total = w === 0 ? 6*86400000 : DEADLINES[w]-DEADLINES[w-1];
+  const pct = Math.max(0, Math.min(100, 100 - ((DEADLINES[w]-Date.now())/total*100)));
+  const blocks = 16, on = Math.round(pct/100*blocks);
+
+  return topbar("main")
+  + '<div class="board"><div class="weekrow"><h2>WEEK '+(w+1)+'</h2>'
+  + '<div class="weeknav"><button id="prev"'+(w===0?" disabled":"")+' aria-label="Previous week">&#9664;</button>'
+  + '<button id="next"'+(w===17?" disabled":"")+' aria-label="Next week">&#9654;</button></div></div>'
+  + '<div class="clock" id="clock">'+(locked ? (n+"/"+size+" IN") : esc(countdown(w)))+'</div>'
+  + '<div class="clocklabel">'+(locked ? "Locked "+esc(deadlineText(w))
+      : n+" of "+size+" legs in, locks "+esc(deadlineText(w)))+'</div>'
+  + (locked ? "" : '<div class="fill">'+Array.from({length:blocks},(_,i)=>'<i class="'+(i<on?"on":"")+'"></i>').join("")+'</div>')
+  + '</div>'
+  + (state.me ? yourLegCard(w, locked) : signInCard())
+  + lineupCard(w, locked)
+  + buildPanel(w)
+  + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
+  + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.</p>';
+}
+
+function signInCard(){
+  const c = state.claiming;
+  if(c){
+    const m = state.roster.members.find(x=>x.id===c), first = !m.pinHash;
+    return '<div class="card"><h3>'+esc(m.name)+'</h3>'
+    + '<p class="hint">'+(first ? "Pick a 4-digit code. You will use it to post your leg from any device." : "Enter your 4-digit code.")+'</p>'
+    + '<label for="pin">Your code</label><input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">'
+    + (first ? '<label for="pin2">Type it again</label><input id="pin2" type="password" inputmode="numeric" maxlength="8" autocomplete="off">' : "")
+    + '<div class="row-btns"><button class="btn" id="claim">'+(first?"Save my code":"Sign in")+'</button>'
+    + '<button class="btn ghost" id="cancel">Back</button></div>'
+    + (state.err ? '<p class="err">'+esc(state.err)+'</p>' : "") + '</div>';
+  }
+  return '<div class="card"><h3>Which one are you?</h3>'
+  + '<p class="hint">Each person gets their own slot and code, so nobody can post a leg for you.</p>'
+  + '<div class="whoami">'+state.roster.members.map(m=>
+      '<button data-claim="'+m.id+'">'+avatarFor(m,48)+'<span>'+esc(m.name)
+      +'<small>'+(m.pinHash?"sign in":"unclaimed")+'</small></span></button>').join("")
+  + '</div></div>';
+}
+
+function propText(p){
+  return '<span class="'+(p.side==="More"?"more":"less")+'">'+p.side+' '+esc(p.line)+'</span> '+esc(p.stat);
+}
+
+function yourLegCard(w, locked){
+  const p = myPick(w);
+  if(locked){
+    return '<div class="card"><h3>Your leg, Week '+(w+1)+'</h3>'
+    + (p ? '<div style="display:flex;gap:12px;align-items:center;margin-top:8px">'
+         + '<div class="spritebox">'+sprite(p.player,p.stat,48,false,p.team)+'</div><div>'
+         + '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div></div></div>'
+         + (p.note?'<p class="note hint">'+esc(p.note)+'</p>':"")
+       : '<p class="miss" style="margin-top:8px">You did not get a leg in before the lock.</p>')
+    + '<p class="hint" style="margin-top:10px">Signed in as '+esc(memberName(state.me))+'. Week '+(w+1)+' is closed.</p></div>';
+  }
+  state.side = p ? p.side : state.side;
+  const taken = state.roster.members.filter(m=>m.id!==state.me && picksOf(w)[m.id])
+    .map(m=>esc(picksOf(w)[m.id].player)).join(", ");
+  const pv = p ? {player:p.player, stat:p.stat, team:p.team} : {player:"", stat:"", team:""};
+  return '<div class="card"><h3>'+(p?"Change your leg":"Post your leg")+'</h3>'
+  + '<p class="hint">Signed in as '+esc(memberName(state.me))+'. Edit it any time before the lock.</p>'
+  + (taken ? '<div class="rule">Already taken: '+taken+'</div>' : "")
+  + '<div class="preview"><div class="spritebox" id="pvbox">'+sprite(pv.player,pv.stat||null,72,false,pv.team)+'</div>'
+  + '<div class="cap"><b id="pvname">'+esc(pv.player||"YOUR GUY")+'</b><span id="pvpose">'
+  + esc(pv.stat?POSENAME[poseFor(pv.stat)]:"Pick a player and a stat")+'</span></div></div>'
+  + '<label for="player">Player</label>'
+  + '<input id="player" type="text" maxlength="40" value="'+esc(p?p.player:"")+'" placeholder="Bijan Robinson" autocomplete="off">'
+  + '<p class="warn" id="dupwarn"></p>'
+  + '<label for="team">Team</label>'
+  + '<input id="team" type="text" maxlength="24" list="teams" value="'+esc(p&&p.team?((teamOf(p.team)||{}).name||p.team):"")+'" placeholder="Atlanta Falcons" autocomplete="off">'
+  + '<datalist id="teams">'+TEAMS.map(t=>'<option value="'+t.name+'">').join("")+'</datalist>'
+  + '<p class="hint" style="margin-top:5px">Fills in on its own for most players. Sets the jersey color, and you can always type over it.</p>'
+  + '<div class="two"><div><label for="stat">Stat</label>'
+  + '<input id="stat" type="text" maxlength="30" list="stats" value="'+esc(p?p.stat:"")+'" placeholder="Rush+Rec Yards" autocomplete="off">'
+  + '<datalist id="stats">'+STATS.map(s=>'<option value="'+s+'">').join("")+'</datalist></div>'
+  + '<div><label for="line">Line</label>'
+  + '<input id="line" type="text" inputmode="decimal" maxlength="6" value="'+esc(p?p.line:"")+'" placeholder="74.5"></div></div>'
+  + '<label>Side</label><div class="side">'
+  + '<button type="button" id="sMore" aria-pressed="'+(state.side==="More")+'">MORE</button>'
+  + '<button type="button" id="sLess" aria-pressed="'+(state.side==="Less")+'">LESS</button></div>'
+  + '<label for="note">Reasoning, optional</label>'
+  + '<input id="note" type="text" maxlength="140" value="'+esc(p&&p.note?p.note:"")+'">'
+  + '<button class="btn wide" id="submit">'+(p?"Update my leg":"Add my leg")+'</button>'
+  + (state.msg?'<p class="ok">'+esc(state.msg)+'</p>':"")
+  + (state.err?'<p class="err">'+esc(state.err)+'</p>':"") + '</div>';
+}
+
+
+/* A prefix match let https://prizepicks.evil.com.co through, so the host is parsed
+   and checked against an allowlist instead. */
+const PP_HOSTS = ["prizepicks.com", "prizepicks.onelink.me"];
+function isPrizePicksUrl(v){
+  try{
+    const u = new URL(String(v).trim());
+    if(u.protocol !== "https:") return false;
+    const h = u.hostname.toLowerCase();
+    return PP_HOSTS.some(d => h === d || h.endsWith("." + d));
+  }catch(e){ return false; }
+}
+/* PrizePicks has no public URL that accepts arbitrary picks, so this does the two
+   things that are actually possible: walk the builder through the six legs one at a
+   time, and hold onto the real share link once their app produces one. */
+function buildPanelSlot(w){ return ""; }
+function buildPanel(w){
+  const r = state.roster, picks = picksOf(w);
+  const full = r.members.every(m => picks[m.id]);
+  const wk = state.season.weeks[w] || {};
+  const link = wk.link || "";
+  if(!full && !link) return "";
+
+  const steps = full ? r.members.map((m,i) => {
+    const p = picks[m.id];
+    return '<li><b>' + (i+1) + '</b><div class="stepbody">'
+      + '<div class="stepname">' + esc(p.player) + '</div>'
+      + '<div class="stepprop">' + propText(p) + (p.team ? ' &middot; ' + esc(p.team) : "") + '</div></div>'
+      + '<button class="stepcopy" data-copyname="' + esc(p.player) + '">COPY</button></li>';
+  }).join("") : "";
+
+  return '<div class="card"><h3>Build the slip</h3>'
+  + (link
+      ? '<p class="hint">' + esc(wk.linkBy ? wk.linkBy + " built it. " : "") + 'Tap through to copy it in the app.</p>'
+        + '<a class="btn wide golink" href="' + esc(link) + '" target="_blank" rel="noopener noreferrer">OPEN THE LINEUP</a>'
+        + (state.me ? '<button class="btn ghost" id="clearlink">Remove the link</button>' : "")
+      : "")
+  + (full
+      ? '<p class="hint" style="margin-top:14px">PrizePicks builds a lineup inside their app, so nobody can hand it a '
+        + 'ready-made link. Open the app, then work down this list. Each COPY puts the name on your clipboard to paste '
+        + 'into their search.</p>'
+        + '<ol class="steps">' + steps + '</ol>'
+        + '<div class="row-btns"><a class="btn ghost golink" href="https://app.prizepicks.com/" target="_blank" rel="noopener noreferrer">OPEN PRIZEPICKS</a>'
+        + '<button class="btn ghost" id="copyall">COPY ALL SIX</button></div>'
+        + (state.me
+            ? '<label for="pplink">Once it is built, paste the PrizePicks share link</label>'
+              + '<input id="pplink" type="text" maxlength="300" value="' + esc(link) + '" placeholder="https://prizepicks.com/...">'
+              + '<button class="btn" id="savelink">Save it for everyone</button>'
+            : "")
+        + (state.linkMsg ? '<p class="ok">' + esc(state.linkMsg) + '</p>' : "")
+        + (state.linkErr ? '<p class="err">' + esc(state.linkErr) + '</p>' : "")
+      : "")
+  + '</div>';
+}
+
+function lineupCard(w, locked){
+  const r = state.roster, picks = picksOf(w);
+  let hits=0, graded=0, voids=0;
+  r.members.forEach(m=>{ const p=picks[m.id]; if(!p||!p.result) return;
+    if(p.result==="H"){hits++;graded++} else if(p.result==="M"){graded++} else if(p.result==="V"){voids++} });
+
+  const legs = r.members.map(m=>{
+    const p = picks[m.id], mine = m.id === state.me;
+    let art, body;
+    if(!p){
+      art = sprite(m.name, null, 48, true);
+      body = locked ? '<div class="miss">No leg submitted</div>' : '<span class="tag">Waiting</span>';
+    } else if(locked){
+      art = sprite(p.player, p.stat, 48, false, p.team);
+      const mt = marginText(p), cls = p.result==="H" ? "h" : p.result==="M" ? "m" : "v";
+      body = '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div>'
+           + (p.note?'<div class="note">'+esc(p.note)+'</div>':"")
+           + (mt ? '<div class="margin '+cls+'">'+esc(mt)+'</div>' : "")
+           + (isAdmin() ? marks(m.id, p) : (p.result?'<span class="tag">'+({H:"Hit",M:"Miss",V:"Void"}[p.result])+'</span>':""));
+    } else if(mine){
+      art = sprite(p.player, p.stat, 48, false, p.team);
+      body = '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div>'
+           + (p.note?'<div class="note">'+esc(p.note)+'</div>':"")
+           + '<div class="note">only you can see the rest until 5</div>';
+    } else {
+      art = sprite(p.player, null, 48, false, p.team);
+      body = '<div class="player">'+esc(p.player)+'</div><span class="tag in">Locked in</span>';
+    }
+    return '<li><div class="spritebox">'+art+'</div><div class="leg">'
+      + '<div class="rowname">'+avatarFor(m,24)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
+  }).join("");
+
+  return '<div class="card"><h3>Week '+(w+1)+' lineup</h3>'
+  + '<p class="hint">'+(locked
+      ? (graded||voids ? hits+" of "+graded+" hit"+(voids?", "+voids+" voided":"")
+                       : "Type each player's final number and the grade sets itself.")
+      : "One player per week. Names show as they come in so you can avoid a double.")+'</p>'
+  + '<ul class="legs">'+legs+'</ul>'
+  + buildPanelSlot(w)
+  + (locked ? lockedTools(w)
+            : '<div class="row-btns"><button class="btn ghost" id="refresh">Refresh the board</button>'
+              + (isAdmin() && Object.keys(picks).length ? '<button class="btn ghost" id="checkteams"'+(state.fetching?" disabled":"")+'>'
+                  + (state.fetching ? "Checking" : "Check teams") + '</button>' : "") + '</div>'
+              + (state.fetchNote ? '<p class="pulling">'+esc(state.fetchNote)+'</p>' : ""))
+  + '</div>';
+}
+function lockedTools(w){
+  const found = state.props[w] || {};
+  const pending = Object.keys(found).filter(id => {
+    const f = found[id], p = picksOf(w)[id];
+    return f && f.status === "ok" && f.final !== null && p && num(p.actual) !== f.final;
+  }).length;
+  const admin = isAdmin();
+  return '<div class="row-btns"><button class="btn ghost" id="copy">Copy lineup</button>'
+  + (admin ? '<button class="btn ghost" id="pullfinals"'+(state.fetching?" disabled":"")+'>'
+      + (state.fetching ? "Checking box scores" : "Find final numbers") + '</button>' : "")
+  + (admin ? '<button class="btn ghost" id="checkteams"'+(state.fetching?" disabled":"")+'>Check teams</button>' : "")
+  + (admin && pending ? '<button class="btn" id="useallfound">Use all '+pending+'</button>' : "")
+  + '</div>'
+  + (state.fetchNote ? '<p class="pulling">'+esc(state.fetchNote)+'</p>' : "")
+  + '<p class="hint" style="margin-top:10px">'
+  + (admin
+      ? 'Numbers come from a live web search, not from PrizePicks. Confirm each one before it counts, and let their settlement be the tiebreaker.'
+      : esc(commishName()) + ' enters the finals. Watch them land on the card screen.')
+  + '</p>';
+}
+function marks(id, p){
+  return '<div class="marks">'
+  + '<input type="text" inputmode="decimal" maxlength="7" data-final="'+id+'" value="'+esc(p.actual==null?"":p.actual)+'" placeholder="Final" aria-label="Final number">'
+  + ["H","M","V"].map(rr=>'<button data-mark="'+id+'" data-r="'+rr+'" class="'+(p.result===rr?"on":"")+'" aria-label="'
+      +({H:"Hit",M:"Miss",V:"Void"}[rr])+'">'+rr+'</button>').join("")
+  + '</div>' + foundBlock(id, p);
+}
+function foundBlock(id, p){
+  const f = (state.props[state.view]||{})[id];
+  if(!f) return "";
+  if(f.status !== "ok" || f.final === null)
+    return '<div class="found thin">Nothing solid found'+(f.game?', '+esc(f.game):"")
+         + (f.status === "dnp" ? '. Looks like he did not play, so this is probably a void.' : '. Grade it by hand.')+'</div>';
+  if(num(p.actual) === f.final) return "";
+  return '<div class="found">Found <b>'+trim1(f.final)+'</b>'+(f.game ? ', '+esc(f.game) : "")
+       + '<button data-usefound="'+id+'">Use it</button></div>';
+}
+
+function viewSeason(){
+  const a = analyze(), members = state.roster.members;
+  const streak = r => r.cur > 0 ? r.cur+"H" : r.cur < 0 ? (-r.cur)+"M" : "0";
+
+  const table = '<div class="card"><h3>Records</h3>'
+  + '<p class="hint">Every graded leg since Week 1.</p><div class="scroller">'
+  + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
+  + a.table.map(r=>'<tr><td>'+avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M+'</td><td>'+r.V+'</td><td>'+r.skip
+      +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
+  + '</table></div></div>';
+
+  const cases = '<div class="card"><h3>Trophy case</h3>'
+  + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
+  + members.map(m=>{
+      const b = a.rec[m.id].badges, keys = Object.keys(b);
+      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div><h4>'+esc(m.name.toUpperCase())+'</h4>'
+      + (keys.length ? keys.map(k=>'<span class="tag badge">'+esc(BADGES[k].name)+(b[k]>1?" x"+b[k]:"")+'</span>').join("")
+                     : '<span class="hint">Nothing yet.</span>')
+      + '</div></div>';
+    }).join("")
+  + '<p class="legend">'+Object.keys(BADGES).map(k=>'<b>'+BADGES[k].name+'</b>, '+BADGES[k].desc).join("<br>")+'</p></div>';
+
+  const feed = '<div class="card"><h3>Moments</h3>'
+  + (state.me
+      ? '<label for="mtext">Add one for Week '+(state.view+1)+'</label>'
+        + '<input id="mtext" type="text" maxlength="180" placeholder="Fell asleep, posted at 4:59">'
+        + '<button class="btn" id="addmoment">Add it</button>'
+        + (state.msg?'<p class="ok">'+esc(state.msg)+'</p>':"")
+      : '<p class="hint">Sign in on the board to add your own.</p>')
+  + (a.moments.length
+      ? '<ul class="feed">'+a.moments.slice(0,60).map(mo =>
+          '<li><span class="fl">WK'+(mo.w+1)+' &middot; '+esc(mo.who.toUpperCase())+' &middot; '+esc(mo.label)+'</span>'
+          + '<div class="fd">'+esc(mo.detail)+'</div>'
+          + (mo.manual && state.me ? '<button class="linkbtn" data-delmoment="'+mo.id+'">Remove</button>' : "")
+          + '</li>').join("")+'</ul>'
+      : '<p class="hint" style="margin-top:10px">Nothing logged yet. Grade a week and the good ones show up here.</p>')
+  + '</div>';
+
+  return topbar("season") + table + cases + feed
+  + '<p class="footnote">Records and badges are recalculated from the grades every time this page opens, so fixing a wrong grade fixes the history with it.</p>';
+}
+function wireSeason(){
+  document.getElementById("back").onclick = () => { state.screen="main"; state.msg=null; state.err=null; state.look=null; state.lookMsg=null; render(); };
+  const add = document.getElementById("addmoment");
+  if(add) add.onclick = async () => {
+    const t = document.getElementById("mtext").value.trim();
+    if(!t) return;
+    try{
+      await updateSeason(s=>{ s.moments.push({id:"mo"+Date.now()+Math.random().toString(36).slice(2,5),
+        week:state.view, text:t, by:memberName(state.me), ts:Date.now()}); });
+      state.msg = "Added.";
+    }catch(e){ state.msg = null; }
+    render();
+  };
+  document.querySelectorAll("[data-delmoment]").forEach(b=>{
+    b.onclick = async () => {
+      const id = b.dataset.delmoment;
+      try{ await updateSeason(s=>{ s.moments = s.moments.filter(x=>x.id!==id); }); }catch(e){}
+      render();
+    };
+  });
+}
+
+function viewCard(){
+  const w = state.view, locked = isLocked(w), picks = picksOf(w), r = state.roster;
+  let hit = 0, miss = 0, voids = 0, pending = 0, none = 0;
+  r.members.forEach(m => {
+    const p = picks[m.id];
+    if(!p){ none++; return; }
+    if(p.result === "H") hit++;
+    else if(p.result === "M") miss++;
+    else if(p.result === "V") voids++;
+    else pending++;
+  });
+
+  const tiles = r.members.map(m => {
+    const p = picks[m.id];
+    let cls = "", fin = "", bar = '<i style="width:100%;background:#3E4A59"></i>', tag = "?", tint = "#3A4757";
+    let name = locked ? "No leg" : "Nothing yet", prop = "";
+    if(p){
+      name = p.player;
+      tag = locked ? posTag(p.stat) : "?";
+      tint = locked ? posTint(p.stat) : "#3A4757";
+      if(locked){
+        prop = propText(p);
+        cls = p.result === "H" ? " hit" : p.result === "M" ? " miss" : p.result === "V" ? " void" : "";
+        fin = marginText(p).toUpperCase();
+        bar = p.result === "H" ? '<i style="width:100%;background:#4CC17E"></i>'
+            : p.result === "M" ? '<i style="width:100%;background:#E2574C"></i>'
+            : p.result === "V" ? '<i style="width:100%;background:#8FA3B8"></i>'
+            : '<i style="width:45%;background:#FFC53D"></i>';
+        if(!p.result) fin = "STILL RUNNING";
+      } else { prop = "Locked in"; fin = ""; }
+    }
+    const art = p ? sprite(p.player, locked ? p.stat : null, 72, false, p.team) : sprite(m.name, null, 72, true);
+    return '<div class="rcard' + cls + '">'
+      + '<div class="rtop">' + avatarFor(m, 24) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
+      + '<div class="rport" style="background-color:' + tint + '"><span class="rpos">' + tag + (p && p.team && locked ? ' <em>' + esc(p.team) + '</em>' : '') + '</span>' + art + '</div>'
+      + '<div class="rname">' + esc(name.toUpperCase()) + '</div>'
+      + '<div class="rprop">' + (prop || "&nbsp;") + '</div>'
+      + '<div class="rbar">' + bar + '</div>'
+      + (fin ? '<div class="rfin">' + esc(fin) + '</div>' : "")
+      + '</div>';
+  }).join("");
+
+  const headline = !locked ? "HIDDEN" : (hit + miss + voids === 0 ? "0" : String(hit));
+  const sub = !locked
+    ? "Picks show at " + esc(deadlineText(w))
+    : (pending ? hit + " hit, " + miss + " missed, " + pending + " still running"
+               : hit + " of " + (hit + miss) + " hit" + (voids ? ", " + voids + " voided" : "")
+                 + (none ? ", " + none + " never posted" : ""));
+
+  return topbar("card")
+  + '<div class="board"><div class="weekrow"><h2>WEEK ' + (w+1) + ' CARD</h2>'
+  + '<div class="weeknav"><button id="prev"' + (w===0?" disabled":"") + ' aria-label="Previous week">&#9664;</button>'
+  + '<button id="next"' + (w===17?" disabled":"") + ' aria-label="Next week">&#9654;</button></div></div>'
+  + '<div class="bigcount">' + headline + (locked && hit+miss+voids>0 ? '<span style="font-size:16px"> / ' + r.members.length + '</span>' : "") + '</div>'
+  + '<div class="clocklabel">' + esc(sub) + '</div></div>'
+  + '<div class="cardgrid">' + tiles + '</div>'
+  + '<div class="card"><h3>How it is going</h3><p class="hint">'
+  + (locked
+      ? 'A six-pick Flex pays with four or more. Green means it hit, red means it missed, grey means it voided. '
+        + (isAdmin() ? 'You grade these on the board screen.' : 'Waiting on ' + esc(commishName()) + ' to enter the finals.')
+      : 'Everything stays covered until the lock. Come back Friday evening.')
+  + '</p><button class="btn ghost" id="refreshcard">Refresh</button></div>';
+}
+function wireCard(){
+  const q = s => document.getElementById(s);
+  q("back").onclick = () => { state.screen = "main"; render(); };
+  if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; render(); } };
+  if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; render(); } };
+  if(q("refreshcard")) q("refreshcard").onclick = async () => {
+    const fresh = await sget(SEASON_KEY, true);
+    if(fresh){ if(!fresh.moments) fresh.moments = []; state.season = fresh; }
+    render();
+  };
+}
+
+function viewSettings(){
+  return topbar("settings")
+  + '<div class="card"><h3>Pool</h3>'
+  + '<label for="pn">Pool name</label><input id="pn" type="text" value="'+esc(state.roster.pool)+'" maxlength="40">'
+  + '<label>Names, in lineup order</label>'
+  + state.roster.members.map((m,i)=>'<input id="mn'+i+'" type="text" value="'+esc(m.name)+'" maxlength="18" style="margin-bottom:8px">').join("")
+  + '<button class="btn" id="save">Save changes</button>'
+  + (state.msg?'<p class="ok">'+esc(state.msg)+'</p>':"")
+  + (state.err?'<p class="err">'+esc(state.err)+'</p>':"") + '</div>'
+  + (state.me ? '<div class="card"><h3>Your look</h3>'
+      + '<p class="hint">Only you can change yours. It rides along next to your picks all season.</p>'
+      + '<div class="preview"><div class="spritebox" id="lookbox">'+avatarSVG(currentLook(),72)+'</div>'
+      + '<div class="cap"><b>'+esc(memberName(state.me).toUpperCase())+'</b>'
+      + '<span id="lookdesc">'+esc(lookDesc(currentLook()))+'</span></div></div>'
+      + '<div class="row-btns" style="margin-top:10px">'
+      + '<button class="btn ghost" data-look="hat">Headgear</button>'
+      + '<button class="btn ghost" data-look="face">Face</button>'
+      + '<button class="btn ghost" data-look="pal">Colors</button>'
+      + '<button class="btn ghost" data-look="skin">Skin</button></div>'
+      + '<button class="btn" id="savelook">Save my look</button>'
+      + (state.lookMsg?'<p class="ok">'+esc(state.lookMsg)+'</p>':"")
+      + '</div>' : "")
+  + (isAdmin() ? '<div class="card"><h3>Player teams</h3>'
+      + '<p class="hint">'+esc(rosterStamp())+'. Typing a player on the pick form fills the team in from this, and the Check teams button on the board verifies a week against live sources. '
+      + 'After the trade deadline, paste corrections below, one per line, as <b>Name, TEAM</b>. '
+      + 'Corrections sync to everyone and beat the shipped table.</p>'
+      + '<label for="rpaste">Corrections</label>'
+      + '<textarea id="rpaste" rows="5" placeholder="Bijan Robinson, ATL&#10;Ja\'Marr Chase - Bengals&#10;Brock Bowers LV"></textarea>'
+      + '<div class="row-btns"><button class="btn" id="saveroster">Apply corrections</button>'
+      + '<button class="btn ghost" id="clearroster">Clear all corrections</button></div>'
+      + (state.rosterMsg?'<p class="ok">'+esc(state.rosterMsg)+'</p>':"")
+      + (state.rosterBad?'<p class="err">'+esc(state.rosterBad)+'</p>':"")
+      + '</div>' : "")
+  + '<div class="card"><h3>You</h3>'
+  + '<p class="hint">Signed in as '+esc(state.me?memberName(state.me):"nobody")+' on this device.</p>'
+  + '<div class="row-btns"><button class="btn ghost" id="signout"'+(state.me?"":" disabled")+'>Sign out</button>'
+  + '<button class="btn ghost" id="resetpin"'+(state.me?"":" disabled")+'>New code</button></div></div>'
+  + '<div class="card"><h3>Storage</h3><p class="hint">'
+  + (STORE_MODE === "shared"
+      ? "Connected to the shared board. Everyone sees the same picks."
+      : esc(STORE_WHY) + " Nothing is being kept.")
+  + '</p><button class="btn ghost" id="recheck">Check again</button></div>'
+  + '<p class="footnote">Everyone shares one board, so treat the codes as a courtesy lock between friends, not real security.</p>';
+}
+function wireSettings(){
+  const sr = document.getElementById("saveroster");
+  if(sr) sr.onclick = async () => {
+    const res = parseRosterPaste(document.getElementById("rpaste").value);
+    const n = Object.keys(res.map).length;
+    if(!n){ state.rosterMsg = null; state.rosterBad = "Nothing usable in that. Each line needs a name and a team."; render(); return; }
+    try{
+      await updateSeason(s => { s.roster = Object.assign({}, s.roster || {}, res.map); });
+      state.rosterMsg = "Applied " + n + " correction" + (n===1?"":"s") + ".";
+      state.rosterBad = res.bad.length ? "Skipped " + res.bad.length + " line" + (res.bad.length===1?"":"s") + " I could not read: " + res.bad.slice(0,3).join(" / ") : null;
+    }catch(e){ state.rosterMsg = null; state.rosterBad = "Could not save those."; }
+    render();
+  };
+  const cr = document.getElementById("clearroster");
+  if(cr) cr.onclick = async () => {
+    try{
+      await updateSeason(s => { s.roster = {}; });
+      state.rosterMsg = "Back to the shipped table."; state.rosterBad = null;
+    }catch(e){ state.rosterBad = "Could not clear those."; }
+    render();
+  };
+  document.querySelectorAll("[data-look]").forEach(b => {
+    b.onclick = () => {
+      const k = b.dataset.look;
+      const l = currentLook();
+      l[k] = (l[k] + 1) % LOOKMAX[k];
+      const box = document.getElementById("lookbox"), d = document.getElementById("lookdesc");
+      if(box) box.innerHTML = avatarSVG(l, 72);
+      if(d) d.textContent = lookDesc(l);
+      state.lookMsg = null;
+    };
+  });
+  const sl = document.getElementById("savelook");
+  if(sl) sl.onclick = async () => {
+    const l = currentLook(), id = state.me;
+    try{
+      await updateRoster(r => { const m = r.members.find(x => x.id === id); if(m) m.look = {hat:l.hat, face:l.face, pal:l.pal, skin:l.skin}; });
+      state.lookMsg = "Saved.";
+    }catch(e){ state.lookMsg = null; state.err = "Could not save your look."; }
+    render();
+  };
+  document.querySelectorAll("[data-adm]").forEach(b => {
+    b.onclick = async () => {
+      const id = b.dataset.adm, ms = state.roster.members;
+      const target = ms.find(m => m.id === id);
+      const admins = ms.filter(m => m.admin).length || 1;
+      if(target && target.admin && admins <= 1){
+        state.err = "Somebody has to grade. Hand it to someone else first."; render(); return;
+      }
+      try{
+        await updateRoster(r => {
+          if(!r.members.some(m => m.admin)) r.members[0].admin = true;   /* older pools */
+          const t = r.members.find(m => m.id === id);
+          if(t) t.admin = !t.admin;
+        });
+        state.err = null;
+      }catch(e){ state.err = "Could not save that."; }
+      render();
+    };
+  });
+  const rc = document.getElementById("recheck");
+  if(rc) rc.onclick = async () => { rc.textContent = "Checking"; await initStorage(); render(); };
+  document.getElementById("back").onclick = () => { state.screen="main"; state.msg=null; state.err=null; state.look=null; state.lookMsg=null; render(); };
+  document.getElementById("save").onclick = async () => {
+    const pool = document.getElementById("pn").value.trim();
+    const names = state.roster.members.map((m,i)=>document.getElementById("mn"+i).value.trim() || m.name);
+    try{
+      await updateRoster(r=>{ r.pool = pool||r.pool; r.members.forEach((m,i)=>{ if(names[i]) m.name = names[i]; }); });
+      state.msg = "Saved."; state.err = null;
+    }catch(e){ state.err = "That did not save. Try again."; state.msg = null; }
+    render();
+  };
+  document.getElementById("signout").onclick = async () => {
+    try{ await sset(ME_KEY, {id:null}, false); }catch(e){}
+    state.me = null; state.screen = "main"; render();
+  };
+  document.getElementById("resetpin").onclick = async () => {
+    const id = state.me;
+    try{ await updateRoster(r=>{ const m = r.members.find(x=>x.id===id); if(m) m.pinHash = null; }); }catch(e){}
+    try{ await sset(ME_KEY, {id:null}, false); }catch(e){}
+    state.me = null; state.claiming = id; state.screen = "main"; render();
+  };
+}
+
+async function applyFinal(id, a){
+  const w = state.view;
+  const found = (state.props[w] || {})[id];
+  await updateSeason(s=>{
+    const t = s.weeks[w] && s.weeks[w].picks && s.weeks[w].picks[id];
+    if(!t) return;
+    t.actual = a;
+    if(!t.team && found && found.team) t.team = found.team;
+    if(a !== null){
+      const mg = t.side === "More" ? a - num(t.line) : num(t.line) - a;
+      t.result = mg > 0 ? "H" : mg < 0 ? "M" : "V";
+    }
+    t.gradedBy = memberName(state.me);
+  });
+  if(state.props[w] && state.props[w][id]) delete state.props[w][id];
+}
+
+async function pullFinals(){
+  const w = state.view, picks = picksOf(w);
+  const legs = state.roster.members.filter(m => picks[m.id]).map(m => ({id:m.id, p:picks[m.id]}));
+  if(!legs.length){ state.fetchNote = "No legs to look up."; render(); return; }
+  state.fetching = true; state.fetchNote = "Searching box scores for " + legs.length + " players."; render();
+
+  const gamesFrom = new Date(DEADLINES[w]).toDateString();
+  const gamesTo = new Date(DEADLINES[w] + 4*86400000).toDateString();
+  const list = legs.map((x,i) => i + ". " + x.p.player + " | stat: " + x.p.stat).join("\n");
+
+  try{
+    const headers = {"content-type":"application/json"};
+    const pk = poolKey(); if(pk) headers["x-pool-key"] = pk;
+    const res = await fetch("/api/finals", {method:"POST", headers:headers,
+      body: JSON.stringify({week: w+1, from: gamesFrom, to: gamesTo,
+        legs: legs.map(x => ({player:x.p.player, stat:x.p.stat}))})});
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || ("server said " + res.status));
+    const rows = data.rows || [];
+    state.props[w] = state.props[w] || {};
+    let ok = 0;
+    rows.forEach(r => {
+      const leg = legs[r.i]; if(!leg) return;
+      const f = num(r.final);
+      state.props[w][leg.id] = {final: r.status === "ok" ? f : null, game: r.game || "", status: r.status || "unsure", team: teamKey(r.team || "")};
+      if(r.status === "ok" && f !== null) ok++;
+    });
+    state.fetchNote = ok + " of " + legs.length + " came back with a number. Confirm each one to lock the grade in.";
+  }catch(e){
+    state.fetchNote = "Lookup failed: " + errText(e) + " Enter the finals by hand.";
+  }
+  state.fetching = false;
+  render();
+}
+
+
+/* Ask Claude to check who these players are actually on right now. Uses the site's own
+   endpoint when there is one, and falls back to calling the API directly. */
+async function pullTeams(){
+  const w = state.view, picks = picksOf(w);
+  const legs = state.roster.members.filter(m => picks[m.id]).map(m => ({id:m.id, p:picks[m.id]}));
+  if(!legs.length){ state.fetchNote = "No players to check."; render(); return; }
+  state.fetching = true; state.fetchNote = "Checking teams for " + legs.length + " players."; render();
+
+  const names = legs.map((x,i) => i + ". " + x.p.player).join("\n");
+  const prompt = "For each numbered NFL player below, search for the team they are on right now, "
+    + "in the " + new Date().getFullYear() + " season as of " + new Date().toDateString() + ".\n\n" + names
+    + "\n\nReply with ONLY a JSON array, no prose and no markdown fences, one object per item in order:\n"
+    + '[{"i":0,"team":"ATL"}]\n'
+    + 'Use standard abbreviations such as ATL, KC, NYJ, LV. Use "" if you are not certain or the player is a free agent.';
+
+  let rows = null;
+  try{
+    const headers = {"content-type":"application/json"};
+    const pk = (typeof poolKey === "function" && poolKey()) || ""; if(pk) headers["x-pool-key"] = pk;
+    const res = await fetch("/api/finals", {method:"POST", headers:headers,
+      body: JSON.stringify({mode:"teams", week: w+1, legs: legs.map(x => ({player:x.p.player, stat:x.p.stat}))})});
+    if(res.ok){ const d = await res.json(); rows = d.rows || []; }
+  }catch(e){ rows = null; }
+
+  if(!rows){
+    try{
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method:"POST", headers:{"content-type":"application/json"},
+        body: JSON.stringify({model:"claude-sonnet-5", max_tokens:1000,
+          messages:[{role:"user", content:prompt}],
+          tools:[{type:"web_search_20250305", name:"web_search"}]})});
+      if(!res.ok) throw new Error("http " + res.status);
+      const data = await res.json();
+      const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
+      const a = text.indexOf("["), b = text.lastIndexOf("]");
+      if(a < 0 || b < 0) throw new Error("no json");
+      rows = JSON.parse(text.slice(a, b+1));
+    }catch(e){
+      state.fetching = false;
+      state.fetchNote = "Could not check teams: " + errText(e) + " Fix any wrong ones by hand in Setup.";
+      render(); return;
+    }
+  }
+
+  const changes = {}, picksFix = {};
+  rows.forEach(r => {
+    const leg = legs[r.i]; if(!leg) return;
+    const k = teamKey(r.team || "");
+    if(!k) return;
+    if(teamForPlayer(leg.p.player) !== k) changes[normName(leg.p.player)] = k;
+    if(leg.p.team !== k) picksFix[leg.id] = k;
+  });
+  const n = Object.keys(changes).length + Object.keys(picksFix).length;
+  if(n){
+    try{
+      await updateSeason(s => {
+        s.roster = Object.assign({}, s.roster || {}, changes);
+        Object.keys(picksFix).forEach(id => {
+          const p = s.weeks[w] && s.weeks[w].picks && s.weeks[w].picks[id];
+          if(p) p.team = picksFix[id];
+        });
+      });
+      state.fetchNote = "Corrected " + Object.keys(picksFix).length + " jersey"
+        + (Object.keys(picksFix).length === 1 ? "" : "s") + " and saved "
+        + Object.keys(changes).length + " roster fix" + (Object.keys(changes).length === 1 ? "" : "es") + ".";
+    }catch(e){ state.fetchNote = "Found fixes but could not save them."; }
+  } else {
+    state.fetchNote = "The snapshot already had all " + legs.length + " right.";
+  }
+  state.fetching = false;
+  render();
+}
+
+function wireMain(){
+  const q = s => document.getElementById(s);
+  const on = (id, fn) => { const el = q(id); if(el) el.onclick = fn; };
+  on("settings", () => { state.screen="settings"; state.msg=null; state.err=null; render(); });
+  on("toseason", () => { state.screen="season"; state.msg=null; state.err=null; render(); });
+  on("tocard",   () => { state.screen="card"; state.msg=null; state.err=null; render(); });
+  if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; state.msg=null; state.err=null; render(); } };
+  if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.msg=null; state.err=null; render(); } };
+
+  document.querySelectorAll("[data-claim]").forEach(b=>{ b.onclick = () => { state.claiming = b.dataset.claim; state.err=null; render(); }; });
+  if(q("cancel")) q("cancel").onclick = () => { state.claiming = null; state.err = null; render(); };
+  if(q("claim")) q("claim").onclick = async () => {
+    const id = state.claiming, m = state.roster.members.find(x=>x.id===id);
+    const pin = q("pin").value.trim();
+    if(pin.length < 4){ state.err = "Use at least 4 digits."; render(); return; }
+    if(!m.pinHash){
+      if(pin !== q("pin2").value.trim()){ state.err = "Those two codes do not match."; render(); return; }
+      const h = await hash(pin);
+      try{ await updateRoster(r=>{ const t = r.members.find(x=>x.id===id); if(!t.pinHash) t.pinHash = h; }); }
+      catch(e){ state.err = "Could not save your code. Try again."; render(); return; }
+      if(state.roster.members.find(x=>x.id===id).pinHash !== h){
+        state.err = "Someone else just claimed that name."; state.claiming = null; render(); return;
+      }
+    } else if(await hash(pin) !== m.pinHash){
+      state.err = "That code does not match."; render(); return;
+    }
+    state.me = id; state.claiming = null; state.err = null;
+    try{ await sset(ME_KEY, {id}, false); }catch(e){}
+    render();
+  };
+
+  if(q("sMore")) q("sMore").onclick = () => { state.side="More"; q("sMore").setAttribute("aria-pressed","true"); q("sLess").setAttribute("aria-pressed","false"); };
+  if(q("sLess")) q("sLess").onclick = () => { state.side="Less"; q("sLess").setAttribute("aria-pressed","true"); q("sMore").setAttribute("aria-pressed","false"); };
+
+  function refreshPreview(){
+    const pl = q("player") ? q("player").value.trim() : "", st = q("stat") ? q("stat").value.trim() : "";
+    const tm = q("team") ? q("team").value.trim() : "";
+    if(q("pvbox")) q("pvbox").innerHTML = sprite(pl, st || null, 72, false, tm);
+    if(q("pvname")) q("pvname").textContent = (pl || "YOUR GUY").toUpperCase();
+    if(q("pvpose")) q("pvpose").textContent = (st ? POSENAME[poseFor(st)] : "Pick a player and a stat")
+      + (teamOf(tm) ? ", " + teamOf(tm).k : "");
+  }
+  if(q("player")) q("player").oninput = () => {
+    const other = takenBy(state.view, q("player").value, state.me);
+    q("dupwarn").textContent = other ? memberName(other)+" already has "+picksOf(state.view)[other].player+". Pick someone else." : "";
+    const tf = q("team");
+    if(tf && (!tf.value.trim() || tf.dataset.auto === "1")){
+      const guess = teamForPlayer(q("player").value);
+      if(guess){ tf.value = (teamOf(guess)||{}).name || guess; tf.dataset.auto = "1"; }
+      else if(tf.dataset.auto === "1"){ tf.value = ""; }
+    }
+    refreshPreview();
+  };
+  if(q("stat")){ q("stat").oninput = refreshPreview; q("stat").onchange = refreshPreview; }
+  if(q("team")){ q("team").oninput = () => { q("team").dataset.auto = ""; refreshPreview(); };
+                 q("team").onchange = refreshPreview; }
+
+  if(q("refresh")) q("refresh").onclick = async () => {
+    const fresh = await sget(SEASON_KEY, true), roster = await sget(ROSTER_KEY, true);
+    if(fresh){ if(!fresh.moments) fresh.moments=[]; state.season = fresh; }
+    if(roster) state.roster = roster;
+    render();
+  };
+
+  if(q("copy")) q("copy").onclick = async () => {
+    const w = state.view, picks = picksOf(w);
+    let out = state.roster.pool + ", Week " + (w+1) + "\n";
+    state.roster.members.forEach((m,i)=>{
+      const p = picks[m.id];
+      out += (i+1)+". "+(p ? p.player+" "+p.side+" "+p.line+" "+p.stat+"  ("+m.name+")" : "(no leg from "+m.name+")")+"\n";
+    });
+    try{ await navigator.clipboard.writeText(out); q("copy").textContent = "Copied"; }
+    catch(e){ q("copy").textContent = "Copy blocked"; }
+  };
+
+
+  document.querySelectorAll("[data-copyname]").forEach(b => {
+    b.onclick = async () => {
+      try{ await navigator.clipboard.writeText(b.dataset.copyname); b.textContent = "COPIED"; }
+      catch(e){ b.textContent = "BLOCKED"; }
+    };
+  });
+  if(q("copyall")) q("copyall").onclick = async () => {
+    const w = state.view, picks = picksOf(w);
+    let out = state.roster.pool + ", Week " + (w+1) + "\n";
+    state.roster.members.forEach((m,i) => {
+      const p = picks[m.id];
+      if(p) out += (i+1) + ". " + p.player + " " + p.side + " " + p.line + " " + p.stat + "\n";
+    });
+    try{ await navigator.clipboard.writeText(out); q("copyall").textContent = "COPIED"; }
+    catch(e){ q("copyall").textContent = "BLOCKED"; }
+  };
+  if(q("savelink")) q("savelink").onclick = async () => {
+    const v = q("pplink").value.trim(), w = state.view;
+    if(v && !isPrizePicksUrl(v)){
+      state.linkErr = "That does not look like a PrizePicks link."; state.linkMsg = null; render(); return;
+    }
+    try{
+      await updateSeason(s => {
+        s.weeks[w] = s.weeks[w] || {picks:{}};
+        s.weeks[w].link = v;
+        s.weeks[w].linkBy = memberName(state.me);
+      });
+      state.linkMsg = v ? "Saved. Everyone can open it now." : "Cleared."; state.linkErr = null;
+    }catch(e){ state.linkErr = "Could not save that."; state.linkMsg = null; }
+    render();
+  };
+  if(q("clearlink")) q("clearlink").onclick = async () => {
+    const w = state.view;
+    try{ await updateSeason(s => { if(s.weeks[w]){ s.weeks[w].link = ""; s.weeks[w].linkBy = ""; } });
+         state.linkMsg = "Removed."; }catch(e){ state.linkErr = "Could not remove it."; }
+    render();
+  };
+
+  if(q("pullfinals")) q("pullfinals").onclick = () => pullFinals();
+  if(q("checkteams")) q("checkteams").onclick = () => pullTeams();
+
+  document.querySelectorAll("[data-usefound]").forEach(b=>{
+    b.onclick = async () => {
+      const id = b.dataset.usefound, f = (state.props[state.view]||{})[id];
+      if(!f || f.final === null) return;
+      try{ await applyFinal(id, f.final); state.err = null; }
+      catch(e){ state.err = "Could not save that number."; }
+      render();
+    };
+  });
+  if(q("useallfound")) q("useallfound").onclick = async () => {
+    const w = state.view, found = state.props[w] || {};
+    for(const id of Object.keys(found)){
+      const f = found[id];
+      if(f.status === "ok" && f.final !== null){
+        try{ await applyFinal(id, f.final); }catch(e){ state.err = "Some numbers did not save."; }
+      }
+    }
+    state.fetchNote = "Applied. Anything left needs a number by hand.";
+    render();
+  };
+
+  document.querySelectorAll("[data-final]").forEach(inp=>{
+    inp.onchange = async () => {
+      const id = inp.dataset.final, raw = inp.value.trim();
+      if(!picksOf(state.view)[id]) return;
+      const a = raw === "" ? null : num(raw);
+      if(raw !== "" && a === null){ state.err = "The final number has to be a number."; render(); return; }
+      try{ await applyFinal(id, a); state.err = null; }
+      catch(e){ state.err = "Could not save that number."; }
+      render();
+    };
+  });
+
+  document.querySelectorAll("[data-mark]").forEach(b=>{
+    b.onclick = async () => {
+      const id = b.dataset.mark, rr = b.dataset.r, w = state.view;
+      const cur = (picksOf(w)[id]||{}).result;
+      try{
+        await updateSeason(s=>{
+          const p = s.weeks[w] && s.weeks[w].picks && s.weeks[w].picks[id];
+          if(!p) return;
+          p.result = cur === rr ? null : rr;
+          p.gradedBy = memberName(state.me);
+        });
+      }catch(e){ state.err = "Could not save that result."; }
+      render();
+    };
+  });
+
+  if(q("submit")) q("submit").onclick = async () => {
+    const w = state.view, id = state.me;
+    const player = q("player").value.trim(), stat = q("stat").value.trim(), line = q("line").value.trim();
+    const team = teamKey(q("team") ? q("team").value : "");
+    if(!player || !stat || !line){ state.err = "Fill in player, stat and line."; state.msg = null; render(); return; }
+    if(!/^-?\d+(\.\d+)?$/.test(line)){ state.err = "The line should be a number, like 74.5."; state.msg = null; render(); return; }
+    if(isLocked(w)){ state.err = "Week "+(w+1)+" locked while you were typing."; render(); return; }
+    const note = q("note").value.trim(), side = state.side;
+    try{
+      let clash = null;
+      await updateSeason(s=>{
+        s.weeks[w] = s.weeks[w] || {picks:{}};
+        const picks = s.weeks[w].picks, k = tightName(player);
+        for(const other in picks){ if(other !== id && tightName(picks[other].player) === k){ clash = other; return; } }
+        const prev = picks[id] || {};
+        picks[id] = {player, stat, line, side, team, note, ts:Date.now(), result: prev.result || null, actual: prev.actual==null?null:prev.actual};
+      });
+      if(clash){ state.err = memberName(clash)+" already took that player. Pick someone else."; state.msg = null; }
+      else { state.msg = "In. You can change it until Friday at 5."; state.err = null; }
+    }catch(e){ state.err = "That did not save. Check your connection and try again."; state.msg = null; }
+    render();
+  };
+}
+
+function tickClock(){
+  if(state.screen !== "main" || !state.roster) return;
+  const el = document.getElementById("clock");
+  if(!el) return;
+  const cd = countdown(state.view);
+  if(!cd){ if(el.textContent.indexOf("/") < 0) render(); return; }
+  el.textContent = cd;
+}
+
+/* the field behind everything: mown stripes, yard lines, hash marks and numbers */
+(function buildField(){
+  const t = document.getElementById("turf");
+  if(!t) return;
+  const nums = [10,20,30,40,50,40,30,20,10];
+  t.innerHTML = nums.map((n,i) =>
+    '<div class="yard' + (i===0?" first":"") + '">'
+    + '<span class="yn top">' + n + '</span>'
+    + '<span class="yn bot">' + n + '</span></div>').join("");
+})();
+
+boot();
+
+</script>
