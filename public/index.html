@@ -174,6 +174,7 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .build{color:#5C6B7C;font-size:8px;font-family:var(--pix);letter-spacing:0}
   .scroller{overflow-x:auto}
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{text-align:right;padding:8px 5px;border-bottom:2px solid #16222F;font-family:var(--pix);font-size:8px;white-space:nowrap}
@@ -915,7 +916,8 @@ function render(){
   else if(state.screen === "card"){ html = viewCard(); wire = wireCard; }
   else { html = viewMain(); wire = wireMain; }
   app.innerHTML = banner() + html;
-  wire();
+  /* one missing element must never stop the rest of the screen from working */
+  try{ wire(); }catch(e){ console.error("wiring failed on " + state.screen + ":", e); }
   const retry = document.getElementById("retrystore");
   if(retry) retry.onclick = async () => {
     retry.textContent = "Checking";
@@ -959,7 +961,7 @@ function topbar(current){
   return '<div class="topbar"><span class="poolname">'
   + esc((current==="season"?"Season":current==="card"?"The card":(current==="settings"?"Settings":state.roster.pool)).toUpperCase())+'</span>'
   + '<div class="navlinks">'
-  + (current==="main" ? '<button class="linkbtn" id="toseason">Season</button><button class="linkbtn" id="settings">Setup</button>'
+  + (current==="main" ? '<button class="linkbtn" id="tocard">Card</button><button class="linkbtn" id="toseason">Season</button><button class="linkbtn" id="settings">Setup</button>'
                       : '<button class="linkbtn" id="back">Back</button>')
   + '</div></div>';
 }
@@ -984,7 +986,8 @@ function viewMain(){
   + lineupCard(w, locked)
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
-  + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.</p>';
+  + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
+  + '<br><span class="build">build 2026-09-08c</span></p>';
 }
 
 function signInCard(){
@@ -1587,9 +1590,10 @@ async function pullTeams(){
 
 function wireMain(){
   const q = s => document.getElementById(s);
-  q("settings").onclick = () => { state.screen="settings"; state.msg=null; state.err=null; render(); };
-  q("toseason").onclick = () => { state.screen="season"; state.msg=null; state.err=null; render(); };
-  q("tocard").onclick = () => { state.screen="card"; state.msg=null; state.err=null; render(); };
+  const on = (id, fn) => { const el = q(id); if(el) el.onclick = fn; };
+  on("settings", () => { state.screen="settings"; state.msg=null; state.err=null; render(); });
+  on("toseason", () => { state.screen="season"; state.msg=null; state.err=null; render(); });
+  on("tocard",   () => { state.screen="card"; state.msg=null; state.err=null; render(); });
   if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; state.msg=null; state.err=null; render(); } };
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.msg=null; state.err=null; render(); } };
 
