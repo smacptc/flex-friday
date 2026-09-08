@@ -1,6 +1,16 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Flex Friday</title>
+
+<!-- home screen icon and standalone mode. iOS reads the apple- tags, Android reads the manifest. -->
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Flex Friday">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#131E2C">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -24,7 +34,8 @@
   svg{image-rendering:pixelated}
   .sprite{display:block}
   .sprite.dim{opacity:.85}
-  .wrap{max-width:640px;margin:0 auto;padding:16px 14px 64px}
+  .wrap{max-width:640px;margin:0 auto;
+    padding:calc(16px + env(safe-area-inset-top)) 14px calc(64px + env(safe-area-inset-bottom))}
   button{font-family:var(--pix);font-size:8px;line-height:1.5;cursor:pointer}
   button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
   input{font-family:var(--body);font-size:16px}
@@ -119,8 +130,8 @@
     padding:12px;margin-bottom:16px;font-size:16px;color:#FFD98A;line-height:1.7}
   .banner b{display:block;font-family:var(--pix);font-size:8px;color:var(--amber);margin-bottom:6px}
   .banner .linkbtn{margin-top:8px;display:block}
-  .rowname svg{vertical-align:-4px;margin-right:2px}
-  td svg{vertical-align:-4px;margin-right:4px}
+  .rowname svg{vertical-align:-6px;margin-right:4px}
+  td svg{vertical-align:-6px;margin-right:5px}
   .rcard{border:4px solid #fff;background:#151F2D;box-shadow:7px 7px 0 rgba(0,0,0,.65);overflow:hidden}
   .rcard.hit{border-color:#3E9E6B}
   .rcard.miss{border-color:#9B4038}
@@ -174,6 +185,50 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .pindots{display:flex;gap:12px;justify-content:center;margin:18px 0}
+  .pindots span{width:20px;height:20px;border:4px solid var(--edge);background:#0F1926}
+  .pindots span.on{background:var(--amber)}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+  .keypad button{font-family:var(--big);font-weight:700;font-size:24px;color:var(--chalk);
+    background:var(--panel2);border:4px solid var(--edge);box-shadow:5px 5px 0 var(--edge);
+    padding:16px 0;text-shadow:2px 2px 0 var(--edge)}
+  .keypad button:active{transform:translate(5px,5px);box-shadow:none}
+  .badgeicon{display:block}
+  .medals{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
+  .medal{text-align:center;width:64px}
+  .medal svg{margin:0 auto}
+  .mname{display:block;font-family:var(--pix);font-size:8px;color:var(--chalk);margin-top:6px;line-height:1.5}
+  .medal.gold .mname{color:#FFE08A}
+  .medal.silver .mname{color:#EDF1F5}
+  .medal.bronze .mname{color:#E0A96D}
+  .mcount{display:block;font-size:16px;color:var(--dim);line-height:1.4}
+  .tierdemo{display:flex;gap:16px;justify-content:center;margin-top:12px;padding:12px 0;
+    border-top:2px solid #16222F;border-bottom:2px solid #16222F}
+  .legend .legrow{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+  .legend .legrow svg{flex:none;margin-top:2px}
+  .drill{list-style:none;margin:10px 0 0;padding:0}
+  .drill li{display:flex;gap:10px;padding:10px 0;border-top:2px solid #16222F}
+  .drill li:first-child{border-top:0}
+  .dwk{font-family:var(--big);font-weight:700;font-size:16px;color:var(--amber);width:46px;flex:none;
+    text-shadow:2px 2px 0 var(--edge)}
+  .dbody{flex:1;min-width:0}
+  .dplayer{font-weight:700;font-size:16px;word-wrap:break-word}
+  .dplayer em{font-style:normal;font-family:var(--pix);font-size:8px;color:var(--amber);margin-left:4px}
+  .dprop{font-size:16px;color:var(--dim);line-height:1.5}
+  .dnum{font-size:16px;font-weight:700;margin-top:3px}
+  .dnum.h{color:var(--green)} .dnum.m{color:var(--red)} .dnum.v{color:var(--void)}
+  .dfin{font-family:var(--pix);font-size:8px;color:var(--dim);margin-top:4px;line-height:1.6}
+  td button.drillcell{background:none;border:0;color:var(--chalk);font-family:var(--pix);font-size:8px;
+    padding:4px 2px;text-decoration:underline}
+  td button.drillcell:active{color:var(--amber)}
+  .plist{list-style:none;margin:6px 0 0;padding:0;border:3px solid var(--edge);background:#0F1926;max-height:250px;overflow-y:auto}
+  .plist li{border-top:2px solid #16222F}
+  .plist li:first-child{border-top:0}
+  .plist button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;
+    color:var(--chalk);font-family:var(--body);font-size:16px;padding:8px 10px}
+  .plist button:active{background:var(--panel2)}
+  .plist em{font-style:normal;font-family:var(--pix);font-size:8px;color:var(--amber);margin-left:auto}
+  .build{color:#5C6B7C;font-size:8px;font-family:var(--pix);letter-spacing:0}
   .scroller{overflow-x:auto}
   table{width:100%;border-collapse:collapse;margin-top:10px}
   th,td{text-align:right;padding:8px 5px;border-bottom:2px solid #16222F;font-family:var(--pix);font-size:8px;white-space:nowrap}
@@ -355,6 +410,40 @@ function parseRosterPaste(text){
   return {map: out, bad: bad};
 }
 
+/* ---- name lookup ------------------------------------------------------------
+   Type a last name and the full name fills in. Where a last name is shared, the
+   options are listed instead of one being picked for you. */
+const PLAYERS = [];
+Object.keys(BY_TEAM).forEach(club => BY_TEAM[club].forEach(n => PLAYERS.push(n)));
+
+const lastOf = n => { const p = normName(n).split(" "); return p[p.length-1]; };
+const LAST_INDEX = {};
+PLAYERS.forEach(n => { const l = lastOf(n); (LAST_INDEX[l] = LAST_INDEX[l] || []).push(n); });
+
+/* exact last name first, then last names that start with it, then full names */
+function matchPlayers(text, cap){
+  const q = normName(text);
+  if(!q) return [];
+  const seen = {}, out = [];
+  const push = n => { const k = normName(n); if(!seen[k]){ seen[k] = 1; out.push(n); } };
+  (LAST_INDEX[q] || []).forEach(push);
+  Object.keys(LAST_INDEX).forEach(l => { if(l !== q && l.indexOf(q) === 0) LAST_INDEX[l].forEach(push); });
+  PLAYERS.forEach(n => { if(normName(n).indexOf(q) === 0) push(n); });
+  PLAYERS.forEach(n => { if(normName(n).indexOf(q) > 0) push(n); });
+  return out.slice(0, cap || 8);
+}
+/* one unambiguous last name expands on its own when the leg is submitted */
+function expandPlayer(text){
+  const q = normName(text);
+  if(!q) return text;
+  if(PLAYERS.some(n => normName(n) === q)) return text;      // already a full name
+  const exact = LAST_INDEX[q] || [];
+  if(exact.length === 1) return exact[0];
+  const starts = PLAYERS.filter(n => normName(n).indexOf(q) === 0);
+  if(starts.length === 1) return starts[0];
+  return text;
+}
+
 /* pixel sprite engine, 16x16 grids drawn as run-length SVG rects */
 const SKIN="#C08457", MASK="#D9DEE5", PANTS="#E8EBEF", CLEAT="#1A2430", BALL="#8B5A2B";
 const PALETTES=[
@@ -366,23 +455,27 @@ const PALETTES=[
 const GREY={j:"#3A4757",t:"#4E5D70",h:"#313D4B"};
 /* 24x24 players: helmet stripe, facemask bars, eyes, shoulder pads with trim,
    a number panel on the jersey, gloves, belt and cleats. */
+/* 24x24 players, drawn to match the member portraits: eyes with a pupil and a
+   catchlight behind the facemask, a shaded side on the skin, a darker band across
+   the bottom of the jersey, and a keyline traced around the whole figure at render
+   time so the sprite reads against the striped panel. */
 const BASE24=[
 "........................",  //0
 ".......HHHHHHHHHH.......",  //1
 "......HHHHHHHHHHHH......",  //2
 ".....HHHHHHHHHHHHHH.....",  //3
 ".....HHHHHTTTTHHHHH.....",  //4
-".....HHSSSSSSSSSSHH.....",  //5
-".....HHSSEESSEESSHH.....",  //6
+".....HHSSSSSSSSSSZH.....",  //5  shaded on the right
+".....HHSWEGSSWEGSZH.....",  //6  white, pupil, catchlight
 ".....HHFFFFFFFFFFHH.....",  //7
 "......HFFFFFFFFFFH......",  //8
-".........SSSSSS.........",  //9
+".........SSSSSZ.........",  //9
 "....TTJJJJJJJJJJJJTT....",  //10
 "..JJTTJJJJJJJJJJJJTTJJ..",  //11
 "..JJJJJJNNNNNNNNJJJJJJ..",  //12
 "..GGJJJJNNNNNNNNJJJJGG..",  //13
 "....JJJJJJJJJJJJJJJJ....",  //14
-".....JJJJJJJJJJJJJJ.....",  //15
+".....VVVVVVVVVVVVVV.....",  //15  jersey shadow
 "......TTTTTTTTTTTT......",  //16
 "......PPPPPPPPPPPP......",  //17
 "......PPPP....PPPP......",  //18
@@ -393,61 +486,183 @@ const BASE24=[
 "........................"]; //23
 const OVER24={
  stand:{},
- qb:{8:"......HFFFFFFFFFFH..BB..",9:".........SSSSSS...BBBB..",10:"....TTJJJJJJJJJJJJTTGG..",11:"..JJTTJJJJJJJJJJJJTTJJ.."},
- rb:{13:"BBGGJJJJNNNNNNNNJJJJGG..",14:"BB..JJJJJJJJJJJJJJJJ....",15:".....JJJJJJJJJJJJJJ....."},
- wr:{8:"..GG..HFFFFFFFFFFH..GG..",9:"..JJ.....SSSSSS...JJ....",10:"..JJTTJJJJJJJJJJJJTTJJ..",11:"....JJJJJJJJJJJJJJJJ...."},
+ qb:{8:"......HFFFFFFFFFFH..BB..",9:".........SSSSSZ...BBBB..",10:"....TTJJJJJJJJJJJJTTGG..",11:"..JJTTJJJJJJJJJJJJTTJJ.."},
+ rb:{13:".BGGJJJJNNNNNNNNJJJJGG..",14:".B..JJJJJJJJJJJJJJJJ....",15:".....VVVVVVVVVVVVVV....."},
+ wr:{8:"..GG..HFFFFFFFFFFH..GG..",9:"..JJ.....SSSSSZ...JJ....",10:"..JJTTJJJJJJJJJJJJTTJJ..",11:"....JJJJJJJJJJJJJJJJ...."},
  k:{18:"......PPPP....PPPPPP....",19:"......PPPP.....PPPPPP...",20:"......PPPP.......PPPP...",21:".....PPPPP........KKKK..",22:".....KKKK.........BBBB.."},
- def:{11:"GGJJTTJJJJJJJJJJJJTTJJGG",12:"GG..JJJJNNNNNNNNJJJJ..GG",17:".....PPPPPPPPPPPPPP.....",18:"....PPPP......PPPP......",22:"....KKKK........KKKK...."}
+ def:{11:".GJJTTJJJJJJJJJJJJTTJG..",12:".G..JJJJNNNNNNNNJJJJ..G.",17:".....PPPPPPPPPPPPPP.....",18:"....PPPP......PPPP......",22:"....KKKK........KKKK...."}
 };
 const POSES={};
 Object.keys(OVER24).forEach(k=>{
   POSES[k]=BASE24.map((row,i)=> OVER24[k][i] !== undefined ? OVER24[k][i] : row);
 });
+/* trace a dark keyline around whatever is drawn, the way the portraits are outlined */
+function outlineGrid(rows, ch){
+  const h=rows.length, w=rows[0].length;
+  const g=rows.map(r=>r.split(""));
+  const out=g.map(r=>r.slice());
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    if(g[y][x] !== ".") continue;
+    if((y>0 && g[y-1][x] !== ".") || (y<h-1 && g[y+1][x] !== ".") ||
+       (x>0 && g[y][x-1] !== ".") || (x<w-1 && g[y][x+1] !== ".")) out[y][x] = ch;
+  }
+  return out.map(r=>r.join(""));
+}
 
-const HAIRC="#33261A", EYE="#141C2B", WHITE="#F4F6F8", MOUTH="#8A4038", DARK="#1A2430";
-const SKINS=["#F2CCA4","#DDA96C","#B47F4C","#8B5A32","#5C3A1F"];
-const B20=[
-"....................","......SSSSSSSS......",".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",
-".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",".....SSSSSSSSSS.....",
-".....SSSSSSSSSS.....","......SSSSSSSS......",".......SSSSSS.......","........SSSS........",
-"....JJJJJJJJJJJJ....","..JJJJJJJJJJJJJJJJ..",".JJJJJJJJJJJJJJJJJJ.",".JJTTTTTTTTTTTTTTJJ.",
-".JJTTTTTTTTTTTTTTJJ.",".JJJJJJJJJJJJJJJJJJ.",".JJJJJJJJJJJJJJJJJJ.","...................."];
-const E20="....................";
-const pad20=r=>{const o=r.slice();while(o.length<20)o.push(E20);return o;};
-const FACES20=[
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......WWW..WWW......","......EEW..EEW......",E20,"........MMMM........"]),
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......EEE..EEE......",E20,E20,"........MMMM........"]),
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......DDDDDDDD......","......DDDDDDDD......",E20,"........MMMM........"]),
- pad20([E20,E20,E20,E20,"......BBBB.BBBB.....","......WWW..WWW......","......EEW..EEW......",E20,".......MMMMMM.......","......GGGGGGGG......",".......GGGGGG......."])];
-const HATS20=[
- pad20(["......HHHHHHHH......",".....HHHHHHHHHH.....","....HHHHHHHHHHHH....","....HHH......HHH....","....HH........HH....","....HH........HH....","....HH........HH....","....HHFFFFFFFFHH....","....HH.FFFFFF.HH...."]),
- pad20([E20,"......HHHHHHHH......",".....HHHHHHHHHH.....","....HHHHHHHHHHHH....","....HHHHHHHHHHHHHHH."]),
- pad20(["......HHHHHHHH......",".....HHHHHHHHHH.....",".....HHHHHHHHHH.....","....TTTTTTTTTTTT...."]),
- pad20([E20,"......HHHHHHHH......",".....HHHHHHHHHH.....",".....HH......HH....."]),
- pad20([".....HHHHHHHHHH.....","....HHHHHHHHHHHH....","....HHHHHHHHHHHH....","....HH........HH....","....HH........HH...."]),
- pad20([E20])];
-const HATNAMES=["Helmet","Ball cap","Beanie","Short hair","Big hair","Bald"];
-const FACENAMES=["Level","Squint","Shades","Grin"];
-const LOOKMAX={hat:6, face:4, pal:8, skin:5};
-function defaultLook(name){return {hat:hashIdx(name+"|h",6), face:hashIdx(name+"|f",4), pal:hashIdx(name,8), skin:2};}
+/* ---- member portraits, 24x24 -------------------------------------------------
+   Redrawn with the outline-and-shade approach those old handheld sprites use:
+   a dark keyline around the whole figure, a shadow tone down one side of the face
+   and across the bottom of the jersey, and eyes built from a white, a pupil and a
+   highlight rather than a solid block. */
+const OUTL = "#1B2130", EYE = "#10151F", WHITE = "#F6F8FA", GLINT = "#FFFFFF",
+      MOUTH = "#7E3B33", HAIRC = "#33261A", HAIRL = "#4C3A27", SHADE_D = "#1A2430";
+const SKINS = ["#F4D2AC","#E0AE74","#B8834F","#8E5C33","#5F3C21"];
+
+/* darken any color so shading follows whatever palette is in play */
+function shade(hex, f){
+  const n = parseInt(hex.slice(1), 16);
+  const r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+  return "#" + [r,g,b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2,"0")).join("");
+}
+
+const BUST24 = [
+"........................",
+".......OOOOOOOOOO.......",
+"......OSSSSSSSSSSO......",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+".....OSSSSSSSSSSSKO.....",
+"......OSSSSSSSSSKO......",
+".......OOOOOOOOOO.......",
+".........OSSSSKO........",
+"....OOOOOOOOOOOOOOOO....",
+"...OJJJJJJJJJJJJJJJJO...",
+"..OJJJTTTTTTTTTTTTJJJO..",
+"..OJJJTTTTTTTTTTTTJJJO..",
+"..OJJJJJJJJJJJJJJJJJJO..",
+"..OJJJJJJJJJJJJJJJJJJO..",
+"..OVVVVVVVVVVVVVVVVVVO..",
+"..OOOOOOOOOOOOOOOOOOOO..",
+"........................"];
+
+const E24 = "........................";
+const pad24 = r => { const o = r.slice(); while(o.length < 24) o.push(E24); return o; };
+
+/* eyes sit at cols 7-9 and 14-16, so every face variant lines up with the head */
+const FACES24 = [
+  /* level */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    ".......WWW....WWW.......",
+    ".......WEW....WEW.......",
+    ".......GWW....GWW.......",
+    E24,
+    "..........MMMM.........."]),
+  /* squint */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    "........B......B........",
+    ".......WEW....WEW.......",
+    E24,E24,
+    "..........MMMM.........."]),
+  /* shades */ pad24([E24,E24,E24,E24,E24,E24,
+    "......DDDDDDDDDDDD......",
+    "......DGDDDDDDGDDD......",
+    "......DDDDDDDDDDDD......",
+    E24,E24,
+    "..........MMMM.........."]),
+  /* grin */ pad24([E24,E24,E24,E24,E24,E24,
+    ".......BBB....BBB.......",
+    ".......WWW....WWW.......",
+    ".......WEW....WEW.......",
+    ".......GWW....GWW.......",
+    E24,
+    ".........MMMMMM.........",
+    "......GGGGGGGGGGGG......",
+    ".......GGGGGGGGGG......."])
+];
+
+const HATS24 = [
+  /* helmet */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHHHHTTTTHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO.....",
+    ".....OHH........HHO.....",
+    ".....OHH........HHO.....",
+    ".....OHHFFFFFFFFHHO.....",
+    ".....OHHFFFFFFFFHHO.....",
+    ".....OHH........HHO....."]),
+  /* ball cap */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHLLHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHHHHO.."]),
+  /* beanie */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHHLLHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OTTTTTTTTTTTTO....."]),
+  /* short hair */ pad24([E24,
+    ".......OOOOOOOOOO.......",
+    "......OHHHHHHHHHHO......",
+    ".....OHHLLHHHHHHHHO.....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO....."]),
+  /* big hair */ pad24([
+    "......OOOOOOOOOOOO......",
+    "....OHHHHHHHHHHHHHHO....",
+    "....OHHLLHHHHHHHHHHO....",
+    "....OHHHHHHHHHHHHHHO....",
+    ".....OHHHHHHHHHHHHO.....",
+    ".....OHH........HHO....."]),
+  /* bald */ pad24([E24])
+];
+
+const HATNAMES = ["Helmet","Ball cap","Beanie","Short hair","Big hair","Bald"];
+const FACENAMES = ["Level","Squint","Shades","Grin"];
+const LOOKMAX = {hat:6, face:4, pal:8, skin:5};
+
+/* weighted so most people start with visible eyes; shades is 1 in 8, not 1 in 4 */
+const FACE_WEIGHTS = [0,1,3,0,1,3,0,2];
+function defaultLook(name){
+  return {hat: hashIdx(name+"|h",6), face: FACE_WEIGHTS[hashIdx(name+"|f",8)],
+          pal: hashIdx(name,8), skin: 2};
+}
 function lookOf(m){
-  const d=defaultLook(m.name||""), l=m.look||{};
+  const d = defaultLook(m.name||""), l = m.look||{};
   return {hat:Number.isInteger(l.hat)?l.hat:d.hat, face:Number.isInteger(l.face)?l.face:d.face,
           pal:Number.isInteger(l.pal)?l.pal:d.pal, skin:Number.isInteger(l.skin)?l.skin:d.skin};
 }
-function avatarSVG(look,px){
-  const g=B20.map(r=>r.split(""));
-  const lay=rows=>rows.forEach((r,y)=>r.split("").forEach((c,x)=>{if(c!==".")g[y][x]=c;}));
-  lay(FACES20[look.face%4]); lay(HATS20[look.hat%6]);
-  const pal=PALETTES[look.pal%8], hairish=look.hat>=3;
-  return gridSVG(g.map(r=>r.join("")),{S:SKINS[look.skin%5],J:pal.j,T:pal.t,
-    H:hairish?HAIRC:pal.h,F:MASK,E:EYE,W:WHITE,D:DARK,M:MOUTH,B:HAIRC,G:HAIRC},px,"sprite");
+function avatarSVG(look, px){
+  const g = BUST24.map(r => r.split(""));
+  const lay = rows => rows.forEach((r,y) => r.split("").forEach((c,x) => { if(c !== ".") g[y][x] = c; }));
+  lay(FACES24[look.face % 4]);
+  lay(HATS24[look.hat % 6]);
+  const pal = PALETTES[look.pal % 8], hairish = look.hat >= 3;
+  const skin = SKINS[look.skin % 5];
+  return gridSVG(g.map(r => r.join("")), {
+    O: OUTL, S: skin, K: shade(skin, .82),
+    J: pal.j, V: shade(pal.j, .78), T: pal.t,
+    H: hairish ? HAIRC : pal.h, L: hairish ? HAIRL : shade(pal.h, 1.25),
+    F: "#D9DEE5", W: WHITE, E: EYE, G: GLINT, D: SHADE_D, B: HAIRC, M: MOUTH
+  }, px, "sprite");
 }
-const avatarFor=(m,px)=>avatarSVG(lookOf(m),px);
-const lookDesc=l=>HATNAMES[l.hat%6]+", "+FACENAMES[l.face%4];
+const avatarFor = (m,px) => avatarSVG(lookOf(m), px);
+const lookDesc = l => HATNAMES[l.hat % 6] + ", " + FACENAMES[l.face % 4];
+
 const POSTAG={qb:"QB",rb:"RB",wr:"WR",k:"K",def:"DEF",stand:"?"};
 const posTag=stat=>stat?POSTAG[poseFor(stat)]:"?";
 const posTint=stat=>(stat&&poseFor(stat)==="def")?"#A8443A":"#2E6FA8";
+
 
 const HELM=["..HHHH..",".HHHHHH.",".HHSSHH.",".HFFFFH.",".HFFFF..","..HHH...","........","........"];
 
@@ -482,9 +697,15 @@ function sprite(name,stat,px,dim,team){
   const tm=dim?null:teamOf(team);
   const pal=tm?{j:tm.j,t:tm.t,h:tm.h}:(dim?GREY:PALETTES[hashIdx(name,PALETTES.length)]);
   const rows=POSES[stat===null?"stand":poseFor(stat)];
-  return gridSVG(rows,{H:pal.h,J:pal.j,T:pal.t,N:pal.t,S:dim?"#55636F":SKIN,F:dim?"#46525E":MASK,
-    E:dim?"#3A4653":"#131A24",G:dim?"#3A4653":"#23282F",
-    P:dim?"#4A5866":PANTS,K:dim?"#2B3541":CLEAT,B:dim?"#4A5866":BALL},px,"sprite"+(dim?" dim":""));
+  const skin = dim ? "#55636F" : SKIN;
+  return gridSVG(outlineGrid(rows,"O"), {
+    O: dim ? "#28323D" : "#1B2130",
+    H: pal.h, J: pal.j, V: shade(pal.j, .78), T: pal.t, N: pal.t,
+    S: skin, Z: shade(skin, .82),
+    W: dim ? "#7C8794" : "#F6F8FA", E: dim ? "#2B3541" : "#10151F", G: dim ? "#8C97A4" : "#FFFFFF",
+    F: dim ? "#46525E" : MASK,
+    P: dim ? "#4A5866" : PANTS, K: dim ? "#2B3541" : CLEAT, B: dim ? "#4A5866" : BALL
+  }, px, "sprite" + (dim ? " dim" : ""));
 }
 function helmet(name,px){
   const pal=PALETTES[hashIdx(name,PALETTES.length)];
@@ -509,7 +730,7 @@ const POSENAME = {qb:"Quarterback",rb:"Ball carrier",wr:"Receiver",k:"Kicker",de
 
 const BADGES = {
   razor:    {name:"Razor",         desc:"Hit by exactly 0.5, the thinnest margin there is"},
-  gutpunch: {name:"Gut punch",     desc:"Missed by exactly 0.5"},
+  hook:     {name:"Hook",          desc:"Missed by exactly 0.5"},
   cushion:  {name:"Cushion",       desc:"Cleared the line by 50 percent or more"},
   backbone: {name:"Backbone",      desc:"The only leg that hit that week"},
   cooler:   {name:"Cooler",        desc:"The only leg that missed that week"},
@@ -523,7 +744,8 @@ const BADGES = {
 
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
-                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null };
+                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null,
+                pinBuf:"", pinStage:null, pinFirst:null };
 
 /* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
    Shared documents live in D1 behind /api/kv, with a version on every write so two
@@ -714,10 +936,140 @@ async function hash(pin){
   }catch(e){ return "plain:"+pin; }
 }
 
+/* Roughly how much each stat swings from game to game, so a half-yard miss on a
+   79.5 line and a half-touchdown miss on 2.5 stop counting the same. These are my
+   estimates, not measured from your results, and they are tunable once you have a
+   season of grades to check them against. */
+const SPREADS = [
+  [/pass\s*yards|pass\+rush/i, 70], [/pass\s*td/i, 1], [/pass\s*attempts/i, 8],
+  [/completions/i, 6], [/interceptions/i, 0.8],
+  [/rush\+rec/i, 35], [/rush\s*yards/i, 30], [/rush\s*attempts/i, 5],
+  [/longest\s*rec/i, 12], [/longest\s*rush/i, 10],
+  [/receiving\s*yards/i, 30], [/receptions/i, 2],
+  [/fantasy/i, 7], [/kicking/i, 3.5], [/tackle/i, 3], [/sack/i, 0.8]
+];
+function spreadFor(stat, line){
+  const s = String(stat || "");
+  for(const [re, v] of SPREADS) if(re.test(s)) return v;
+  const l = Math.abs(num(line) || 0);          /* unknown stat: a third of its line */
+  return Math.max(0.5, l * 0.35);
+}
+const sw1 = v => v === null ? "-" : (Math.round(v*100)/100).toFixed(2);
+
+/* every graded leg for one member, newest first */
+function legsFor(id, kind){
+  const out = [];
+  for(let w = DEADLINES.length - 1; w >= 0; w--){
+    if(!isLocked(w)) continue;
+    const p = (picksOf(w) || {})[id];
+    if(!p || !p.result) continue;
+    if(kind === "H" && p.result !== "H") continue;
+    if(kind === "M" && p.result !== "M") continue;
+    const mg = margin(p), off = mg === null ? null : Math.abs(mg);
+    const l = Math.abs(num(p.line) || 0);
+    out.push({w:w, p:p, off:off,
+      pct: (off !== null && l > 0) ? (off/l)*100 : null,
+      swing: off === null ? null : off / spreadFor(p.stat, p.line)});
+  }
+  return out;
+}
+
+/* ---- badge icons -------------------------------------------------------------
+   One 16x16 symbol per badge, struck in bronze, silver or gold depending on how
+   many times it has been earned. O outline, D shadow, M body, L highlight. */
+const TIERS = {
+  bronze: {at:1, O:"#3A2410", D:"#7A4A1E", M:"#B87333", L:"#E0A96D", name:"Bronze"},
+  silver: {at:3, O:"#2B3138", D:"#7C858F", M:"#BFC7D1", L:"#EDF1F5", name:"Silver"},
+  gold:   {at:5, O:"#4A3405", D:"#B8860B", M:"#F0B429", L:"#FFE08A", name:"Gold"}
+};
+const tierOf = n => n >= TIERS.gold.at ? "gold" : n >= TIERS.silver.at ? "silver" : "bronze";
+
+const ICONS = {
+  /* a blade, for the thinnest possible margin */
+  razor:[
+  "................","................","...OOOOOOOOOO...","..OLLLLLLLLLLO..",
+  "..OMMMMMMMMMMO..","..OMOOOOOOOOMO..","..OMODDDDDDOMO..","..OMOOOOOOOOMO..",
+  "..OMMMMMMMMMMO..","..ODDDDDDDDDDO..","...OOOOOOOOOO...","................",
+  "................","................","................","................"],
+  /* a hook, for coming up half a unit short */
+  hook:[
+  "................","......OOOO......",".....OLLLLO.....","....OMMOOMMO....",
+  "....OMO..OMO....","....OMMOOMMO....",".....OMMMMO.....","......OMDO......",
+  "......OMDO......","......OMDO......","......OMDO......","......OMDO......",
+  ".....OMDO.......","....OMDO....OO..","....OMDO...OMMO.",".....OMMMMMMMO.."],
+  /* a pillow, for clearing the line with room */
+  cushion:[
+  "................","................","..OOOOOOOOOOOO..",".OLLLLLLLLLLLLO.",
+  "OMMMMMMMMMMMMMMO","OMMMLLMMMMLLMMMO","OMMMMMMMMMMMMMMO","OMMMMMMMMMMMMMMO",
+  "OMMMMMMMMMMMMMMO","ODDDDDDDDDDDDDDO",".ODDDDDDDDDDDDO.","..OOOOOOOOOOOO..",
+  "................","................","................","................"],
+  /* a spine, for carrying the card */
+  backbone:[
+  "......OOOO......",".....OLLLLO.....","....OMMMMMMO....",".....ODDDDO.....",
+  "....OOMMMMOO....","...OLOMMMMOLO...","...OMOMMMMOMO...","....OOMMMMOO....",
+  ".....ODDDDO.....","....OOMMMMOO....","...OLOMMMMOLO...","...OMOMMMMOMO...",
+  "....OOMMMMOO....",".....ODDDDO.....","......OOOO......","................"],
+  /* an ice cube, for being the one who cooled the card off */
+  cooler:[
+  "................","...OOOOOOOOOO...","..OLLLLLLLLLLO..","..OMLLMMMMMMMO..",
+  "..OMLLMMMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..",
+  "..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","..ODDDDDDDDDDO..","...OOOOOOOOOO...",
+  "................","................","................","................"],
+  /* a star, for a clean sweep */
+  perfect:[
+  "................",".......OO.......","......OLLO......","......OMMO......",
+  "..OOOOOMMOOOOO..",".OLLLLMMMMLLLLO.","..OMMMMMMMMMMO..","...OMMMMMMMMO...",
+  "....OMMMMMMO....","...OMMMOOMMMO...","..OMMMO..OMMMO..",".OMMDO....ODMMO.",
+  ".ODDO......ODDO.","..OO........OO..","................","................"],
+  /* an alarm clock, for posting with minutes to spare */
+  buzzer:[
+  "................",".OOO........OOO.","OLLLO......OLLLO","OMMMOOOOOOOOMMMO",
+  ".OOOMMMMMMMMOOO.","..OMMMLLMMMMMO..","..OMMMMLMMMMMO..","..OMMLLLMLLMMO..",
+  "..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","...ODDDDDDDDO...","....OOOOOOOO....",
+  "....OM....MO....","...ODO....ODO...","...OO......OO...","................"],
+  /* a bird, for filing days early */
+  earlybird:[
+  "................","................",".....OOOO.......","....OLLLLO......",
+  "...OMMOMMMO.....","...OMMMMMMOOO...","..OMMMMMMMMMMO..",".OMMMLLMMMMMMMO.",
+  ".OMMLLLMMMMMMO..",".OMMMMMMMMMMO...","..ODDDDDDDDO....","...OO..OO.......",
+  "...OM..OM.......","...OD..OD.......","...OO..OO.......","................"],
+  /* a flame */
+  heater:[
+  "................",".......OO.......","......OLLO......","......OMMO......",
+  ".....OMMMMO.....","....OMMMMMMO....","...OMMOMMMMO....","...OMMOOMMMMO...",
+  "..OMMMOOOMMMMO..","..OMMMMOMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..",
+  "...ODMMMMMMDO...","....ODDDDDDO....",".....OOOOOO.....","................"],
+  /* a snowflake */
+  freeze:[
+  "................",".......OO.......","....O..OMO..O...","....OO.OMO.OO...",
+  ".....OOOMOOO....","......OMMMO.....","..OOOOMMMMOOOO..",".OLLMMMMMMMMLLO.",
+  "..OOOOMMMMOOOO..","......OMMMO.....",".....OOOMOOO....","....OO.OMO.OO...",
+  "....O..OMO..O...",".......OO.......","................","................"],
+  /* a ghost, for never getting a leg in */
+  ghost:[
+  "................","................",".....OOOOOO.....","....OLLLLLLO....",
+  "...OMMMMMMMMO...","...OMOOMMOOMO...","...OMODMMODMO...","...OMOOMMOOMO...",
+  "...OMMMMMMMMO...","...OMMMMMMMMO...","...OMMMMMMMMO...","...ODMDMDMDMO...",
+  "...OO.OO.OO.O...","................","................","................"]
+};
+function badgeSVG(key, count, px){
+  const rows = ICONS[key];
+  if(!rows) return "";
+  const t = TIERS[tierOf(count)];
+  return gridSVG(rows, {O:t.O, D:t.D, M:t.M, L:t.L}, px, "sprite badgeicon");
+}
+
+/* margin statistics: hit rate, and how far the average leg lands from its line */
+const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
+const pct1 = v => v === null ? "-" : (Math.round(v*10)/10) + "%";
+const num1 = v => v === null ? "-" : String(Math.round(v*10)/10);
+const hitRate = r => (r.H + r.M) ? (r.H / (r.H + r.M)) * 100 : null;
+
 /* ---------- records, badges and moments, all derived from the grades ---------- */
 function analyze(){
   const members = state.roster.members;
-  const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0, badges:{}, cur:0, best:0});
+  const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0,
+    badges:{}, cur:0, best:0, hitPct:[], missPct:[], hitAbs:[], missAbs:[], hitSw:[], missSw:[]});
   const moments = [];
   const give = (id, key, w, detail) => {
     rec[id].badges[key] = (rec[id].badges[key]||0) + 1;
@@ -736,13 +1088,26 @@ function analyze(){
       const leg = p.player + " " + p.side + " " + p.line + " " + p.stat;
       const mg = margin(p);
 
-      if(p.result === "H"){ r.H++; hits.push(m.id); r.cur = r.cur > 0 ? r.cur+1 : 1; }
-      else if(p.result === "M"){ r.M++; misses.push(m.id); r.cur = r.cur < 0 ? r.cur-1 : -1; }
+      /* how far off the line it landed, in raw units and as a share of the line */
+      const lineAbs = Math.abs(num(p.line) || 0);
+      const off = mg === null ? null : Math.abs(mg);
+      const offPct = (off !== null && lineAbs > 0) ? (off / lineAbs) * 100 : null;
+
+      const swing = off === null ? null : off / spreadFor(p.stat, p.line);
+
+      if(p.result === "H"){ r.H++; hits.push(m.id); r.cur = r.cur > 0 ? r.cur+1 : 1;
+        if(off !== null) r.hitAbs.push(off);
+        if(offPct !== null) r.hitPct.push(offPct);
+        if(swing !== null) r.hitSw.push(swing); }
+      else if(p.result === "M"){ r.M++; misses.push(m.id); r.cur = r.cur < 0 ? r.cur-1 : -1;
+        if(off !== null) r.missAbs.push(off);
+        if(offPct !== null) r.missPct.push(offPct);
+        if(swing !== null) r.missSw.push(swing); }
       else if(p.result === "V"){ r.V++; }
       r.best = Math.max(r.best, r.cur);
 
       if(mg !== null && p.result === "H" && Math.abs(mg) === 0.5) give(m.id,"razor",w,leg+", "+marginText(p));
-      if(mg !== null && p.result === "M" && Math.abs(mg) === 0.5) give(m.id,"gutpunch",w,leg+", "+marginText(p));
+      if(mg !== null && p.result === "M" && Math.abs(mg) === 0.5) give(m.id,"hook",w,leg+", "+marginText(p));
       const l = num(p.line);
       if(mg !== null && p.result === "H" && l && Math.abs(l) > 0 && mg >= 2 && mg/Math.abs(l) >= 0.5) give(m.id,"cushion",w,leg+", "+marginText(p));
 
@@ -805,7 +1170,8 @@ function render(){
   else if(state.screen === "card"){ html = viewCard(); wire = wireCard; }
   else { html = viewMain(); wire = wireMain; }
   app.innerHTML = banner() + html;
-  wire();
+  /* one missing element must never stop the rest of the screen from working */
+  try{ wire(); }catch(e){ console.error("wiring failed on " + state.screen + ":", e); }
   const retry = document.getElementById("retrystore");
   if(retry) retry.onclick = async () => {
     retry.textContent = "Checking";
@@ -849,7 +1215,7 @@ function topbar(current){
   return '<div class="topbar"><span class="poolname">'
   + esc((current==="season"?"Season":current==="card"?"The card":(current==="settings"?"Settings":state.roster.pool)).toUpperCase())+'</span>'
   + '<div class="navlinks">'
-  + (current==="main" ? '<button class="linkbtn" id="toseason">Season</button><button class="linkbtn" id="settings">Setup</button>'
+  + (current==="main" ? '<button class="linkbtn" id="tocard">Card</button><button class="linkbtn" id="toseason">Season</button><button class="linkbtn" id="settings">Setup</button>'
                       : '<button class="linkbtn" id="back">Back</button>')
   + '</div></div>';
 }
@@ -874,25 +1240,34 @@ function viewMain(){
   + lineupCard(w, locked)
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
-  + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.</p>';
+  + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
+  + '<br><span class="build">build 2026-09-08j</span></p>';
 }
 
 function signInCard(){
   const c = state.claiming;
   if(c){
     const m = state.roster.members.find(x=>x.id===c), first = !m.pinHash;
+    const buf = state.pinBuf || "";
+    const line = first
+      ? (state.pinStage === "confirm" ? "Type it again." : "Pick a 4-digit code. You will use it to post your leg from any device.")
+      : "Enter your 4-digit code.";
     return '<div class="card"><h3>'+esc(m.name)+'</h3>'
-    + '<p class="hint">'+(first ? "Pick a 4-digit code. You will use it to post your leg from any device." : "Enter your 4-digit code.")+'</p>'
-    + '<label for="pin">Your code</label><input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">'
-    + (first ? '<label for="pin2">Type it again</label><input id="pin2" type="password" inputmode="numeric" maxlength="8" autocomplete="off">' : "")
-    + '<div class="row-btns"><button class="btn" id="claim">'+(first?"Save my code":"Sign in")+'</button>'
-    + '<button class="btn ghost" id="cancel">Back</button></div>'
+    + '<p class="hint">'+line+'</p>'
+    + '<div class="pindots">' + [0,1,2,3].map(i =>
+        '<span class="' + (i < buf.length ? "on" : "") + '"></span>').join("") + '</div>'
+    + '<div class="keypad">' + ["1","2","3","4","5","6","7","8","9","clear","0","back"].map(k => {
+        const label = k === "clear" ? "C" : k === "back" ? "&#9003;" : k;
+        const aria = k === "clear" ? "Clear" : k === "back" ? "Delete" : k;
+        return '<button type="button" data-key="'+k+'" aria-label="'+aria+'">'+label+'</button>';
+      }).join("") + '</div>'
+    + '<button class="btn ghost wide" id="cancel">Back</button>'
     + (state.err ? '<p class="err">'+esc(state.err)+'</p>' : "") + '</div>';
   }
   return '<div class="card"><h3>Which one are you?</h3>'
   + '<p class="hint">Each person gets their own slot and code, so nobody can post a leg for you.</p>'
   + '<div class="whoami">'+state.roster.members.map(m=>
-      '<button data-claim="'+m.id+'">'+avatarFor(m,40)+'<span>'+esc(m.name)
+      '<button data-claim="'+m.id+'">'+avatarFor(m,48)+'<span>'+esc(m.name)
       +'<small>'+(m.pinHash?"sign in":"unclaimed")+'</small></span></button>').join("")
   + '</div></div>';
 }
@@ -925,6 +1300,7 @@ function yourLegCard(w, locked){
   + '<label for="player">Player</label>'
   + '<input id="player" type="text" maxlength="40" value="'+esc(p?p.player:"")+'" placeholder="Bijan Robinson" autocomplete="off">'
   + '<p class="warn" id="dupwarn"></p>'
+  + '<ul class="plist" id="plist" hidden></ul>'
   + '<label for="team">Team</label>'
   + '<input id="team" type="text" maxlength="24" list="teams" value="'+esc(p&&p.team?((teamOf(p.team)||{}).name||p.team):"")+'" placeholder="Atlanta Falcons" autocomplete="off">'
   + '<datalist id="teams">'+TEAMS.map(t=>'<option value="'+t.name+'">').join("")+'</datalist>'
@@ -1028,7 +1404,7 @@ function lineupCard(w, locked){
       body = '<div class="player">'+esc(p.player)+'</div><span class="tag in">Locked in</span>';
     }
     return '<li><div class="spritebox">'+art+'</div><div class="leg">'
-      + '<div class="rowname">'+avatarFor(m,20)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
+      + '<div class="rowname">'+avatarFor(m,24)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
   }).join("");
 
   return '<div class="card"><h3>Week '+(w+1)+' lineup</h3>'
@@ -1083,27 +1459,91 @@ function foundBlock(id, p){
        + '<button data-usefound="'+id+'">Use it</button></div>';
 }
 
+function drillCard(){
+  if(!state.drill) return "";
+  const {id, kind} = state.drill;
+  const legs = legsFor(id, kind);
+  const label = kind === "H" ? "hits" : kind === "M" ? "misses" : "graded legs";
+  return '<div class="card"><h3>' + esc(memberName(id)) + ", " + label + '</h3>'
+  + '<p class="hint">' + (legs.length ? legs.length + ' of them, newest first.' : 'Nothing here yet.') + '</p>'
+  + (legs.length ? '<ul class="drill">' + legs.map(L => {
+      const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
+      return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
+        + '<div class="dplayer">' + esc(p.player) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
+        + '<div class="dprop">' + propText(p) + '</div>'
+        + '<div class="dnum ' + cls + '">'
+        + (p.result === "V" ? "landed on the number"
+           : (p.result === "H" ? "hit by " : "missed by ") + num1(L.off)
+             + (L.pct !== null ? ", " + pct1(L.pct) : "")
+             + (L.swing !== null ? ", " + sw1(L.swing) + " swings" : ""))
+        + '</div>'
+        + (p.actual != null ? '<div class="dfin">final ' + esc(trim1(num(p.actual))) + '</div>' : "")
+        + '</div></li>';
+    }).join("") + '</ul>' : "")
+  + '<button class="btn ghost" id="closedrill">Close</button></div>';
+}
+
 function viewSeason(){
   const a = analyze(), members = state.roster.members;
   const streak = r => r.cur > 0 ? r.cur+"H" : r.cur < 0 ? (-r.cur)+"M" : "0";
 
+  const cell = (id,kind,text) => text === "-" ? "-"
+    : '<button class="drillcell" data-drill="' + id + ':' + kind + '">' + text + '</button>';
+  const face = r => avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24);
+  const byRate = a.table.slice().sort((x,y) => (hitRate(y)===null?-1:hitRate(y)) - (hitRate(x)===null?-1:hitRate(x)));
+
   const table = '<div class="card"><h3>Records</h3>'
   + '<p class="hint">Every graded leg since Week 1.</p><div class="scroller">'
-  + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
-  + a.table.map(r=>'<tr><td>'+avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},20)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M+'</td><td>'+r.V+'</td><td>'+r.skip
+  + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
+  + byRate.map(r=>'<tr><td>'+face(r)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M
+      +'</td><td>'+pct1(hitRate(r))+'</td><td>'+r.V+'</td><td>'+r.skip
       +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
-  + '</table></div></div>';
+  + '</table></div></div>'
+
+  + '<div class="card"><h3>Margins</h3>'
+  + '<p class="hint">Clear is the cushion on hits, short is the gap on misses. Swing measures that '
+  + 'gap against how much the stat moves week to week, so half a touchdown on a 2.5 line counts as a '
+  + 'real miss and half a yard on 79.5 counts as bad luck. Tap any number to see the legs behind it.</p>'
+  + '<div class="scroller">'
+  + '<table><tr><th>Player</th><th>Clear</th><th>Short</th><th>Swing +</th><th>Swing -</th></tr>'
+  + a.table.map(r=>'<tr><td>'+face(r)+' '+esc(r.name)+'</td>'
+      +'<td>'+cell(r.id,"H",num1(avg(r.hitAbs)))+'</td><td>'+cell(r.id,"M",num1(avg(r.missAbs)))+'</td>'
+      +'<td>'+cell(r.id,"H",sw1(avg(r.hitSw)))+'</td><td>'+cell(r.id,"M",sw1(avg(r.missSw)))+'</td></tr>').join("")
+  + '</table></div>'
+  + (function(){
+      const allH = [], allM = [], allHp = [], allMp = [];
+      a.table.forEach(r => { allH.push(...r.hitAbs); allM.push(...r.missAbs);
+                             allHp.push(...r.hitPct); allMp.push(...r.missPct); });
+      const H = a.table.reduce((s,r)=>s+r.H,0), M = a.table.reduce((s,r)=>s+r.M,0);
+      if(!H && !M) return '';
+      return '<p class="hint" style="margin-top:12px">The pool is hitting '
+        + pct1((H/(H+M))*100) + ' overall. Winners clear by ' + pct1(avg(allHp))
+        + ' on average, losers come up ' + pct1(avg(allMp)) + ' short.</p>';
+    })()
+  + '</div>';
 
   const cases = '<div class="card"><h3>Trophy case</h3>'
   + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
   + members.map(m=>{
-      const b = a.rec[m.id].badges, keys = Object.keys(b);
-      return '<div class="case"><div class="spritebox">'+avatarFor(m,40)+'</div><div><h4>'+esc(m.name.toUpperCase())+'</h4>'
-      + (keys.length ? keys.map(k=>'<span class="tag badge">'+esc(BADGES[k].name)+(b[k]>1?" x"+b[k]:"")+'</span>').join("")
-                     : '<span class="hint">Nothing yet.</span>')
+      const b = a.rec[m.id].badges;
+      const keys = Object.keys(b).sort((x,y) => b[y]-b[x]);
+      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div style="flex:1"><h4>'+esc(m.name.toUpperCase())+'</h4>'
+      + (keys.length
+          ? '<div class="medals">' + keys.map(k =>
+              '<div class="medal ' + tierOf(b[k]) + '">' + badgeSVG(k, b[k], 48)
+              + '<span class="mname">' + esc(BADGES[k].name) + '</span>'
+              + '<span class="mcount">' + TIERS[tierOf(b[k])].name + (b[k]>1 ? " x"+b[k] : "") + '</span></div>').join("")
+            + '</div>'
+          : '<span class="hint">Nothing yet.</span>')
       + '</div></div>';
     }).join("")
-  + '<p class="legend">'+Object.keys(BADGES).map(k=>'<b>'+BADGES[k].name+'</b>, '+BADGES[k].desc).join("<br>")+'</p></div>';
+  + '<p class="hint" style="margin-top:14px">Each one is struck in bronze the first time you earn it, '
+  + 'silver at three and gold at five.</p>'
+  + '<div class="tierdemo">' + ["bronze","silver","gold"].map(t =>
+      '<div class="medal"><div>' + badgeSVG("perfect", TIERS[t].at, 48) + '</div>'
+      + '<span class="mcount">' + TIERS[t].name + " at " + TIERS[t].at + '</span></div>').join("") + '</div>'
+  + '<p class="legend">'+Object.keys(BADGES).map(k=>
+      '<span class="legrow">' + badgeSVG(k, 1, 24) + '<b>'+BADGES[k].name+'</b>, '+BADGES[k].desc + '</span>').join("")+'</p></div>';
 
   const feed = '<div class="card"><h3>Moments</h3>'
   + (state.me
@@ -1121,7 +1561,7 @@ function viewSeason(){
       : '<p class="hint" style="margin-top:10px">Nothing logged yet. Grade a week and the good ones show up here.</p>')
   + '</div>';
 
-  return topbar("season") + table + cases + feed
+  return topbar("season") + table + drillCard() + cases + feed
   + '<p class="footnote">Records and badges are recalculated from the grades every time this page opens, so fixing a wrong grade fixes the history with it.</p>';
 }
 function wireSeason(){
@@ -1179,7 +1619,7 @@ function viewCard(){
     }
     const art = p ? sprite(p.player, locked ? p.stat : null, 72, false, p.team) : sprite(m.name, null, 72, true);
     return '<div class="rcard' + cls + '">'
-      + '<div class="rtop">' + avatarFor(m, 20) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
+      + '<div class="rtop">' + avatarFor(m, 24) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
       + '<div class="rport" style="background-color:' + tint + '"><span class="rpos">' + tag + (p && p.team && locked ? ' <em>' + esc(p.team) + '</em>' : '') + '</span>' + art + '</div>'
       + '<div class="rname">' + esc(name.toUpperCase()) + '</div>'
       + '<div class="rprop">' + (prop || "&nbsp;") + '</div>'
@@ -1232,7 +1672,7 @@ function viewSettings(){
   + (state.err?'<p class="err">'+esc(state.err)+'</p>':"") + '</div>'
   + (state.me ? '<div class="card"><h3>Your look</h3>'
       + '<p class="hint">Only you can change yours. It rides along next to your picks all season.</p>'
-      + '<div class="preview"><div class="spritebox" id="lookbox">'+avatarSVG(currentLook(),60)+'</div>'
+      + '<div class="preview"><div class="spritebox" id="lookbox">'+avatarSVG(currentLook(),72)+'</div>'
       + '<div class="cap"><b>'+esc(memberName(state.me).toUpperCase())+'</b>'
       + '<span id="lookdesc">'+esc(lookDesc(currentLook()))+'</span></div></div>'
       + '<div class="row-btns" style="margin-top:10px">'
@@ -1292,7 +1732,7 @@ function wireSettings(){
       const l = currentLook();
       l[k] = (l[k] + 1) % LOOKMAX[k];
       const box = document.getElementById("lookbox"), d = document.getElementById("lookdesc");
-      if(box) box.innerHTML = avatarSVG(l, 60);
+      if(box) box.innerHTML = avatarSVG(l, 72);
       if(d) d.textContent = lookDesc(l);
       state.lookMsg = null;
     };
@@ -1477,33 +1917,53 @@ async function pullTeams(){
 
 function wireMain(){
   const q = s => document.getElementById(s);
-  q("settings").onclick = () => { state.screen="settings"; state.msg=null; state.err=null; render(); };
-  q("toseason").onclick = () => { state.screen="season"; state.msg=null; state.err=null; render(); };
-  q("tocard").onclick = () => { state.screen="card"; state.msg=null; state.err=null; render(); };
+  const on = (id, fn) => { const el = q(id); if(el) el.onclick = fn; };
+  on("settings", () => { state.screen="settings"; state.msg=null; state.err=null; render(); });
+  on("toseason", () => { state.screen="season"; state.msg=null; state.err=null; render(); });
+  on("tocard",   () => { state.screen="card"; state.msg=null; state.err=null; render(); });
   if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; state.msg=null; state.err=null; render(); } };
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.msg=null; state.err=null; render(); } };
 
   document.querySelectorAll("[data-claim]").forEach(b=>{ b.onclick = () => { state.claiming = b.dataset.claim; state.err=null; render(); }; });
-  if(q("cancel")) q("cancel").onclick = () => { state.claiming = null; state.err = null; render(); };
-  if(q("claim")) q("claim").onclick = async () => {
-    const id = state.claiming, m = state.roster.members.find(x=>x.id===id);
-    const pin = q("pin").value.trim();
-    if(pin.length < 4){ state.err = "Use at least 4 digits."; render(); return; }
-    if(!m.pinHash){
-      if(pin !== q("pin2").value.trim()){ state.err = "Those two codes do not match."; render(); return; }
-      const h = await hash(pin);
-      try{ await updateRoster(r=>{ const t = r.members.find(x=>x.id===id); if(!t.pinHash) t.pinHash = h; }); }
-      catch(e){ state.err = "Could not save your code. Try again."; render(); return; }
-      if(state.roster.members.find(x=>x.id===id).pinHash !== h){
-        state.err = "Someone else just claimed that name."; state.claiming = null; render(); return;
+  const clearPin = () => { state.pinBuf = ""; state.pinStage = null; state.pinFirst = null; };
+  if(q("cancel")) q("cancel").onclick = () => { state.claiming = null; state.err = null; clearPin(); render(); };
+
+  /* the keypad: four taps and it acts, no keyboard and no submit button */
+  document.querySelectorAll("[data-key]").forEach(b => {
+    b.onclick = async () => {
+      const k = b.dataset.key;
+      if(k === "clear"){ state.pinBuf = ""; state.err = null; render(); return; }
+      if(k === "back"){ state.pinBuf = (state.pinBuf || "").slice(0, -1); state.err = null; render(); return; }
+      state.pinBuf = ((state.pinBuf || "") + k).slice(0, 4);
+      state.err = null;
+      if(state.pinBuf.length < 4){ render(); return; }
+
+      const id = state.claiming, m = state.roster.members.find(x => x.id === id);
+      const entered = state.pinBuf;
+
+      if(!m.pinHash){
+        if(state.pinStage !== "confirm"){
+          state.pinFirst = entered; state.pinStage = "confirm"; state.pinBuf = "";
+          render(); return;
+        }
+        if(entered !== state.pinFirst){
+          state.err = "Those two codes did not match. Start again.";
+          clearPin(); render(); return;
+        }
+        const h = await hash(entered);
+        try{ await updateRoster(r => { const t = r.members.find(x => x.id === id); if(!t.pinHash) t.pinHash = h; }); }
+        catch(e){ state.err = "Could not save your code. Try again."; clearPin(); render(); return; }
+        if(state.roster.members.find(x => x.id === id).pinHash !== h){
+          state.err = "Someone else just claimed that name."; state.claiming = null; clearPin(); render(); return;
+        }
+      } else if(await hash(entered) !== m.pinHash){
+        state.err = "That code does not match."; state.pinBuf = ""; render(); return;
       }
-    } else if(await hash(pin) !== m.pinHash){
-      state.err = "That code does not match."; render(); return;
-    }
-    state.me = id; state.claiming = null; state.err = null;
-    try{ await sset(ME_KEY, {id}, false); }catch(e){}
-    render();
-  };
+      state.me = id; state.claiming = null; state.err = null; clearPin();
+      try{ await sset(ME_KEY, {id}, false); }catch(e){}
+      render();
+    };
+  });
 
   if(q("sMore")) q("sMore").onclick = () => { state.side="More"; q("sMore").setAttribute("aria-pressed","true"); q("sLess").setAttribute("aria-pressed","false"); };
   if(q("sLess")) q("sLess").onclick = () => { state.side="Less"; q("sLess").setAttribute("aria-pressed","true"); q("sMore").setAttribute("aria-pressed","false"); };
@@ -1516,7 +1976,33 @@ function wireMain(){
     if(q("pvpose")) q("pvpose").textContent = (st ? POSENAME[poseFor(st)] : "Pick a player and a stat")
       + (teamOf(tm) ? ", " + teamOf(tm).k : "");
   }
+  function fillPlayer(name){
+    q("player").value = name;
+    const t = teamForPlayer(name);
+    if(t && q("team")){ q("team").value = (teamOf(t)||{}).name || t; q("team").dataset.auto = "1"; }
+    const list = q("plist"); if(list){ list.hidden = true; list.innerHTML = ""; }
+    q("dupwarn").textContent = (() => {
+      const o = takenBy(state.view, name, state.me);
+      return o ? memberName(o) + " already has " + picksOf(state.view)[o].player + ". Pick someone else." : "";
+    })();
+    refreshPreview();
+  }
+  function showMatches(){
+    const list = q("plist"); if(!list) return;
+    const typed = q("player").value.trim();
+    const hits = typed.length < 2 ? [] : matchPlayers(typed, 8);
+    const exact = hits.length === 1 && normName(hits[0]) === normName(typed);
+    if(!hits.length || exact){ list.hidden = true; list.innerHTML = ""; return; }
+    list.innerHTML = hits.map(n => {
+      const t = teamForPlayer(n);
+      return '<li><button type="button" data-pick="' + esc(n) + '">' + esc(n)
+           + (t ? '<em>' + esc(t) + '</em>' : "") + '</button></li>';
+    }).join("");
+    list.hidden = false;
+    list.querySelectorAll("[data-pick]").forEach(b => { b.onclick = () => fillPlayer(b.dataset.pick); });
+  }
   if(q("player")) q("player").oninput = () => {
+    showMatches();
     const other = takenBy(state.view, q("player").value, state.me);
     q("dupwarn").textContent = other ? memberName(other)+" already has "+picksOf(state.view)[other].player+". Pick someone else." : "";
     const tf = q("team");
@@ -1642,8 +2128,8 @@ function wireMain(){
 
   if(q("submit")) q("submit").onclick = async () => {
     const w = state.view, id = state.me;
-    const player = q("player").value.trim(), stat = q("stat").value.trim(), line = q("line").value.trim();
-    const team = teamKey(q("team") ? q("team").value : "");
+    const player = expandPlayer(q("player").value.trim()), stat = q("stat").value.trim(), line = q("line").value.trim();
+    const team = teamKey(q("team") ? q("team").value : "") || teamForPlayer(player);
     if(!player || !stat || !line){ state.err = "Fill in player, stat and line."; state.msg = null; render(); return; }
     if(!/^-?\d+(\.\d+)?$/.test(line)){ state.err = "The line should be a number, like 74.5."; state.msg = null; render(); return; }
     if(isLocked(w)){ state.err = "Week "+(w+1)+" locked while you were typing."; render(); return; }
