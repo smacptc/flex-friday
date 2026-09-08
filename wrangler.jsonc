@@ -1,0 +1,22 @@
+{
+  // Flex Friday, deployed as a Worker that also serves the static site.
+  "name": "flex-friday",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-01",
+
+  // index.html and anything else in ./public is served straight from the edge.
+  "assets": {
+    "directory": "./public",
+    "binding": "ASSETS"
+  },
+
+  // Paste your database id below. Cloudflare dashboard, Storage & Databases, D1,
+  // click flex-friday, and copy the Database ID shown on that page.
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "flex-friday",
+      "database_id": "PASTE_YOUR_DATABASE_ID_HERE"
+    }
+  ]
+}

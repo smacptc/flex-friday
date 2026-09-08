@@ -1,93 +1,68 @@
-# Flex Friday on Cloudflare Pages
+# Flex Friday, as a Cloudflare Worker
 
-Free, never sleeps, and the six of you share one board. Budget about half an hour
-the first time. Everything below is done in a browser, no command line.
+Cloudflare now points new projects at Workers rather than Pages, so this version is
+a single Worker that serves the site and the two API routes together.
 
-## What is in this folder
+    public/index.html    the whole app
+    worker.js            routes /api/kv and /api/finals, everything else is a file
+    src/kv.js            reads and writes the shared board in D1
+    src/finals.js        box score lookups (optional, needs an API key)
+    wrangler.jsonc       config, one line needs your database id
+    schema.sql           one table, run once
 
-    index.html               the app
-    functions/api/kv.js      reads and writes the shared board
-    functions/api/finals.js  looks up box score numbers (optional)
-    schema.sql               one table, run once
+## 1. Database
 
-Keep the folder structure exactly as it is. Cloudflare turns the `functions`
-folder into your API routes based on the file paths, so moving those files
-changes the URLs and the app stops finding them.
+Cloudflare dashboard, Storage & Databases, D1. Create a database named `flex-friday`
+if you do not already have one. Open it, go to the Console tab, paste in `schema.sql`
+and run it. You should see a table called `kv`.
 
-## 1. Make the database
+While you are on that page, copy the **Database ID**.
 
-1. Sign up at cloudflare.com, free plan.
-2. In the dashboard sidebar, open **Storage & Databases**, then **D1**.
-3. **Create Database**. Name it `flex-friday`. Create.
-4. Open it, go to the **Console** tab, paste the contents of `schema.sql`, run it.
+## 2. Paste the id into wrangler.jsonc
 
-You should see the `kv` table appear.
+Open `wrangler.jsonc` and replace `PASTE_YOUR_DATABASE_ID_HERE` with the id you just
+copied. Keep the quotes around it. This is the step that connects the Worker to the
+database, and nothing saves without it.
 
-## 2. Put the site up
+## 3. Put these files in your repo
 
-1. Sidebar, **Compute (Workers & Pages)**, then **Create**, then the **Pages** tab.
-2. Choose **Upload assets**. Name the project `flex-friday`.
-3. Drag this whole folder in, `functions` included. Deploy.
+Replace everything in the repo with the contents of this folder. If a `functions`
+folder is still there from the Pages version, delete it. The layout in the repo
+should be:
 
-You now have a URL like `https://flex-friday.pages.dev`. It will not save
-anything yet, and the app will say so at the top of the screen. That is expected
-until step 3.
+    public/index.html
+    src/kv.js
+    src/finals.js
+    worker.js
+    wrangler.jsonc
+    schema.sql
+    README.md
 
-If the upload does not pick up the functions, use **Connect to Git** instead:
-push this folder to a GitHub repo, point Pages at it, leave the build command
-empty and the output directory as `/`.
+## 4. Deploy
 
-## 3. Connect the database to the site
+In Cloudflare, create the app from your Git repo. On the setup screen:
 
-1. Your Pages project, **Settings**, then **Bindings**, then **Add**.
-2. Choose **D1 database**.
-3. Variable name must be exactly `DB`. Pick `flex-friday`. Save.
-4. **Deployments**, then retry or redeploy the latest one.
+- Build command: leave empty
+- Deploy command: `npx wrangler deploy`
 
-That redeploy matters. Bindings only reach code that was deployed after the
-binding existed, so skipping it is the usual reason people see "Nothing is being
-saved" with everything else set up correctly.
+Deploy. When it finishes, open `https://your-worker.workers.dev/api/kv?key=ff:health`.
+You want to see `{"value":null,"version":0}`. If you see the app instead, the Worker
+is not routing; if you see an error naming the DB binding, the database id in
+wrangler.jsonc is wrong or missing.
 
-Reload the site. The warning banner should be gone. Create the pool, send the
-link to the other five, each claims a name and sets a code.
+## 5. Optional extras
 
-## 4. Optional, box score lookups
+Both are set in the Worker's Settings, under Variables and Secrets, then redeploy.
 
-The "Find final numbers" button needs an Anthropic API key, which lives on the
-server and never touches the browser.
+- `ANTHROPIC_API_KEY` turns on the box score lookup button. Cents per week.
+- `POOL_KEY` requires a password before anyone can post picks.
 
-1. Get a key at console.anthropic.com and add credit to the account.
-2. Pages project, **Settings**, **Variables and Secrets**, **Add**.
-3. Type **Secret**, name `ANTHROPIC_API_KEY`, paste the key. Save, then redeploy.
+Secrets set in the dashboard survive a `wrangler deploy`, so you only add them once.
 
-Each weekly lookup is one request with web search, so it costs cents, not
-dollars. Skip this entirely if you would rather type six numbers on Tuesday.
-Without the key the button returns a plain message and hand grading still works.
+## Notes
 
-## 5. Optional, a password on writes
+Codes are a courtesy lock between friends, not real security.
 
-Anyone with the link can post picks otherwise. To lock it:
-
-1. **Settings**, **Variables and Secrets**, add a secret named `POOL_KEY` with a
-   password of your choosing. Redeploy.
-2. Each person opens the site, and in the browser console runs
-   `localStorage.setItem("ff:poolkey","your-password")`, once per device.
-
-Clunky, and honestly for six friends the link being unlisted is usually enough.
-
-## Costs
-
-Nothing, at your size. Pages allows 500 builds a month, D1's free tier is far
-past what a 6 by 18 week season uses, and nothing pauses for being idle. The
-only thing that can cost money is the optional API key.
-
-## Two things worth knowing
-
-The codes are a courtesy lock, not real security. They stop your friends from
-posting under each other's names. They are not built to stop someone determined,
-and the roster document holds their hashes.
-
-Simultaneous saves are handled properly. Every write carries a version number,
-and if two of you save in the same second the second write is rejected, re-read,
-and re-applied, which is what keeps the one-player-per-week rule honest instead
-of letting the later save quietly erase the earlier one.
+Writes carry a version number. If two people save in the same second, the second
+write is rejected, re-read and re-applied, which is what keeps the one-player-per-week
+rule honest instead of letting the later save quietly erase the earlier one.
