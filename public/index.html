@@ -174,6 +174,13 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .plist{list-style:none;margin:6px 0 0;padding:0;border:3px solid var(--edge);background:#0F1926;max-height:250px;overflow-y:auto}
+  .plist li{border-top:2px solid #16222F}
+  .plist li:first-child{border-top:0}
+  .plist button{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:0;
+    color:var(--chalk);font-family:var(--body);font-size:16px;padding:8px 10px}
+  .plist button:active{background:var(--panel2)}
+  .plist em{font-style:normal;font-family:var(--pix);font-size:8px;color:var(--amber);margin-left:auto}
   .build{color:#5C6B7C;font-size:8px;font-family:var(--pix);letter-spacing:0}
   .scroller{overflow-x:auto}
   table{width:100%;border-collapse:collapse;margin-top:10px}
@@ -356,6 +363,40 @@ function parseRosterPaste(text){
   return {map: out, bad: bad};
 }
 
+/* ---- name lookup ------------------------------------------------------------
+   Type a last name and the full name fills in. Where a last name is shared, the
+   options are listed instead of one being picked for you. */
+const PLAYERS = [];
+Object.keys(BY_TEAM).forEach(club => BY_TEAM[club].forEach(n => PLAYERS.push(n)));
+
+const lastOf = n => { const p = normName(n).split(" "); return p[p.length-1]; };
+const LAST_INDEX = {};
+PLAYERS.forEach(n => { const l = lastOf(n); (LAST_INDEX[l] = LAST_INDEX[l] || []).push(n); });
+
+/* exact last name first, then last names that start with it, then full names */
+function matchPlayers(text, cap){
+  const q = normName(text);
+  if(!q) return [];
+  const seen = {}, out = [];
+  const push = n => { const k = normName(n); if(!seen[k]){ seen[k] = 1; out.push(n); } };
+  (LAST_INDEX[q] || []).forEach(push);
+  Object.keys(LAST_INDEX).forEach(l => { if(l !== q && l.indexOf(q) === 0) LAST_INDEX[l].forEach(push); });
+  PLAYERS.forEach(n => { if(normName(n).indexOf(q) === 0) push(n); });
+  PLAYERS.forEach(n => { if(normName(n).indexOf(q) > 0) push(n); });
+  return out.slice(0, cap || 8);
+}
+/* one unambiguous last name expands on its own when the leg is submitted */
+function expandPlayer(text){
+  const q = normName(text);
+  if(!q) return text;
+  if(PLAYERS.some(n => normName(n) === q)) return text;      // already a full name
+  const exact = LAST_INDEX[q] || [];
+  if(exact.length === 1) return exact[0];
+  const starts = PLAYERS.filter(n => normName(n).indexOf(q) === 0);
+  if(starts.length === 1) return starts[0];
+  return text;
+}
+
 /* pixel sprite engine, 16x16 grids drawn as run-length SVG rects */
 const SKIN="#C08457", MASK="#D9DEE5", PANTS="#E8EBEF", CLEAT="#1A2430", BALL="#8B5A2B";
 const PALETTES=[
@@ -367,23 +408,27 @@ const PALETTES=[
 const GREY={j:"#3A4757",t:"#4E5D70",h:"#313D4B"};
 /* 24x24 players: helmet stripe, facemask bars, eyes, shoulder pads with trim,
    a number panel on the jersey, gloves, belt and cleats. */
+/* 24x24 players, drawn to match the member portraits: eyes with a pupil and a
+   catchlight behind the facemask, a shaded side on the skin, a darker band across
+   the bottom of the jersey, and a keyline traced around the whole figure at render
+   time so the sprite reads against the striped panel. */
 const BASE24=[
 "........................",  //0
 ".......HHHHHHHHHH.......",  //1
 "......HHHHHHHHHHHH......",  //2
 ".....HHHHHHHHHHHHHH.....",  //3
 ".....HHHHHTTTTHHHHH.....",  //4
-".....HHSSSSSSSSSSHH.....",  //5
-".....HHSSEESSEESSHH.....",  //6
+".....HHSSSSSSSSSSZH.....",  //5  shaded on the right
+".....HHSWEGSSWEGSZH.....",  //6  white, pupil, catchlight
 ".....HHFFFFFFFFFFHH.....",  //7
 "......HFFFFFFFFFFH......",  //8
-".........SSSSSS.........",  //9
+".........SSSSSZ.........",  //9
 "....TTJJJJJJJJJJJJTT....",  //10
 "..JJTTJJJJJJJJJJJJTTJJ..",  //11
 "..JJJJJJNNNNNNNNJJJJJJ..",  //12
 "..GGJJJJNNNNNNNNJJJJGG..",  //13
 "....JJJJJJJJJJJJJJJJ....",  //14
-".....JJJJJJJJJJJJJJ.....",  //15
+".....VVVVVVVVVVVVVV.....",  //15  jersey shadow
 "......TTTTTTTTTTTT......",  //16
 "......PPPPPPPPPPPP......",  //17
 "......PPPP....PPPP......",  //18
@@ -394,16 +439,28 @@ const BASE24=[
 "........................"]; //23
 const OVER24={
  stand:{},
- qb:{8:"......HFFFFFFFFFFH..BB..",9:".........SSSSSS...BBBB..",10:"....TTJJJJJJJJJJJJTTGG..",11:"..JJTTJJJJJJJJJJJJTTJJ.."},
- rb:{13:"BBGGJJJJNNNNNNNNJJJJGG..",14:"BB..JJJJJJJJJJJJJJJJ....",15:".....JJJJJJJJJJJJJJ....."},
- wr:{8:"..GG..HFFFFFFFFFFH..GG..",9:"..JJ.....SSSSSS...JJ....",10:"..JJTTJJJJJJJJJJJJTTJJ..",11:"....JJJJJJJJJJJJJJJJ...."},
+ qb:{8:"......HFFFFFFFFFFH..BB..",9:".........SSSSSZ...BBBB..",10:"....TTJJJJJJJJJJJJTTGG..",11:"..JJTTJJJJJJJJJJJJTTJJ.."},
+ rb:{13:".BGGJJJJNNNNNNNNJJJJGG..",14:".B..JJJJJJJJJJJJJJJJ....",15:".....VVVVVVVVVVVVVV....."},
+ wr:{8:"..GG..HFFFFFFFFFFH..GG..",9:"..JJ.....SSSSSZ...JJ....",10:"..JJTTJJJJJJJJJJJJTTJJ..",11:"....JJJJJJJJJJJJJJJJ...."},
  k:{18:"......PPPP....PPPPPP....",19:"......PPPP.....PPPPPP...",20:"......PPPP.......PPPP...",21:".....PPPPP........KKKK..",22:".....KKKK.........BBBB.."},
- def:{11:"GGJJTTJJJJJJJJJJJJTTJJGG",12:"GG..JJJJNNNNNNNNJJJJ..GG",17:".....PPPPPPPPPPPPPP.....",18:"....PPPP......PPPP......",22:"....KKKK........KKKK...."}
+ def:{11:".GJJTTJJJJJJJJJJJJTTJG..",12:".G..JJJJNNNNNNNNJJJJ..G.",17:".....PPPPPPPPPPPPPP.....",18:"....PPPP......PPPP......",22:"....KKKK........KKKK...."}
 };
 const POSES={};
 Object.keys(OVER24).forEach(k=>{
   POSES[k]=BASE24.map((row,i)=> OVER24[k][i] !== undefined ? OVER24[k][i] : row);
 });
+/* trace a dark keyline around whatever is drawn, the way the portraits are outlined */
+function outlineGrid(rows, ch){
+  const h=rows.length, w=rows[0].length;
+  const g=rows.map(r=>r.split(""));
+  const out=g.map(r=>r.slice());
+  for(let y=0;y<h;y++) for(let x=0;x<w;x++){
+    if(g[y][x] !== ".") continue;
+    if((y>0 && g[y-1][x] !== ".") || (y<h-1 && g[y+1][x] !== ".") ||
+       (x>0 && g[y][x-1] !== ".") || (x<w-1 && g[y][x+1] !== ".")) out[y][x] = ch;
+  }
+  return out.map(r=>r.join(""));
+}
 
 /* ---- member portraits, 24x24 -------------------------------------------------
    Redrawn with the outline-and-shade approach those old handheld sprites use:
@@ -593,9 +650,15 @@ function sprite(name,stat,px,dim,team){
   const tm=dim?null:teamOf(team);
   const pal=tm?{j:tm.j,t:tm.t,h:tm.h}:(dim?GREY:PALETTES[hashIdx(name,PALETTES.length)]);
   const rows=POSES[stat===null?"stand":poseFor(stat)];
-  return gridSVG(rows,{H:pal.h,J:pal.j,T:pal.t,N:pal.t,S:dim?"#55636F":SKIN,F:dim?"#46525E":MASK,
-    E:dim?"#3A4653":"#131A24",G:dim?"#3A4653":"#23282F",
-    P:dim?"#4A5866":PANTS,K:dim?"#2B3541":CLEAT,B:dim?"#4A5866":BALL},px,"sprite"+(dim?" dim":""));
+  const skin = dim ? "#55636F" : SKIN;
+  return gridSVG(outlineGrid(rows,"O"), {
+    O: dim ? "#28323D" : "#1B2130",
+    H: pal.h, J: pal.j, V: shade(pal.j, .78), T: pal.t, N: pal.t,
+    S: skin, Z: shade(skin, .82),
+    W: dim ? "#7C8794" : "#F6F8FA", E: dim ? "#2B3541" : "#10151F", G: dim ? "#8C97A4" : "#FFFFFF",
+    F: dim ? "#46525E" : MASK,
+    P: dim ? "#4A5866" : PANTS, K: dim ? "#2B3541" : CLEAT, B: dim ? "#4A5866" : BALL
+  }, px, "sprite" + (dim ? " dim" : ""));
 }
 function helmet(name,px){
   const pal=PALETTES[hashIdx(name,PALETTES.length)];
@@ -987,7 +1050,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-08c</span></p>';
+  + '<br><span class="build">build 2026-09-08d</span></p>';
 }
 
 function signInCard(){
@@ -1038,6 +1101,7 @@ function yourLegCard(w, locked){
   + '<label for="player">Player</label>'
   + '<input id="player" type="text" maxlength="40" value="'+esc(p?p.player:"")+'" placeholder="Bijan Robinson" autocomplete="off">'
   + '<p class="warn" id="dupwarn"></p>'
+  + '<ul class="plist" id="plist" hidden></ul>'
   + '<label for="team">Team</label>'
   + '<input id="team" type="text" maxlength="24" list="teams" value="'+esc(p&&p.team?((teamOf(p.team)||{}).name||p.team):"")+'" placeholder="Atlanta Falcons" autocomplete="off">'
   + '<datalist id="teams">'+TEAMS.map(t=>'<option value="'+t.name+'">').join("")+'</datalist>'
@@ -1630,7 +1694,33 @@ function wireMain(){
     if(q("pvpose")) q("pvpose").textContent = (st ? POSENAME[poseFor(st)] : "Pick a player and a stat")
       + (teamOf(tm) ? ", " + teamOf(tm).k : "");
   }
+  function fillPlayer(name){
+    q("player").value = name;
+    const t = teamForPlayer(name);
+    if(t && q("team")){ q("team").value = (teamOf(t)||{}).name || t; q("team").dataset.auto = "1"; }
+    const list = q("plist"); if(list){ list.hidden = true; list.innerHTML = ""; }
+    q("dupwarn").textContent = (() => {
+      const o = takenBy(state.view, name, state.me);
+      return o ? memberName(o) + " already has " + picksOf(state.view)[o].player + ". Pick someone else." : "";
+    })();
+    refreshPreview();
+  }
+  function showMatches(){
+    const list = q("plist"); if(!list) return;
+    const typed = q("player").value.trim();
+    const hits = typed.length < 2 ? [] : matchPlayers(typed, 8);
+    const exact = hits.length === 1 && normName(hits[0]) === normName(typed);
+    if(!hits.length || exact){ list.hidden = true; list.innerHTML = ""; return; }
+    list.innerHTML = hits.map(n => {
+      const t = teamForPlayer(n);
+      return '<li><button type="button" data-pick="' + esc(n) + '">' + esc(n)
+           + (t ? '<em>' + esc(t) + '</em>' : "") + '</button></li>';
+    }).join("");
+    list.hidden = false;
+    list.querySelectorAll("[data-pick]").forEach(b => { b.onclick = () => fillPlayer(b.dataset.pick); });
+  }
   if(q("player")) q("player").oninput = () => {
+    showMatches();
     const other = takenBy(state.view, q("player").value, state.me);
     q("dupwarn").textContent = other ? memberName(other)+" already has "+picksOf(state.view)[other].player+". Pick someone else." : "";
     const tf = q("team");
@@ -1756,8 +1846,8 @@ function wireMain(){
 
   if(q("submit")) q("submit").onclick = async () => {
     const w = state.view, id = state.me;
-    const player = q("player").value.trim(), stat = q("stat").value.trim(), line = q("line").value.trim();
-    const team = teamKey(q("team") ? q("team").value : "");
+    const player = expandPlayer(q("player").value.trim()), stat = q("stat").value.trim(), line = q("line").value.trim();
+    const team = teamKey(q("team") ? q("team").value : "") || teamForPlayer(player);
     if(!player || !stat || !line){ state.err = "Fill in player, stat and line."; state.msg = null; render(); return; }
     if(!/^-?\d+(\.\d+)?$/.test(line)){ state.err = "The line should be a number, like 74.5."; state.msg = null; render(); return; }
     if(isLocked(w)){ state.err = "Week "+(w+1)+" locked while you were typing."; render(); return; }
