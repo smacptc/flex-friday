@@ -174,6 +174,27 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .pindots{display:flex;gap:12px;justify-content:center;margin:18px 0}
+  .pindots span{width:20px;height:20px;border:4px solid var(--edge);background:#0F1926}
+  .pindots span.on{background:var(--amber)}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:6px}
+  .keypad button{font-family:var(--big);font-weight:700;font-size:24px;color:var(--chalk);
+    background:var(--panel2);border:4px solid var(--edge);box-shadow:5px 5px 0 var(--edge);
+    padding:16px 0;text-shadow:2px 2px 0 var(--edge)}
+  .keypad button:active{transform:translate(5px,5px);box-shadow:none}
+  .badgeicon{display:block}
+  .medals{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
+  .medal{text-align:center;width:64px}
+  .medal svg{margin:0 auto}
+  .mname{display:block;font-family:var(--pix);font-size:8px;color:var(--chalk);margin-top:6px;line-height:1.5}
+  .medal.gold .mname{color:#FFE08A}
+  .medal.silver .mname{color:#EDF1F5}
+  .medal.bronze .mname{color:#E0A96D}
+  .mcount{display:block;font-size:16px;color:var(--dim);line-height:1.4}
+  .tierdemo{display:flex;gap:16px;justify-content:center;margin-top:12px;padding:12px 0;
+    border-top:2px solid #16222F;border-bottom:2px solid #16222F}
+  .legend .legrow{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
+  .legend .legrow svg{flex:none;margin-top:2px}
   .drill{list-style:none;margin:10px 0 0;padding:0}
   .drill li{display:flex;gap:10px;padding:10px 0;border-top:2px solid #16222F}
   .drill li:first-child{border-top:0}
@@ -698,7 +719,7 @@ const POSENAME = {qb:"Quarterback",rb:"Ball carrier",wr:"Receiver",k:"Kicker",de
 
 const BADGES = {
   razor:    {name:"Razor",         desc:"Hit by exactly 0.5, the thinnest margin there is"},
-  gutpunch: {name:"Gut punch",     desc:"Missed by exactly 0.5"},
+  hook:     {name:"Hook",          desc:"Missed by exactly 0.5"},
   cushion:  {name:"Cushion",       desc:"Cleared the line by 50 percent or more"},
   backbone: {name:"Backbone",      desc:"The only leg that hit that week"},
   cooler:   {name:"Cooler",        desc:"The only leg that missed that week"},
@@ -712,7 +733,8 @@ const BADGES = {
 
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
-                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null };
+                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null,
+                pinBuf:"", pinStage:null, pinFirst:null };
 
 /* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
    Shared documents live in D1 behind /api/kv, with a version on every write so two
@@ -941,6 +963,91 @@ function legsFor(id, kind){
   return out;
 }
 
+/* ---- badge icons -------------------------------------------------------------
+   One 16x16 symbol per badge, struck in bronze, silver or gold depending on how
+   many times it has been earned. O outline, D shadow, M body, L highlight. */
+const TIERS = {
+  bronze: {at:1, O:"#3A2410", D:"#7A4A1E", M:"#B87333", L:"#E0A96D", name:"Bronze"},
+  silver: {at:3, O:"#2B3138", D:"#7C858F", M:"#BFC7D1", L:"#EDF1F5", name:"Silver"},
+  gold:   {at:5, O:"#4A3405", D:"#B8860B", M:"#F0B429", L:"#FFE08A", name:"Gold"}
+};
+const tierOf = n => n >= TIERS.gold.at ? "gold" : n >= TIERS.silver.at ? "silver" : "bronze";
+
+const ICONS = {
+  /* a blade, for the thinnest possible margin */
+  razor:[
+  "................","................","...OOOOOOOOOO...","..OLLLLLLLLLLO..",
+  "..OMMMMMMMMMMO..","..OMOOOOOOOOMO..","..OMODDDDDDOMO..","..OMOOOOOOOOMO..",
+  "..OMMMMMMMMMMO..","..ODDDDDDDDDDO..","...OOOOOOOOOO...","................",
+  "................","................","................","................"],
+  /* a hook, for coming up half a unit short */
+  hook:[
+  "................","......OOOO......",".....OLLLLO.....","....OMMOOMMO....",
+  "....OMO..OMO....","....OMMOOMMO....",".....OMMMMO.....","......OMDO......",
+  "......OMDO......","......OMDO......","......OMDO......","......OMDO......",
+  ".....OMDO.......","....OMDO....OO..","....OMDO...OMMO.",".....OMMMMMMMO.."],
+  /* a pillow, for clearing the line with room */
+  cushion:[
+  "................","................","..OOOOOOOOOOOO..",".OLLLLLLLLLLLLO.",
+  "OMMMMMMMMMMMMMMO","OMMMLLMMMMLLMMMO","OMMMMMMMMMMMMMMO","OMMMMMMMMMMMMMMO",
+  "OMMMMMMMMMMMMMMO","ODDDDDDDDDDDDDDO",".ODDDDDDDDDDDDO.","..OOOOOOOOOOOO..",
+  "................","................","................","................"],
+  /* a spine, for carrying the card */
+  backbone:[
+  "......OOOO......",".....OLLLLO.....","....OMMMMMMO....",".....ODDDDO.....",
+  "....OOMMMMOO....","...OLOMMMMOLO...","...OMOMMMMOMO...","....OOMMMMOO....",
+  ".....ODDDDO.....","....OOMMMMOO....","...OLOMMMMOLO...","...OMOMMMMOMO...",
+  "....OOMMMMOO....",".....ODDDDO.....","......OOOO......","................"],
+  /* an ice cube, for being the one who cooled the card off */
+  cooler:[
+  "................","...OOOOOOOOOO...","..OLLLLLLLLLLO..","..OMLLMMMMMMMO..",
+  "..OMLLMMMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..",
+  "..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","..ODDDDDDDDDDO..","...OOOOOOOOOO...",
+  "................","................","................","................"],
+  /* a star, for a clean sweep */
+  perfect:[
+  "................",".......OO.......","......OLLO......","......OMMO......",
+  "..OOOOOMMOOOOO..",".OLLLLMMMMLLLLO.","..OMMMMMMMMMMO..","...OMMMMMMMMO...",
+  "....OMMMMMMO....","...OMMMOOMMMO...","..OMMMO..OMMMO..",".OMMDO....ODMMO.",
+  ".ODDO......ODDO.","..OO........OO..","................","................"],
+  /* an alarm clock, for posting with minutes to spare */
+  buzzer:[
+  "................",".OOO........OOO.","OLLLO......OLLLO","OMMMOOOOOOOOMMMO",
+  ".OOOMMMMMMMMOOO.","..OMMMLLMMMMMO..","..OMMMMLMMMMMO..","..OMMLLLMLLMMO..",
+  "..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","...ODDDDDDDDO...","....OOOOOOOO....",
+  "....OM....MO....","...ODO....ODO...","...OO......OO...","................"],
+  /* a bird, for filing days early */
+  earlybird:[
+  "................","................",".....OOOO.......","....OLLLLO......",
+  "...OMMOMMMO.....","...OMMMMMMOOO...","..OMMMMMMMMMMO..",".OMMMLLMMMMMMMO.",
+  ".OMMLLLMMMMMMO..",".OMMMMMMMMMMO...","..ODDDDDDDDO....","...OO..OO.......",
+  "...OM..OM.......","...OD..OD.......","...OO..OO.......","................"],
+  /* a flame */
+  heater:[
+  "................",".......OO.......","......OLLO......","......OMMO......",
+  ".....OMMMMO.....","....OMMMMMMO....","...OMMOMMMMO....","...OMMOOMMMMO...",
+  "..OMMMOOOMMMMO..","..OMMMMOMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..",
+  "...ODMMMMMMDO...","....ODDDDDDO....",".....OOOOOO.....","................"],
+  /* a snowflake */
+  freeze:[
+  "................",".......OO.......","....O..OMO..O...","....OO.OMO.OO...",
+  ".....OOOMOOO....","......OMMMO.....","..OOOOMMMMOOOO..",".OLLMMMMMMMMLLO.",
+  "..OOOOMMMMOOOO..","......OMMMO.....",".....OOOMOOO....","....OO.OMO.OO...",
+  "....O..OMO..O...",".......OO.......","................","................"],
+  /* a ghost, for never getting a leg in */
+  ghost:[
+  "................","................",".....OOOOOO.....","....OLLLLLLO....",
+  "...OMMMMMMMMO...","...OMOOMMOOMO...","...OMODMMODMO...","...OMOOMMOOMO...",
+  "...OMMMMMMMMO...","...OMMMMMMMMO...","...OMMMMMMMMO...","...ODMDMDMDMO...",
+  "...OO.OO.OO.O...","................","................","................"]
+};
+function badgeSVG(key, count, px){
+  const rows = ICONS[key];
+  if(!rows) return "";
+  const t = TIERS[tierOf(count)];
+  return gridSVG(rows, {O:t.O, D:t.D, M:t.M, L:t.L}, px, "sprite badgeicon");
+}
+
 /* margin statistics: hit rate, and how far the average leg lands from its line */
 const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
 const pct1 = v => v === null ? "-" : (Math.round(v*10)/10) + "%";
@@ -989,7 +1096,7 @@ function analyze(){
       r.best = Math.max(r.best, r.cur);
 
       if(mg !== null && p.result === "H" && Math.abs(mg) === 0.5) give(m.id,"razor",w,leg+", "+marginText(p));
-      if(mg !== null && p.result === "M" && Math.abs(mg) === 0.5) give(m.id,"gutpunch",w,leg+", "+marginText(p));
+      if(mg !== null && p.result === "M" && Math.abs(mg) === 0.5) give(m.id,"hook",w,leg+", "+marginText(p));
       const l = num(p.line);
       if(mg !== null && p.result === "H" && l && Math.abs(l) > 0 && mg >= 2 && mg/Math.abs(l) >= 0.5) give(m.id,"cushion",w,leg+", "+marginText(p));
 
@@ -1123,19 +1230,27 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-08f</span></p>';
+  + '<br><span class="build">build 2026-09-08i</span></p>';
 }
 
 function signInCard(){
   const c = state.claiming;
   if(c){
     const m = state.roster.members.find(x=>x.id===c), first = !m.pinHash;
+    const buf = state.pinBuf || "";
+    const line = first
+      ? (state.pinStage === "confirm" ? "Type it again." : "Pick a 4-digit code. You will use it to post your leg from any device.")
+      : "Enter your 4-digit code.";
     return '<div class="card"><h3>'+esc(m.name)+'</h3>'
-    + '<p class="hint">'+(first ? "Pick a 4-digit code. You will use it to post your leg from any device." : "Enter your 4-digit code.")+'</p>'
-    + '<label for="pin">Your code</label><input id="pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">'
-    + (first ? '<label for="pin2">Type it again</label><input id="pin2" type="password" inputmode="numeric" maxlength="8" autocomplete="off">' : "")
-    + '<div class="row-btns"><button class="btn" id="claim">'+(first?"Save my code":"Sign in")+'</button>'
-    + '<button class="btn ghost" id="cancel">Back</button></div>'
+    + '<p class="hint">'+line+'</p>'
+    + '<div class="pindots">' + [0,1,2,3].map(i =>
+        '<span class="' + (i < buf.length ? "on" : "") + '"></span>').join("") + '</div>'
+    + '<div class="keypad">' + ["1","2","3","4","5","6","7","8","9","clear","0","back"].map(k => {
+        const label = k === "clear" ? "C" : k === "back" ? "&#9003;" : k;
+        const aria = k === "clear" ? "Clear" : k === "back" ? "Delete" : k;
+        return '<button type="button" data-key="'+k+'" aria-label="'+aria+'">'+label+'</button>';
+      }).join("") + '</div>'
+    + '<button class="btn ghost wide" id="cancel">Back</button>'
     + (state.err ? '<p class="err">'+esc(state.err)+'</p>' : "") + '</div>';
   }
   return '<div class="card"><h3>Which one are you?</h3>'
@@ -1399,13 +1514,25 @@ function viewSeason(){
   const cases = '<div class="card"><h3>Trophy case</h3>'
   + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
   + members.map(m=>{
-      const b = a.rec[m.id].badges, keys = Object.keys(b);
-      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div><h4>'+esc(m.name.toUpperCase())+'</h4>'
-      + (keys.length ? keys.map(k=>'<span class="tag badge">'+esc(BADGES[k].name)+(b[k]>1?" x"+b[k]:"")+'</span>').join("")
-                     : '<span class="hint">Nothing yet.</span>')
+      const b = a.rec[m.id].badges;
+      const keys = Object.keys(b).sort((x,y) => b[y]-b[x]);
+      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div style="flex:1"><h4>'+esc(m.name.toUpperCase())+'</h4>'
+      + (keys.length
+          ? '<div class="medals">' + keys.map(k =>
+              '<div class="medal ' + tierOf(b[k]) + '">' + badgeSVG(k, b[k], 48)
+              + '<span class="mname">' + esc(BADGES[k].name) + '</span>'
+              + '<span class="mcount">' + TIERS[tierOf(b[k])].name + (b[k]>1 ? " x"+b[k] : "") + '</span></div>').join("")
+            + '</div>'
+          : '<span class="hint">Nothing yet.</span>')
       + '</div></div>';
     }).join("")
-  + '<p class="legend">'+Object.keys(BADGES).map(k=>'<b>'+BADGES[k].name+'</b>, '+BADGES[k].desc).join("<br>")+'</p></div>';
+  + '<p class="hint" style="margin-top:14px">Each one is struck in bronze the first time you earn it, '
+  + 'silver at three and gold at five.</p>'
+  + '<div class="tierdemo">' + ["bronze","silver","gold"].map(t =>
+      '<div class="medal"><div>' + badgeSVG("perfect", TIERS[t].at, 48) + '</div>'
+      + '<span class="mcount">' + TIERS[t].name + " at " + TIERS[t].at + '</span></div>').join("") + '</div>'
+  + '<p class="legend">'+Object.keys(BADGES).map(k=>
+      '<span class="legrow">' + badgeSVG(k, 1, 24) + '<b>'+BADGES[k].name+'</b>, '+BADGES[k].desc + '</span>').join("")+'</p></div>';
 
   const feed = '<div class="card"><h3>Moments</h3>'
   + (state.me
@@ -1787,26 +1914,45 @@ function wireMain(){
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.msg=null; state.err=null; render(); } };
 
   document.querySelectorAll("[data-claim]").forEach(b=>{ b.onclick = () => { state.claiming = b.dataset.claim; state.err=null; render(); }; });
-  if(q("cancel")) q("cancel").onclick = () => { state.claiming = null; state.err = null; render(); };
-  if(q("claim")) q("claim").onclick = async () => {
-    const id = state.claiming, m = state.roster.members.find(x=>x.id===id);
-    const pin = q("pin").value.trim();
-    if(pin.length < 4){ state.err = "Use at least 4 digits."; render(); return; }
-    if(!m.pinHash){
-      if(pin !== q("pin2").value.trim()){ state.err = "Those two codes do not match."; render(); return; }
-      const h = await hash(pin);
-      try{ await updateRoster(r=>{ const t = r.members.find(x=>x.id===id); if(!t.pinHash) t.pinHash = h; }); }
-      catch(e){ state.err = "Could not save your code. Try again."; render(); return; }
-      if(state.roster.members.find(x=>x.id===id).pinHash !== h){
-        state.err = "Someone else just claimed that name."; state.claiming = null; render(); return;
+  const clearPin = () => { state.pinBuf = ""; state.pinStage = null; state.pinFirst = null; };
+  if(q("cancel")) q("cancel").onclick = () => { state.claiming = null; state.err = null; clearPin(); render(); };
+
+  /* the keypad: four taps and it acts, no keyboard and no submit button */
+  document.querySelectorAll("[data-key]").forEach(b => {
+    b.onclick = async () => {
+      const k = b.dataset.key;
+      if(k === "clear"){ state.pinBuf = ""; state.err = null; render(); return; }
+      if(k === "back"){ state.pinBuf = (state.pinBuf || "").slice(0, -1); state.err = null; render(); return; }
+      state.pinBuf = ((state.pinBuf || "") + k).slice(0, 4);
+      state.err = null;
+      if(state.pinBuf.length < 4){ render(); return; }
+
+      const id = state.claiming, m = state.roster.members.find(x => x.id === id);
+      const entered = state.pinBuf;
+
+      if(!m.pinHash){
+        if(state.pinStage !== "confirm"){
+          state.pinFirst = entered; state.pinStage = "confirm"; state.pinBuf = "";
+          render(); return;
+        }
+        if(entered !== state.pinFirst){
+          state.err = "Those two codes did not match. Start again.";
+          clearPin(); render(); return;
+        }
+        const h = await hash(entered);
+        try{ await updateRoster(r => { const t = r.members.find(x => x.id === id); if(!t.pinHash) t.pinHash = h; }); }
+        catch(e){ state.err = "Could not save your code. Try again."; clearPin(); render(); return; }
+        if(state.roster.members.find(x => x.id === id).pinHash !== h){
+          state.err = "Someone else just claimed that name."; state.claiming = null; clearPin(); render(); return;
+        }
+      } else if(await hash(entered) !== m.pinHash){
+        state.err = "That code does not match."; state.pinBuf = ""; render(); return;
       }
-    } else if(await hash(pin) !== m.pinHash){
-      state.err = "That code does not match."; render(); return;
-    }
-    state.me = id; state.claiming = null; state.err = null;
-    try{ await sset(ME_KEY, {id}, false); }catch(e){}
-    render();
-  };
+      state.me = id; state.claiming = null; state.err = null; clearPin();
+      try{ await sset(ME_KEY, {id}, false); }catch(e){}
+      render();
+    };
+  });
 
   if(q("sMore")) q("sMore").onclick = () => { state.side="More"; q("sMore").setAttribute("aria-pressed","true"); q("sLess").setAttribute("aria-pressed","false"); };
   if(q("sLess")) q("sLess").onclick = () => { state.side="Less"; q("sLess").setAttribute("aria-pressed","true"); q("sMore").setAttribute("aria-pressed","false"); };
