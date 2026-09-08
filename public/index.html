@@ -1,6 +1,20 @@
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Flex Friday</title>
+
+<!-- home screen icon and standalone mode. iOS reads the apple- tags, Android reads the manifest. -->
+<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
+<link rel="apple-touch-icon-precomposed" sizes="180x180" href="/apple-touch-icon-precomposed.png?v=2">
+<link rel="apple-touch-icon" sizes="167x167" href="/apple-touch-icon-167.png?v=2">
+<link rel="apple-touch-icon" sizes="152x152" href="/apple-touch-icon-152.png?v=2">
+<link rel="apple-touch-icon" sizes="120x120" href="/apple-touch-icon-120.png?v=2">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon.png?v=2">
+<link rel="manifest" href="/manifest.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Flex Friday">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#131E2C">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -24,7 +38,8 @@
   svg{image-rendering:pixelated}
   .sprite{display:block}
   .sprite.dim{opacity:.85}
-  .wrap{max-width:640px;margin:0 auto;padding:16px 14px 64px}
+  .wrap{max-width:640px;margin:0 auto;
+    padding:calc(16px + env(safe-area-inset-top)) 14px calc(64px + env(safe-area-inset-bottom))}
   button{font-family:var(--pix);font-size:8px;line-height:1.5;cursor:pointer}
   button:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
   input{font-family:var(--body);font-size:16px}
@@ -1230,7 +1245,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-08i</span></p>';
+  + '<br><span class="build">build 2026-09-08k</span></p>';
 }
 
 function signInCard(){

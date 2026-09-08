@@ -4,11 +4,16 @@ Cloudflare now points new projects at Workers rather than Pages, so this version
 a single Worker that serves the site and the two API routes together.
 
     public/index.html    the whole app
-    worker.js            routes /api/kv and /api/finals, everything else is a file
+    worker.js            routes the api, the icons, and everything else
     src/kv.js            reads and writes the shared board in D1
     src/finals.js        box score lookups (optional, needs an API key)
+    src/icons.js         home screen icons, stored as base64 text
     wrangler.jsonc       config, one line needs your database id
     schema.sql           one table, run once
+
+Every file here is plain text on purpose. Binary files get corrupted when they are
+pasted through a text editor, so the icons are base64 inside src/icons.js and the
+Worker decodes them on request.
 
 ## 1. Database
 
