@@ -210,6 +210,17 @@
     border-top:2px solid #16222F;border-bottom:2px solid #16222F}
   .legend .legrow{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
   .legend .legrow svg{flex:none;margin-top:2px}
+  .phead{display:flex;gap:14px;align-items:center;margin-bottom:12px}
+  .phead .spritebox,.phead svg{flex:none}
+  h4.sub{font-family:var(--pix);font-size:8px;color:var(--dim);margin:16px 0 6px;font-weight:400;letter-spacing:0}
+  ul.tally{list-style:none;margin:0;padding:0}
+  ul.tally li{display:flex;align-items:center;gap:8px;padding:5px 0}
+  .tk{width:112px;flex:none;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tb{flex:1;height:14px;background:#0F1926;border:2px solid var(--edge)}
+  .tb i{display:block;height:100%;background:var(--amber)}
+  .tn{width:22px;flex:none;text-align:right;font-family:var(--pix);font-size:8px;color:var(--dim)}
+  td button.namecell{background:none;border:0;color:var(--amber);font-family:inherit;font-size:inherit;
+    padding:0;text-decoration:underline;display:flex;align-items:center;gap:5px}
   .drill{list-style:none;margin:10px 0 0;padding:0}
   .drill li{display:flex;gap:10px;padding:10px 0;border-top:2px solid #16222F}
   .drill li:first-child{border-top:0}
@@ -317,7 +328,7 @@ const teamKey = v => { const t=teamOf(v); return t ? t.k : ""; };
 /* Player-to-team snapshot from the 2026 offseason, grouped by club so it can be audited
    by eye. Starters are solid; the deeper a name sits on a depth chart, the shakier it is.
    Everything here is overridable from Setup, and corrections sync to the whole pool. */
-const ROSTER_VERSION = "2026 season, checked Sep 6";
+const ROSTER_VERSION = "2026 season, free agency checked Sep 9";
 const BY_TEAM = {
 ARI:["Kyler Murray","Jacoby Brissett","James Conner","Trey Benson","Emari Demercado","Marvin Harrison","Michael Wilson","Zay Jones","Greg Dortch","Trey McBride","Elijah Higgins","Chad Ryland","Budda Baker","Zaven Collins","Mack Wilson","Darius Robinson","Walter Nolen"],
 ATL:["Michael Penix","Kirk Cousins","Bijan Robinson","Tyler Allgeier","Drake London","Darnell Mooney","Ray-Ray McCloud","Kyle Pitts","Charlie Woerner","Younghoe Koo","Jessie Bates","Kaden Elliss","Jalon Walker","James Pearce","Divine Deablo"],
@@ -366,10 +377,16 @@ const VERIFIED_2026 = {
 "Jarquez Hunter":"MIA","Tutu Atwell":"LAR",
 "Myles Garrett":"LAR","Jared Verse":"CLE","Trent McDuffie":"LAR","Jaylen Watson":"LAR",
 "Osa Odighizuwa":"SF","Zaire Franklin":"GB","Tyree Wilson":"NO",
-"Jauan Jennings":"MIN","Justin Fields":"KC","Stefon Diggs":"WAS","Cooper Rush":"ATL"
+"Jauan Jennings":"MIN","Justin Fields":"KC","Stefon Diggs":"WAS","Cooper Rush":"ATL",
+/* checked against the 2026 free agency trackers on Sep 9 */
+"Kenneth Walker":"KC","Emari Demercado":"KC","Isiah Pacheco":"DET","Trey Hendrickson":"BAL",
+"Michael Pittman":"PIT","Minkah Fitzpatrick":"NYJ","Brian Robinson":"ATL",
+"J.K. Dobbins":"DEN","A.J. Dillon":"CAR","Solomon Thomas":"TEN","K'Lavon Chaisson":"WAS",
+"Calais Campbell":"BAL","David Onyemata":"NYJ","Greg Newsome":"NYG","D.J. Reader":"NYG"
 };
 /* Nothing outstanding: the four I could not place were confirmed and moved up. */
-const UNPLACED_2026 = [];
+/* moved this offseason, destination unconfirmed, so they return blank rather than wrong */
+const UNPLACED_2026 = ["Kareem Hunt"];
 Object.keys(VERIFIED_2026).forEach(n => { ROSTER_SEED[normName(n)] = VERIFIED_2026[n]; });
 UNPLACED_2026.forEach(n => { delete ROSTER_SEED[normName(n)]; });
 
@@ -748,7 +765,7 @@ const BADGES = {
 
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
-                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null,
+                msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null, profile:null,
                 pinBuf:"", pinStage:null, pinFirst:null };
 
 /* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
@@ -1172,6 +1189,7 @@ function render(){
   else if(state.screen === "settings"){ html = viewSettings(); wire = wireSettings; }
   else if(state.screen === "season"){ html = viewSeason(); wire = wireSeason; }
   else if(state.screen === "card"){ html = viewCard(); wire = wireCard; }
+  else if(state.screen === "profile"){ html = viewProfile(); wire = wireProfile; }
   else { html = viewMain(); wire = wireMain; }
   app.innerHTML = banner() + html;
   /* one missing element must never stop the rest of the screen from working */
@@ -1198,7 +1216,7 @@ function viewSetup(){
   + '<p class="hint">The first name is the commissioner. That person enters the final numbers each week, and can hand the job to someone else later.</p>'+ '<label>The six of you, in lineup order</label>'
   + [0,1,2,3,4,5].map(i=>'<input id="n'+i+'" type="text" maxlength="18" placeholder="'+(i===0?"Your name":"Friend "+i)+'" style="margin-bottom:8px">').join("")
   + '<button class="btn wide" id="go">Create the pool</button><p class="err" id="setuperr" hidden></p></div>'
-  + '<p class="footnote">One leg each builds the six-pick Flex lineup. Player names show as soon as they are claimed so nobody doubles up, but the stat, line and side stay hidden until Friday at 5.</p>';
+  + '<p class="footnote">One leg each builds the six-pick Flex lineup. Everyone sees each leg as it goes in, so you can avoid doubling up on a player and talk each other out of the bad ones.</p>';
 }
 function wireSetup(){
   document.getElementById("go").onclick = async () => {
@@ -1217,7 +1235,7 @@ function wireSetup(){
 
 function topbar(current){
   return '<div class="topbar"><span class="poolname">'
-  + esc((current==="season"?"Season":current==="card"?"The card":(current==="settings"?"Settings":state.roster.pool)).toUpperCase())+'</span>'
+  + esc((current==="profile"?(state.roster.members.find(m=>m.id===state.profile)||{name:"Profile"}).name:current==="season"?"Season":current==="card"?"The card":(current==="settings"?"Settings":state.roster.pool)).toUpperCase())+'</span>'
   + '<div class="navlinks">'
   + (current==="main" ? '<button class="linkbtn" id="tocard">Card</button><button class="linkbtn" id="toseason">Season</button><button class="linkbtn" id="settings">Setup</button>'
                       : '<button class="linkbtn" id="back">Back</button>')
@@ -1245,7 +1263,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-08k</span></p>';
+  + '<br><span class="build">build 2026-09-09d</span></p>';
 }
 
 function signInCard(){
@@ -1398,14 +1416,11 @@ function lineupCard(w, locked){
            + (p.note?'<div class="note">'+esc(p.note)+'</div>':"")
            + (mt ? '<div class="margin '+cls+'">'+esc(mt)+'</div>' : "")
            + (isAdmin() ? marks(m.id, p) : (p.result?'<span class="tag">'+({H:"Hit",M:"Miss",V:"Void"}[p.result])+'</span>':""));
-    } else if(mine){
+    } else {
       art = sprite(p.player, p.stat, 48, false, p.team);
       body = '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div>'
            + (p.note?'<div class="note">'+esc(p.note)+'</div>':"")
-           + '<div class="note">only you can see the rest until 5</div>';
-    } else {
-      art = sprite(p.player, null, 48, false, p.team);
-      body = '<div class="player">'+esc(p.player)+'</div><span class="tag in">Locked in</span>';
+           + '<span class="tag in">' + (mine ? "Yours, still editable" : "In") + '</span>';
     }
     return '<li><div class="spritebox">'+art+'</div><div class="leg">'
       + '<div class="rowname">'+avatarFor(m,24)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
@@ -1415,7 +1430,7 @@ function lineupCard(w, locked){
   + '<p class="hint">'+(locked
       ? (graded||voids ? hits+" of "+graded+" hit"+(voids?", "+voids+" voided":"")
                        : "Type each player's final number and the grade sets itself.")
-      : "One player per week. Names show as they come in so you can avoid a double.")+'</p>'
+      : "Everyone sees each leg the moment it is posted. One player per week, and you can change yours until the lock.")+'</p>'
   + '<ul class="legs">'+legs+'</ul>'
   + buildPanelSlot(w)
   + (locked ? lockedTools(w)
@@ -1463,6 +1478,91 @@ function foundBlock(id, p){
        + '<button data-usefound="'+id+'">Use it</button></div>';
 }
 
+/* what a member reaches for: teams, players, positions and stat types, counted
+   across every leg they have posted, graded or not */
+function countsFor(id){
+  const teams = {}, players = {}, pos = {}, stats = {}, sides = {More:0, Less:0};
+  let total = 0;
+  for(let w = 0; w < DEADLINES.length; w++){
+    const p = (picksOf(w) || {})[id];
+    if(!p) continue;
+    total++;
+    if(p.team) teams[p.team] = (teams[p.team]||0) + 1;
+    const nm = p.player || "";
+    if(nm) players[nm] = (players[nm]||0) + 1;
+    const tag = p.stat ? posTag(p.stat) : "?";
+    pos[tag] = (pos[tag]||0) + 1;
+    if(p.stat) stats[p.stat] = (stats[p.stat]||0) + 1;
+    if(p.side) sides[p.side] = (sides[p.side]||0) + 1;
+  }
+  const rank = o => Object.keys(o).map(k => [k, o[k]]).sort((a,b) => b[1]-a[1] || (a[0] > b[0] ? 1 : -1));
+  return {total:total, teams:rank(teams), players:rank(players), pos:rank(pos), stats:rank(stats), sides:sides};
+}
+
+function barList(rows, total, cap, empty){
+  if(!rows.length) return '<p class="hint">' + empty + '</p>';
+  const top = rows[0][1];
+  return '<ul class="tally">' + rows.slice(0, cap || 5).map(([k, n]) =>
+    '<li><span class="tk">' + esc(k) + '</span>'
+    + '<span class="tb"><i style="width:' + Math.round(n/top*100) + '%"></i></span>'
+    + '<span class="tn">' + n + '</span></li>').join("") + '</ul>';
+}
+
+function viewProfile(){
+  const id = state.profile, m = state.roster.members.find(x => x.id === id);
+  if(!m) return topbar("profile") + '<div class="card"><h3>Nobody here</h3></div>';
+  const a = analyze(), r = a.rec[id], c = countsFor(id);
+  const legs = legsFor(id, "all");
+  const badges = Object.keys(r.badges).sort((x,y) => r.badges[y]-r.badges[x]);
+
+  return topbar("profile")
+  + '<div class="card"><div class="phead">' + avatarFor(m, 72)
+    + '<div><h3 style="margin:0">' + esc(m.name.toUpperCase()) + '</h3>'
+    + '<p class="hint">' + (m.admin ? "Commissioner. " : "") + c.total + ' leg' + (c.total===1?'':'s') + ' posted.</p></div></div>'
+  + '<div class="scroller"><table><tr><th>Hit</th><th>Miss</th><th>Rate</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
+  + '<tr><td>'+r.H+'</td><td>'+r.M+'</td><td>'+pct1(hitRate(r))+'</td><td>'+r.V+'</td><td>'+r.skip
+    +'</td><td>'+(r.cur>0?r.cur+"H":r.cur<0?(-r.cur)+"M":"0")+'</td><td>'+r.best+'</td></tr></table></div>'
+  + '<p class="hint" style="margin-top:10px">Clears by ' + num1(avg(r.hitAbs)) + ' on average ('
+    + sw1(avg(r.hitSw)) + ' swings), comes up ' + num1(avg(r.missAbs)) + ' short ('
+    + sw1(avg(r.missSw)) + ' swings).</p></div>'
+
+  + '<div class="card"><h3>Who he picks</h3>'
+  + '<h4 class="sub">Teams</h4>' + barList(c.teams, c.total, 5, "No teams recorded yet.")
+  + '<h4 class="sub">Players</h4>' + barList(c.players, c.total, 5, "No players yet.")
+  + '</div>'
+
+  + '<div class="card"><h3>What he picks</h3>'
+  + '<h4 class="sub">Positions</h4>' + barList(c.pos, c.total, 5, "Nothing yet.")
+  + '<h4 class="sub">Stat props</h4>' + barList(c.stats, c.total, 6, "Nothing yet.")
+  + '<p class="hint" style="margin-top:12px">More ' + c.sides.More + ', Less ' + c.sides.Less + '.</p>'
+  + '</div>'
+
+  + (badges.length ? '<div class="card"><h3>Trophies</h3><div class="medals">'
+      + badges.map(k => '<div class="medal ' + tierOf(r.badges[k]) + '">' + badgeSVG(k, r.badges[k], 48)
+        + '<span class="mname">' + esc(BADGES[k].name) + '</span>'
+        + '<span class="mcount">' + TIERS[tierOf(r.badges[k])].name + (r.badges[k]>1?" x"+r.badges[k]:"") + '</span></div>').join("")
+      + '</div></div>' : "")
+
+  + '<div class="card"><h3>Every leg</h3>'
+  + (legs.length ? '<ul class="drill">' + legs.map(L => {
+      const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
+      return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
+        + '<div class="dplayer">' + esc(p.player) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
+        + '<div class="dprop">' + propText(p) + '</div>'
+        + (p.result ? '<div class="dnum ' + cls + '">'
+            + (p.result === "V" ? "landed on the number"
+               : (p.result === "H" ? "hit by " : "missed by ") + num1(L.off)
+                 + (L.swing !== null ? ", " + sw1(L.swing) + " swings" : "")) + '</div>'
+          : '<div class="dfin">not graded yet</div>')
+        + '</div></li>';
+    }).join("") + '</ul>' : '<p class="hint">Nothing posted yet.</p>')
+  + '</div>';
+}
+function wireProfile(){
+  const b = document.getElementById("back");
+  if(b) b.onclick = () => { state.screen = "season"; state.profile = null; render(); };
+}
+
 function drillCard(){
   if(!state.drill) return "";
   const {id, kind} = state.drill;
@@ -1494,12 +1594,13 @@ function viewSeason(){
   const cell = (id,kind,text) => text === "-" ? "-"
     : '<button class="drillcell" data-drill="' + id + ':' + kind + '">' + text + '</button>';
   const face = r => avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24);
+  const nameCell = r => '<button class="namecell" data-profile="' + r.id + '">' + face(r) + esc(r.name) + '</button>';
   const byRate = a.table.slice().sort((x,y) => (hitRate(y)===null?-1:hitRate(y)) - (hitRate(x)===null?-1:hitRate(x)));
 
   const table = '<div class="card"><h3>Records</h3>'
   + '<p class="hint">Every graded leg since Week 1.</p><div class="scroller">'
   + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
-  + byRate.map(r=>'<tr><td>'+face(r)+' '+esc(r.name)+'</td><td>'+r.H+'</td><td>'+r.M
+  + byRate.map(r=>'<tr><td>'+nameCell(r)+'</td><td>'+r.H+'</td><td>'+r.M
       +'</td><td>'+pct1(hitRate(r))+'</td><td>'+r.V+'</td><td>'+r.skip
       +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
   + '</table></div></div>'
@@ -1510,7 +1611,7 @@ function viewSeason(){
   + 'real miss and half a yard on 79.5 counts as bad luck. Tap any number to see the legs behind it.</p>'
   + '<div class="scroller">'
   + '<table><tr><th>Player</th><th>Clear</th><th>Short</th><th>Swing +</th><th>Swing -</th></tr>'
-  + a.table.map(r=>'<tr><td>'+face(r)+' '+esc(r.name)+'</td>'
+  + a.table.map(r=>'<tr><td>'+nameCell(r)+'</td>'
       +'<td>'+cell(r.id,"H",num1(avg(r.hitAbs)))+'</td><td>'+cell(r.id,"M",num1(avg(r.missAbs)))+'</td>'
       +'<td>'+cell(r.id,"H",sw1(avg(r.hitSw)))+'</td><td>'+cell(r.id,"M",sw1(avg(r.missSw)))+'</td></tr>').join("")
   + '</table></div>'
@@ -1570,6 +1671,18 @@ function viewSeason(){
 }
 function wireSeason(){
   document.getElementById("back").onclick = () => { state.screen="main"; state.msg=null; state.err=null; state.look=null; state.lookMsg=null; render(); };
+  document.querySelectorAll("[data-profile]").forEach(b => {
+    b.onclick = () => { state.profile = b.dataset.profile; state.screen = "profile"; state.drill = null; render(); };
+  });
+  document.querySelectorAll("[data-drill]").forEach(b => {
+    b.onclick = () => {
+      const [id, kind] = b.dataset.drill.split(":");
+      state.drill = (state.drill && state.drill.id === id && state.drill.kind === kind) ? null : {id:id, kind:kind};
+      render();
+    };
+  });
+  const cd = document.getElementById("closedrill");
+  if(cd) cd.onclick = () => { state.drill = null; render(); };
   const add = document.getElementById("addmoment");
   if(add) add.onclick = async () => {
     const t = document.getElementById("mtext").value.trim();
@@ -1608,10 +1721,10 @@ function viewCard(){
     let name = locked ? "No leg" : "Nothing yet", prop = "";
     if(p){
       name = p.player;
-      tag = locked ? posTag(p.stat) : "?";
-      tint = locked ? posTint(p.stat) : "#3A4757";
+      tag = posTag(p.stat);
+      tint = posTint(p.stat);
+      prop = propText(p);
       if(locked){
-        prop = propText(p);
         cls = p.result === "H" ? " hit" : p.result === "M" ? " miss" : p.result === "V" ? " void" : "";
         fin = marginText(p).toUpperCase();
         bar = p.result === "H" ? '<i style="width:100%;background:#4CC17E"></i>'
@@ -1619,9 +1732,12 @@ function viewCard(){
             : p.result === "V" ? '<i style="width:100%;background:#8FA3B8"></i>'
             : '<i style="width:45%;background:#FFC53D"></i>';
         if(!p.result) fin = "STILL RUNNING";
-      } else { prop = "Locked in"; fin = ""; }
+      } else {
+        fin = "IN, EDITABLE UNTIL THE LOCK";
+        bar = '<i style="width:25%;background:#FFC53D"></i>';
+      }
     }
-    const art = p ? sprite(p.player, locked ? p.stat : null, 72, false, p.team) : sprite(m.name, null, 72, true);
+    const art = p ? sprite(p.player, p.stat, 72, false, p.team) : sprite(m.name, null, 72, true);
     return '<div class="rcard' + cls + '">'
       + '<div class="rtop">' + avatarFor(m, 24) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
       + '<div class="rport" style="background-color:' + tint + '"><span class="rpos">' + tag + (p && p.team && locked ? ' <em>' + esc(p.team) + '</em>' : '') + '</span>' + art + '</div>'
@@ -1632,9 +1748,10 @@ function viewCard(){
       + '</div>';
   }).join("");
 
-  const headline = !locked ? "HIDDEN" : (hit + miss + voids === 0 ? "0" : String(hit));
+  const inCount = r.members.filter(m => picks[m.id]).length;
+  const headline = !locked ? (inCount + "/" + r.members.length) : (hit + miss + voids === 0 ? "0" : String(hit));
   const sub = !locked
-    ? "Picks show at " + esc(deadlineText(w))
+    ? inCount + " of " + r.members.length + " in, locks " + esc(deadlineText(w))
     : (pending ? hit + " hit, " + miss + " missed, " + pending + " still running"
                : hit + " of " + (hit + miss) + " hit" + (voids ? ", " + voids + " voided" : "")
                  + (none ? ", " + none + " never posted" : ""));
@@ -1650,7 +1767,7 @@ function viewCard(){
   + (locked
       ? 'A six-pick Flex pays with four or more. Green means it hit, red means it missed, grey means it voided. '
         + (isAdmin() ? 'You grade these on the board screen.' : 'Waiting on ' + esc(commishName()) + ' to enter the finals.')
-      : 'Everything stays covered until the lock. Come back Friday evening.')
+      : 'Legs show as they are posted. Anyone can still change theirs until Friday at 5.')
   + '</p><button class="btn ghost" id="refreshcard">Refresh</button></div>';
 }
 function wireCard(){
