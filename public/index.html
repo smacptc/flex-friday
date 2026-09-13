@@ -1106,7 +1106,7 @@ function badgeSVG(key, count, px){
    Unofficial. The commissioner's entered final is still what grades a leg. */
 const LIVE_KEY = "ff:live";
 async function loadLive(force){
-  if(STORE_MODE !== "shared") return;
+  if(STORE_MODE !== "live") return;
   try{
     const r = await fetch("/api/live" + (force ? "?refresh=1" : ""), {cache:"no-store"});
     if(!r.ok) return;
@@ -1271,7 +1271,7 @@ function render(){
   if(retry) retry.onclick = async () => {
     retry.textContent = "Checking";
     await initStorage();
-    if(STORE_MODE === "shared"){
+    if(STORE_MODE === "live"){
       const roster = await sget(ROSTER_KEY, true), season = await sget(SEASON_KEY, true);
       if(roster) state.roster = roster;
       if(season){ if(!season.moments) season.moments = []; state.season = season; }
@@ -1336,7 +1336,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-13a</span></p>';
+  + '<br><span class="build">build 2026-09-13b</span></p>';
 }
 
 function signInCard(){
@@ -1865,11 +1865,11 @@ function viewCard(){
     + (locked ? ' Week ' + (w+1) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
   + '</p>' + liveNote(w)
   + '<div class="row-btns"><button class="btn ghost" id="refreshcard">Refresh</button>'
-  + (locked && STORE_MODE === "shared" ? '<button class="btn ghost" id="pulllive">Pull live now</button>' : "")
+  + (locked && STORE_MODE === "live" ? '<button class="btn ghost" id="pulllive">Pull live now</button>' : "")
   + '</div></div>';
 }
 function liveNote(w){
-  if(STORE_MODE !== "shared" || !isLocked(w)) return "";
+  if(STORE_MODE !== "live" || !isLocked(w)) return "";
   const d = state.live;
   if(!d || d.week !== w || !d.updated) return '<p class="hint">Live numbers appear here once games start. They come from ESPN and are not the official grade.</p>';
   const inPlay = Object.values(d.games || {}).some(g => g.state === "in");
@@ -1934,7 +1934,7 @@ function viewSettings(){
   + '<div class="row-btns"><button class="btn ghost" id="signout"'+(state.me?"":" disabled")+'>Sign out</button>'
   + '<button class="btn ghost" id="resetpin"'+(state.me?"":" disabled")+'>New code</button></div></div>'
   + '<div class="card"><h3>Storage</h3><p class="hint">'
-  + (STORE_MODE === "shared"
+  + (STORE_MODE === "live"
       ? "Connected to the shared board. Everyone sees the same picks."
       : esc(STORE_WHY) + " Nothing is being kept.")
   + '</p><button class="btn ghost" id="recheck">Check again</button></div>'
