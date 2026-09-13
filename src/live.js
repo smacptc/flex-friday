@@ -63,11 +63,21 @@ export function flattenPlayers(summary) {
   return out;
 }
 
-/* One picked stat from a flattened record. Returns a number, or null when the
-   box score has no line for it yet (a receiver with no catches simply is not listed). */
+/* One picked stat from a flattened record. The stat field in the app is free
+   text, so people type "Pass yards", "Pass Yards", "pass yds". Match on a
+   normalized form with ordered rules, longest and most specific first, rather
+   than on an exact string. Returns null when the box score has no line for it
+   yet, which is different from zero. */
+export const statKey = s => String(s || "").toLowerCase()
+  .replace(/&/g, "+").replace(/\band\b/g, "+")
+  .replace(/yds/g, "yards").replace(/rec\b/g, "rec").replace(/tds?\b/g, "td")
+  .replace(/receiving/g, "rec").replace(/receptions?/g, "receptions")
+  .replace(/rushing/g, "rush").replace(/passing/g, "pass")
+  .replace(/[^a-z+]+/g, " ").replace(/\s*\+\s*/g, "+").replace(/\s+/g, " ").trim();
+
 export function readStat(rec, stat) {
   const s = rec ? rec.stats : {};
-  const g = k => { for (const key of Object.keys(s)) if (key === k) return s[key]; return undefined; };
+  const g = k => s[k];
   const passY = num(g("passing.passingYards")), passTD = num(g("passing.passingTouchdowns"));
   const ints = num(g("passing.interceptions"));
   const [comp, att] = pair(g("passing.completions/passingAttempts"));
@@ -78,33 +88,41 @@ export function readStat(rec, stat) {
   const fumLost = num(g("fumbles.fumblesLost"));
   const sum = (...xs) => xs.some(x => x !== null) ? xs.reduce((a, x) => a + (x || 0), 0) : null;
 
-  switch (stat) {
-    case "Pass Yards": return passY;
-    case "Pass TDs": return passTD;
-    case "Pass Attempts": return att;
-    case "Pass Completions": return comp;
-    case "Interceptions Thrown": return ints;
-    case "Rush Yards": return rushY;
-    case "Rush Attempts": return rushA;
-    case "Rush+Rec Yards": return sum(rushY, recY);
-    case "Pass+Rush Yards": return sum(passY, rushY);
-    case "Receiving Yards": return recY;
-    case "Receptions": return rec_;
-    case "Longest Reception": return longRec;
-    case "Longest Rush": return longRush;
-    case "Kicking Points": return num(g("kicking.totalKickingPoints"));
-    case "Tackles+Assists": return num(g("defensive.totalTackles"));
-    case "Sacks": return num(g("defensive.sacks"));
-    case "Fantasy Score": {
-      /* PrizePicks scoring: 0.04 per pass yard, 4 per pass TD, -1 per pick,
-         0.1 per rush and receiving yard, 6 per rush and receiving TD, 1 per catch, -2 per lost fumble */
-      if ([passY, rushY, recY, rec_].every(x => x === null)) return null;
-      const v = (passY || 0) * 0.04 + (passTD || 0) * 4 - (ints || 0) + (rushY || 0) * 0.1 + (rushTD || 0) * 6
-              + (recY || 0) * 0.1 + (recTD || 0) * 6 + (rec_ || 0) - (fumLost || 0) * 2;
-      return Math.round(v * 100) / 100;
-    }
-    default: return null;
-  }
+  const k = statKey(stat);
+  const fantasy = () => {
+    if ([passY, rushY, recY, rec_].every(x => x === null)) return null;
+    const v = (passY || 0) * 0.04 + (passTD || 0) * 4 - (ints || 0) + (rushY || 0) * 0.1 + (rushTD || 0) * 6
+            + (recY || 0) * 0.1 + (recTD || 0) * 6 + (rec_ || 0) - (fumLost || 0) * 2;
+    return Math.round(v * 100) / 100;
+  };
+
+  /* order matters: the combined props have to be tested before the single ones */
+  const RULES = [
+    [/^pass\+rush\+rec\s*td/,        () => sum(passTD, rushTD, recTD)],
+    [/^rush\+rec\s*td/,               () => sum(rushTD, recTD)],
+    [/^(total|any)?\s*td/,             () => sum(passTD, rushTD, recTD)],
+    [/^pass\+rush\s*yard/,            () => sum(passY, rushY)],
+    [/^rush\+rec\s*yard/,             () => sum(rushY, recY)],
+    [/fantasy/,                       fantasy],
+    [/^pass\s*yard/,                   () => passY],
+    [/^pass\s*td/,                     () => passTD],
+    [/^pass\s*(attempt|att)/,          () => att],
+    [/completion/,                    () => comp],
+    [/interception/,                  () => ints],
+    [/^rush\s*yard/,                   () => rushY],
+    [/^rush\s*(attempt|att|carr)/,     () => rushA],
+    [/^rush\s*td/,                     () => rushTD],
+    [/longest\s*rec/,                 () => longRec],
+    [/longest\s*rush/,                () => longRush],
+    [/^rec\s*yard/,                    () => recY],
+    [/^rec\s*td/,                      () => recTD],
+    [/reception|^rec$|catches/,       () => rec_],
+    [/kick/,                          () => num(g("kicking.totalKickingPoints"))],
+    [/tackle/,                        () => num(g("defensive.totalTackles"))],
+    [/sack/,                          () => num(g("defensive.sacks"))]
+  ];
+  for (const [re, fn] of RULES) if (re.test(k)) return fn();
+  return null;
 }
 
 /* ---- the scoreboard ------------------------------------------------------- */
@@ -192,7 +210,9 @@ export async function refreshLive(env, opts = {}) {
     const members = (roster && roster.members) || [];
     if (!Object.keys(picks).length) { doc.note = "no legs posted for this week"; await writeLive(env, doc); return doc; }
 
-    const board = await getJson("/scoreboard", fetchFn, doc);
+    /* The bare scoreboard can come back with only part of the slate, which left a
+       team looking like it had no game. Ask for the week explicitly. */
+    const board = await getJson("/scoreboard?seasontype=2&week=" + (week + 1) + "&limit=100", fetchFn, doc);
     const byTeam = gamesByTeam(board);
 
     /* which games do we actually need box scores for */
