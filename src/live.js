@@ -36,6 +36,19 @@ export const normName = s => String(s || "").toLowerCase().normalize("NFD").repl
   .replace(/[.'`\u2019-]/g, " ").replace(/\s+(jr|sr|ii|iii|iv)\s*$/, "").replace(/[^a-z0-9 ]/g, "").replace(/\s+/g, " ").trim();
 const lastOf = n => { const p = normName(n).split(" "); return p[p.length - 1]; };
 
+/* Team abbreviations do not agree between the app and ESPN. Washington is WAS in
+   one and WSH in the other, and there are a handful of others, including old city
+   codes that still turn up. Everything gets folded to one token before comparing. */
+const TEAM_ALIASES = [
+  ["WAS","WSH","WFT"], ["JAX","JAC"], ["LV","OAK","LVR","RAI"], ["LAR","STL","RAM"],
+  ["LAC","SD","SDG"], ["NE","NWE"], ["SF","SFO"], ["TB","TAM","TBB"], ["GB","GNB"],
+  ["KC","KAN"], ["NO","NOR"], ["NYG","NYG"], ["NYJ","NYJ"], ["ARI","ARZ"],
+  ["BAL","BLT"], ["CLE","CLV"], ["HOU","HST"], ["IND","CLT"], ["TEN","OTI"]
+];
+const TEAM_CANON = {};
+for (const group of TEAM_ALIASES) for (const a of group) TEAM_CANON[a] = group[0];
+export const teamCanon = t => { const k = String(t || "").toUpperCase().trim(); return TEAM_CANON[k] || k; };
+
 /* ---- reading a box score -------------------------------------------------- */
 const num = v => { const n = parseFloat(String(v ?? "").replace(/,/g, "")); return isNaN(n) ? null : n; };
 /* "22/31" -> [22, 31]; "3-27" -> [3, 27] */
@@ -142,7 +155,7 @@ function gamesByTeam(scoreboard) {
         abbr: c.team && c.team.abbreviation, score: c.score, home: c.homeAway === "home"
       }))
     };
-    for (const t of g.teams) if (t.abbr) map[t.abbr] = g;
+    for (const t of g.teams) if (t.abbr) map[teamCanon(t.abbr)] = g;
   }
   return map;
 }
@@ -214,12 +227,13 @@ export async function refreshLive(env, opts = {}) {
        team looking like it had no game. Ask for the week explicitly. */
     const board = await getJson("/scoreboard?seasontype=2&week=" + (week + 1) + "&limit=100", fetchFn, doc);
     const byTeam = gamesByTeam(board);
+    doc.slate = ((board && board.events) || []).length;
 
     /* which games do we actually need box scores for */
     const wanted = {};
     for (const m of members) {
       const p = picks[m.id]; if (!p) continue;
-      const g = p.team && byTeam[p.team];
+      const g = p.team && byTeam[teamCanon(p.team)];
       if (g) wanted[g.id] = g;
     }
     const boxes = {};
@@ -232,7 +246,7 @@ export async function refreshLive(env, opts = {}) {
 
     for (const m of members) {
       const p = picks[m.id]; if (!p) continue;
-      const g = p.team && byTeam[p.team];
+      const g = p.team && byTeam[teamCanon(p.team)];
       const leg = { player: p.player, team: p.team || null, stat: p.stat, line: p.line, side: p.side,
                     game: null, state: "unknown", value: null, matched: false };
       if (g) {
@@ -245,7 +259,7 @@ export async function refreshLive(env, opts = {}) {
           let rec = box[k];
           if (!rec) {                                       // fall back to last name on the right team
             const last = lastOf(p.player);
-            const hits = Object.values(box).filter(r => lastOf(r.name) === last && (!p.team || r.team === p.team));
+            const hits = Object.values(box).filter(r => lastOf(r.name) === last && (!p.team || teamCanon(r.team) === teamCanon(p.team)));
             if (hits.length === 1) rec = hits[0];
           }
           if (rec) { leg.matched = true; leg.espnName = rec.name; leg.value = readStat(rec, p.stat); }
