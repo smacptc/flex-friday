@@ -189,6 +189,10 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .rcard.lead .rname{color:var(--green)}
+  .livel{font-size:16px;margin-top:4px}
+  .livel em{font-style:normal;font-family:var(--pix);font-size:8px;color:var(--dim);margin-left:4px}
+  .warnline{color:var(--amber)}
   .pindots{display:flex;gap:12px;justify-content:center;margin:18px 0}
   .pindots span{width:20px;height:20px;border:4px solid var(--edge);background:#0F1926}
   .pindots span.on{background:var(--amber)}
@@ -766,7 +770,7 @@ const BADGES = {
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
                 msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null, profile:null,
-                pinBuf:"", pinStage:null, pinFirst:null };
+                pinBuf:"", pinStage:null, pinFirst:null, live:null };
 
 /* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
    Shared documents live in D1 behind /api/kv, with a version on every write so two
@@ -878,8 +882,25 @@ function banner(){
 }
 
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* The week stays on screen through the weekend and Monday night, rolling over to
+   the next one on Tuesday at 7am Eastern. Written out rather than added to the
+   deadline so the November clock change lands correctly. */
+const ROLLOVERS = [
+  "2026-09-15T07:00:00-04:00","2026-09-22T07:00:00-04:00","2026-09-29T07:00:00-04:00",
+  "2026-10-06T07:00:00-04:00","2026-10-13T07:00:00-04:00","2026-10-20T07:00:00-04:00",
+  "2026-10-27T07:00:00-04:00","2026-11-03T07:00:00-05:00","2026-11-10T07:00:00-05:00",
+  "2026-11-17T07:00:00-05:00","2026-11-24T07:00:00-05:00","2026-12-01T07:00:00-05:00",
+  "2026-12-08T07:00:00-05:00","2026-12-15T07:00:00-05:00","2026-12-22T07:00:00-05:00",
+  "2026-12-29T07:00:00-05:00","2027-01-05T07:00:00-05:00","2027-01-12T07:00:00-05:00"
+].map(s => new Date(s).getTime());
+
 const isLocked = w => Date.now() >= DEADLINES[w];
-const currentWeek = () => { const n = Date.now(); for(let i=0;i<DEADLINES.length;i++) if(DEADLINES[i] > n) return i; return DEADLINES.length-1; };
+const currentWeek = () => { const n = Date.now();
+  for(let i=0;i<ROLLOVERS.length;i++) if(ROLLOVERS[i] > n) return i;
+  return ROLLOVERS.length-1; };
+const rolloverText = w => new Date(ROLLOVERS[w]).toLocaleString(undefined,
+  {weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
 const memberName = id => (state.roster.members.find(m=>m.id===id)||{}).name || "?";
 /* Only a commissioner enters final numbers. Pools built before this existed
    fall back to the first name on the roster, which is whoever set it up. */
@@ -1080,6 +1101,51 @@ function badgeSVG(key, count, px){
   return gridSVG(rows, {O:t.O, D:t.D, M:t.M, L:t.L}, px, "sprite badgeicon");
 }
 
+
+/* ---- live numbers during games, from the Worker's ESPN feed ----------------
+   Unofficial. The commissioner's entered final is still what grades a leg. */
+const LIVE_KEY = "ff:live";
+async function loadLive(force){
+  if(STORE_MODE !== "shared") return;
+  try{
+    const r = await fetch("/api/live" + (force ? "?refresh=1" : ""), {cache:"no-store"});
+    if(!r.ok) return;
+    const doc = await r.json();
+    if(doc && doc.legs) state.live = doc;
+  }catch(e){}
+}
+const liveFor = (w, id) => (state.live && state.live.week === w && state.live.legs) ? state.live.legs[id] : null;
+const liveAge = () => state.live && state.live.updated ? Date.now() - state.live.updated : null;
+function liveAgeText(){
+  const a = liveAge(); if(a === null) return "";
+  const m = Math.floor(a / 60000);
+  return m < 1 ? "just now" : m === 1 ? "1 min ago" : m < 60 ? m + " min ago" : Math.floor(m/60) + "h ago";
+}
+/* how a leg is doing right now: needs, cleared, or on the number */
+function liveStatus(p, L){
+  if(!L || L.value === null || L.value === undefined) return null;
+  const line = num(p.line); if(line === null) return null;
+  const v = L.value, more = (p.side || "More") === "More";
+  const diff = more ? v - line : line - v;
+  const cleared = diff > 0, over = !more && v > line;
+  let text;
+  if(more) text = cleared ? "cleared by " + trim1(v - line) : "needs " + trim1(line - v) + " more";
+  else     text = over ? "over by " + trim1(v - line) : "under by " + trim1(line - v);
+  /* progress toward the line for More; for Less the bar shows how much room is left */
+  const pct = more ? Math.max(0, Math.min(100, Math.round(v / line * 100)))
+                   : Math.max(0, Math.min(100, Math.round(v / line * 100)));
+  return { v, diff, cleared: more ? cleared : !over, text, pct,
+           tone: (more ? cleared : !over) ? "#4CC17E" : "#FFC53D" };
+}
+function liveClock(L){
+  if(!L) return "";
+  if(L.state === "pre") return "not started";
+  if(L.state === "post") return "final";
+  if(L.state === "in") return "Q" + (L.period || "?") + " " + (L.clock || "");
+  if(L.state === "off") return L.note || "no game";
+  return "";
+}
+
 /* margin statistics: hit rate, and how far the average leg lands from its line */
 const avg = a => a.length ? a.reduce((x,y) => x+y, 0) / a.length : null;
 const pct1 = v => v === null ? "-" : (Math.round(v*10)/10) + "%";
@@ -1159,20 +1225,27 @@ async function boot(){
   if(!state.season.moments) state.season.moments = [];
   state.me = me && me.id ? me.id : null;
   state.view = currentWeek();
+  if(isLocked(state.view)) await loadLive(false);
   if(state.me && roster && !roster.members.some(m=>m.id===state.me)) state.me = null;
-  state.screen = roster ? "main" : "setup";
+  /* once Friday 5 has passed, the card is what you want to see, not the entry form */
+  state.screen = !roster ? "setup" : (isLocked(state.view) ? "card" : "main");
   render();
   setInterval(tickClock, 1000);
   setInterval(quietRefresh, 60000);
 }
 async function quietRefresh(){
-  if(!(state.screen === "card" || (state.screen === "main" && !isLocked(state.view)))) return;
+  if(!(state.screen === "card" || state.screen === "main")) return;
   const fresh = await sget(SEASON_KEY, true);
   if(!fresh) return;
   if(!fresh.moments) fresh.moments = [];
-  const changed = JSON.stringify(fresh.weeks[state.view]||{}) !== JSON.stringify(state.season.weeks[state.view]||{});
+  let changed = JSON.stringify(fresh.weeks[state.view]||{}) !== JSON.stringify(state.season.weeks[state.view]||{});
   state.season = fresh;
-  if(changed) render();   /* the card recolors itself as grades land */
+  if(isLocked(state.view)){
+    const before = state.live ? state.live.updated : null;
+    await loadLive(false);
+    if(state.live && state.live.updated !== before) changed = true;
+  }
+  if(changed) render();   /* the card recolors itself as numbers and grades land */
 }
 async function updateSeason(mutate){
   /* seed from what is already loaded, so a dropped connection cannot blank the season */
@@ -1202,7 +1275,7 @@ function render(){
       const roster = await sget(ROSTER_KEY, true), season = await sget(SEASON_KEY, true);
       if(roster) state.roster = roster;
       if(season){ if(!season.moments) season.moments = []; state.season = season; }
-      if(state.roster) state.screen = "main";
+      if(state.roster) state.screen = isLocked(currentWeek()) ? "card" : "main";
     }
     render();
   };
@@ -1263,7 +1336,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-09d</span></p>';
+  + '<br><span class="build">build 2026-09-13a</span></p>';
 }
 
 function signInCard(){
@@ -1421,6 +1494,11 @@ function lineupCard(w, locked){
       body = '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div>'
            + (p.note?'<div class="note">'+esc(p.note)+'</div>':"")
            + '<span class="tag in">' + (mine ? "Yours, still editable" : "In") + '</span>';
+    }
+    if(p && locked && !p.result){
+      const L = liveFor(w, m.id), ls = liveStatus(p, L);
+      if(ls) body += '<div class="livel" style="color:' + ls.tone + '">' + trim1(ls.v) + ' so far, ' + ls.text + ' <em>' + liveClock(L) + '</em></div>';
+      else if(L && L.state === "in") body += '<div class="livel">in progress, no line yet</div>';
     }
     return '<li><div class="spritebox">'+art+'</div><div class="leg">'
       + '<div class="rowname">'+avatarFor(m,24)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
@@ -1731,7 +1809,23 @@ function viewCard(){
             : p.result === "M" ? '<i style="width:100%;background:#E2574C"></i>'
             : p.result === "V" ? '<i style="width:100%;background:#8FA3B8"></i>'
             : '<i style="width:45%;background:#FFC53D"></i>';
-        if(!p.result) fin = "STILL RUNNING";
+        if(!p.result){
+          const L = liveFor(w, m.id), ls = liveStatus(p, L);
+          if(ls){
+            fin = (trim1(ls.v) + " of " + esc(p.line) + ", " + ls.text + " (" + liveClock(L) + ")").toUpperCase();
+            bar = '<i style="width:' + ls.pct + '%;background:' + ls.tone + '"></i>';
+            if(ls.cleared) cls = " lead";
+          } else if(L && L.state === "pre"){
+            fin = "KICKS OFF " + (L.detail || "LATER").toUpperCase();
+            bar = '<i style="width:8%;background:#3E4A59"></i>';
+          } else if(L && L.state === "in" && !L.matched){
+            fin = "IN PROGRESS, NO LINE IN THE BOX SCORE YET";
+            bar = '<i style="width:20%;background:#FFC53D"></i>';
+          } else if(L && L.state === "post"){
+            fin = "GAME OVER, WAITING ON THE OFFICIAL FINAL";
+            bar = '<i style="width:70%;background:#FFC53D"></i>';
+          } else fin = "STILL RUNNING";
+        }
       } else {
         fin = "IN, EDITABLE UNTIL THE LOCK";
         bar = '<i style="width:25%;background:#FFC53D"></i>';
@@ -1768,13 +1862,33 @@ function viewCard(){
       ? 'A six-pick Flex pays with four or more. Green means it hit, red means it missed, grey means it voided. '
         + (isAdmin() ? 'You grade these on the board screen.' : 'Waiting on ' + esc(commishName()) + ' to enter the finals.')
       : 'Legs show as they are posted. Anyone can still change theirs until Friday at 5.')
-  + '</p><button class="btn ghost" id="refreshcard">Refresh</button></div>';
+    + (locked ? ' Week ' + (w+1) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
+  + '</p>' + liveNote(w)
+  + '<div class="row-btns"><button class="btn ghost" id="refreshcard">Refresh</button>'
+  + (locked && STORE_MODE === "shared" ? '<button class="btn ghost" id="pulllive">Pull live now</button>' : "")
+  + '</div></div>';
+}
+function liveNote(w){
+  if(STORE_MODE !== "shared" || !isLocked(w)) return "";
+  const d = state.live;
+  if(!d || d.week !== w || !d.updated) return '<p class="hint">Live numbers appear here once games start. They come from ESPN and are not the official grade.</p>';
+  const inPlay = Object.values(d.games || {}).some(g => g.state === "in");
+  const age = liveAge();
+  let s = '<p class="hint">Live numbers from ESPN, unofficial, updated ' + liveAgeText() + '.';
+  if(d.error) s += ' <span class="warnline">The feed had trouble: ' + esc(d.error) + '.</span>';
+  else if(inPlay && age > 5 * 60000) s += ' <span class="warnline">Games are on but nothing new has come through in ' + liveAgeText().replace(" ago","") + ', so treat these as stale.</span>';
+  return s + '</p>';
 }
 function wireCard(){
   const q = s => document.getElementById(s);
   q("back").onclick = () => { state.screen = "main"; render(); };
   if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; render(); } };
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; render(); } };
+  if(q("pulllive")) q("pulllive").onclick = async () => {
+    q("pulllive").textContent = "Pulling";
+    await loadLive(true);
+    render();
+  };
   if(q("refreshcard")) q("refreshcard").onclick = async () => {
     const fresh = await sget(SEASON_KEY, true);
     if(fresh){ if(!fresh.moments) fresh.moments = []; state.season = fresh; }
