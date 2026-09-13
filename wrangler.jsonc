@@ -18,5 +18,17 @@
       "database_name": "flex-friday",
       "database_id": "5707012f-0ebc-4dd8-9236-664109b8c882"
     }
-  ]
+  ],
+
+  // Live box scores. Cron times are UTC. These cover Sunday 1pm through the end of
+  // Sunday night, Monday night, and Thursday night, all Eastern. Every minute while
+  // a window is open; the Worker does nothing expensive when no game is in progress.
+  "triggers": {
+    "crons": [
+      "* 17-23 * * 0",
+      "* 0-4 * * 1",
+      "* 0-4 * * 2",
+      "* 0-4 * * 5"
+    ]
+  }
 }

@@ -1,8 +1,9 @@
-/* One Worker serves the site, the two API routes, and the icons.
-   The icons are decoded from base64 in src/icons.js rather than being read from
-   disk, so no binary file ever has to survive a copy and paste. */
+/* One Worker serves the site, the API routes, the icons, and the live feed.
+   The icons are decoded from base64 in src/icons.js rather than read from disk,
+   so no binary file ever has to survive a copy and paste. */
 import { handleKv } from "./src/kv.js";
 import { handleFinals } from "./src/finals.js";
+import { handleLive, refreshLive } from "./src/live.js";
 import { ICON_FILES, MANIFEST } from "./src/icons.js";
 
 function bytes(b64){
@@ -18,6 +19,7 @@ export default {
 
     if (url.pathname === "/api/kv") return handleKv(request, env);
     if (url.pathname === "/api/finals") return handleFinals(request, env);
+    if (url.pathname === "/api/live") return handleLive(request, env);
 
     if (url.pathname === "/manifest.webmanifest")
       return new Response(MANIFEST, {
@@ -31,5 +33,10 @@ export default {
       });
 
     return env.ASSETS.fetch(request);
+  },
+
+  /* the cron trigger, see wrangler.jsonc for the schedule */
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(refreshLive(env));
   }
 };

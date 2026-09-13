@@ -8,6 +8,7 @@ a single Worker that serves the site and the two API routes together.
     src/kv.js            reads and writes the shared board in D1
     src/finals.js        box score lookups (optional, needs an API key)
     src/icons.js         home screen icons, stored as base64 text
+    src/live.js          live box scores during games, pulled from ESPN on a cron
     wrangler.jsonc       config, one line needs your database id
     schema.sql           one table, run once
 
@@ -71,3 +72,16 @@ Codes are a courtesy lock between friends, not real security.
 Writes carry a version number. If two people save in the same second, the second
 write is rejected, re-read and re-applied, which is what keeps the one-player-per-week
 rule honest instead of letting the later save quietly erase the earlier one.
+
+
+## Live numbers
+
+While games are on, a cron trigger (see wrangler.jsonc) wakes the Worker every
+minute, reads the week's picks, pulls the box scores for those games from ESPN,
+and writes them to D1 under ff:live. The app reads that key and shows each leg's
+current number against its line. These are unofficial: the commissioner's entered
+final is still what grades a leg. If the ESPN endpoints change, the app says the
+feed is down rather than showing stale numbers as if they were current.
+
+Cron triggers deploy with `npx wrangler deploy`, nothing else to set up. To check
+it is working, open /api/live during a game.
