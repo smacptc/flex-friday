@@ -11,7 +11,10 @@
    GET /api/live            -> the current ff:live document
    GET /api/live?refresh=1  -> refresh first (skipped if it ran in the last 30s), then return it */
 
-const LIVE_KEY = "ff:live", SEASON_KEY = "ff:season", ROSTER_KEY = "ff:roster";
+const SEASON_KEY = "ff:season", ROSTER_KEY = "ff:roster";
+/* One snapshot per week, so a finished week keeps its numbers instead of being
+   overwritten the moment the next week opens. */
+const liveKey = w => "ff:live:" + w;
 
 /* Friday 5pm locks, Tuesday 7am rollovers, mirrored from the app so the Worker
    agrees with it about which week is on screen. */
@@ -171,7 +174,7 @@ async function writeLive(env, doc) {
   await env.DB.prepare(
     "INSERT INTO kv (key, value, version, updated) VALUES (?, ?, 1, ?) " +
     "ON CONFLICT(key) DO UPDATE SET value = excluded.value, version = version + 1, updated = excluded.updated"
-  ).bind(LIVE_KEY, value, now).run();
+  ).bind(liveKey(doc.week), value, now).run();
 }
 
 /* ESPN's edge filters on the User-Agent, and not the way you would expect: it
@@ -282,15 +285,14 @@ export async function refreshLive(env, opts = {}) {
 export async function handleLive(request, env, opts = {}) {
   if (!env.DB || !env.DB.prepare) return json({ error: "No D1 binding named DB." }, 500);
   const url = new URL(request.url);
+  const asked = url.searchParams.get("week");
+  const week = asked !== null && asked !== "" && !isNaN(+asked) ? +asked : currentWeek();
+  const cur = await readKey(env, liveKey(week));
+
   if (url.searchParams.get("refresh") === "1") {
-    const cur = await readKey(env, LIVE_KEY);
     const age = cur && cur.updated ? Date.now() - cur.updated : Infinity;
-    if (age > 30000) {
-      const doc = await refreshLive(env, opts);
-      return json(doc);
-    }
+    if (age > 30000) return json(await refreshLive(env, { ...opts, week }));
     return json(cur);
   }
-  const cur = await readKey(env, LIVE_KEY);
-  return json(cur || { week: currentWeek(), updated: null, via: null, games: {}, legs: {}, error: null, note: "not fetched yet" });
+  return json(cur || { week, updated: null, via: null, games: {}, legs: {}, error: null, note: "not fetched yet" });
 }
