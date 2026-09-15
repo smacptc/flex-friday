@@ -4,6 +4,7 @@
 import { handleKv } from "./src/kv.js";
 import { handleFinals } from "./src/finals.js";
 import { handleLive, refreshLive } from "./src/live.js";
+import { handleSlip } from "./src/slip.js";
 import { ICON_FILES, MANIFEST } from "./src/icons.js";
 
 function bytes(b64){
@@ -20,6 +21,7 @@ export default {
     if (url.pathname === "/api/kv") return handleKv(request, env);
     if (url.pathname === "/api/finals") return handleFinals(request, env);
     if (url.pathname === "/api/live") return handleLive(request, env);
+    if (url.pathname === "/api/slip") return handleSlip(request, env);
 
     if (url.pathname === "/manifest.webmanifest")
       return new Response(MANIFEST, {
