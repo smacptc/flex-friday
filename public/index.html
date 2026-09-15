@@ -189,7 +189,23 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .flav{display:inline-block;font-family:var(--pix);font-size:8px;padding:3px 5px;border:2px solid var(--edge);
+    margin-left:5px;vertical-align:middle;line-height:1}
+  .flav.demon{background:#E2574C;color:#150A08}
+  .flav.goblin{background:#4CC17E;color:#08150D}
+  .flav.low{background:#3E4A59;color:var(--chalk)}
+  .sliplist{list-style:none;margin:10px 0 0;padding:0}
+  .sliplist li{border-top:2px solid #16222F;padding:10px 0}
+  .sliplist li:first-child{border-top:0}
+  .slipow{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700}
+  .slipow input{width:22px;height:22px;accent-color:var(--amber)}
+  .slipleg{font-size:16px;margin-top:4px}
+  .slipleg em{font-style:normal;color:var(--dim)}
+  .slipfin{font-family:var(--pix);font-size:8px;color:var(--green);margin-top:4px;line-height:1.6}
+  .slipfin.dim,.dim{color:var(--dim)}
+  .slipwarn{font-size:16px;color:var(--amber);margin-top:4px}
   .rcard.lead .rname{color:var(--green)}
+  .rcard.trail .rname{color:var(--red)}
   .livel{font-size:16px;margin-top:4px}
   .livel em{font-style:normal;font-family:var(--pix);font-size:8px;color:var(--dim);margin-left:4px}
   .warnline{color:var(--amber)}
@@ -770,7 +786,7 @@ const BADGES = {
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
                 msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null, profile:null,
-                pinBuf:"", pinStage:null, pinFirst:null, live:null };
+                pinBuf:"", pinStage:null, pinFirst:null, live:null, slip:null };
 
 /* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
    Shared documents live in D1 behind /api/kv, with a version on every write so two
@@ -1102,6 +1118,135 @@ function badgeSVG(key, count, px){
 }
 
 
+
+/* ---- reading a PrizePicks screenshot ---------------------------------------
+   The picture is shrunk in the browser first, then sent to the Worker. Nothing is
+   written to the board until the commissioner looks at what was read and says go. */
+const FLAVORS = { demon:{label:"Demon", icon:"D", color:"#E2574C"},
+                  goblin:{label:"Goblin", icon:"G", color:"#4CC17E"},
+                  standard:{label:"", icon:"", color:""} };
+const flavorOf = p => (p && FLAVORS[p.flavor]) ? p.flavor : "standard";
+function flavorTag(p){
+  const f = flavorOf(p);
+  if(f === "standard") return "";
+  return '<span class="flav ' + f + '">' + FLAVORS[f].label + '</span>';
+}
+
+/* shrink to something the reader can handle without eating the upload */
+function shrinkImage(file, maxSide){
+  return new Promise((resolve, reject) => {
+    const img = new Image(), url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+      const c = document.createElement("canvas");
+      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
+      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+      const data = c.toDataURL("image/jpeg", 0.85);
+      resolve({ b64: data.split(",")[1], mediaType: "image/jpeg", w: c.width, h: c.height });
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("could not open that image")); };
+    img.src = url;
+  });
+}
+
+async function readSlip(file){
+  state.slip = { busy:true, error:null, legs:null, note:"" };
+  render();
+  try{
+    const shrunk = await shrinkImage(file, 1568);
+    const r = await fetch("/api/slip", { method:"POST", headers:{"content-type":"application/json"},
+      body: JSON.stringify({ image: shrunk.b64, mediaType: shrunk.mediaType }) });
+    const out = await r.json();
+    if(!r.ok || out.error){ state.slip = { busy:false, error: out.error || ("the reader said " + r.status), legs:null }; render(); return; }
+    /* line each leg up with whoever picked that player */
+    const picks = picksOf(state.view), members = state.roster.members;
+    const rows = (out.legs || []).map(L => {
+      let owner = null;
+      for(const m of members){
+        const p = picks[m.id];
+        if(p && normName(p.player) === normName(L.player)){ owner = m.id; break; }
+      }
+      if(!owner){                                   /* try last names before giving up */
+        const last = normName(L.player).split(" ").pop();
+        const hits = members.filter(m => picks[m.id] && normName(picks[m.id].player).split(" ").pop() === last);
+        if(hits.length === 1) owner = hits[0].id;
+      }
+      return { ...L, owner, use: !!owner };
+    });
+    state.slip = { busy:false, error:null, legs:rows, note: out.note || "" };
+  }catch(e){
+    state.slip = { busy:false, error: e.message || String(e), legs:null };
+  }
+  render();
+}
+
+function slipPanel(){
+  const S = state.slip;
+  if(!S) return "";
+  if(S.busy) return '<div class="card"><h3>Reading the screenshot</h3><p class="hint">This takes a few seconds.</p></div>';
+  if(S.error) return '<div class="card"><h3>Could not read it</h3><p class="err">' + esc(S.error) + '</p>'
+    + '<button class="btn ghost" id="slipclose">Close</button></div>';
+  if(!S.legs) return "";
+  if(!S.legs.length) return '<div class="card"><h3>Nothing found</h3><p class="hint">'
+    + esc(S.note || "No legs were visible in that image.") + '</p>'
+    + '<button class="btn ghost" id="slipclose">Close</button></div>';
+
+  const picks = picksOf(state.view);
+  return '<div class="card"><h3>What the screenshot says</h3>'
+  + '<p class="hint">Untick anything that looks wrong. Nothing is saved until you apply it.</p>'
+  + '<ul class="sliplist">' + S.legs.map((L, i) => {
+      const owner = L.owner ? memberName(L.owner) : null;
+      const p = L.owner ? picks[L.owner] : null;
+      const mismatch = p && (Math.abs((num(p.line)||0) - (L.line||0)) > 0.001 || p.side !== L.side);
+      return '<li>'
+        + '<label class="slipow"><input type="checkbox" data-slip="' + i + '"' + (L.use ? " checked" : "")
+          + (L.owner ? "" : " disabled") + '> '
+        + (owner ? esc(owner) : '<span class="dim">nobody on the board</span>') + '</label>'
+        + '<div class="slipleg">' + esc(L.player) + ' <em>' + esc(L.side) + ' ' + esc(String(L.line)) + ' ' + esc(L.stat) + '</em>'
+          + (L.flavor !== "standard" ? ' <span class="flav ' + L.flavor + '">' + FLAVORS[L.flavor].label + '</span>' : "")
+          + (L.confidence === "low" ? ' <span class="flav low">hard to read</span>' : "") + '</div>'
+        + (L.final !== null || L.result
+            ? '<div class="slipfin">' + (L.final !== null ? "final " + trim1(L.final) : "")
+              + (L.result ? (L.final !== null ? ", " : "") + (L.result === "H" ? "hit" : L.result === "M" ? "missed" : "void") : "")
+              + '</div>'
+            : '<div class="slipfin dim">no result shown</div>')
+        + (mismatch ? '<div class="slipwarn">the board has ' + esc(p.side) + ' ' + esc(p.line)
+            + ', this says ' + esc(L.side) + ' ' + esc(String(L.line)) + '. Applying will update the board.</div>' : "")
+        + '</li>';
+    }).join("") + '</ul>'
+  + (S.note ? '<p class="hint">' + esc(S.note) + '</p>' : "")
+  + '<div class="row-btns"><button class="btn" id="slipapply">Apply to the card</button>'
+  + '<button class="btn ghost" id="slipclose">Cancel</button></div></div>';
+}
+
+async function applySlip(){
+  const S = state.slip;
+  if(!S || !S.legs) return;
+  const chosen = S.legs.filter(L => L.use && L.owner);
+  if(!chosen.length){ state.slip = null; render(); return; }
+  const w = state.view;
+  try{
+    await updateSeason(s => {
+      const wk = s.weeks[w] || (s.weeks[w] = {picks:{}});
+      for(const L of chosen){
+        const p = wk.picks[L.owner];
+        if(!p) continue;
+        p.flavor = L.flavor;
+        if(L.line !== null) p.line = String(L.line);
+        if(L.side) p.side = L.side;
+        if(L.final !== null) p.actual = L.final;
+        if(L.result) p.result = L.result;
+        else if(L.final !== null) p.result = grade(p, L.final);
+        p.fromSlip = true;
+      }
+    });
+    state.msg = chosen.length + (chosen.length === 1 ? " leg updated." : " legs updated.");
+  }catch(e){ state.err = "Could not save: " + errText(e); }
+  state.slip = null;
+  render();
+}
+
 /* ---- live numbers during games, from the Worker's ESPN feed ----------------
    Unofficial. The commissioner's entered final is still what grades a leg. */
 const LIVE_KEY = "ff:live";
@@ -1126,16 +1271,21 @@ function liveStatus(p, L){
   if(!L || L.value === null || L.value === undefined) return null;
   const line = num(p.line); if(line === null) return null;
   const v = L.value, more = (p.side || "More") === "More";
-  const diff = more ? v - line : line - v;
-  const cleared = diff > 0, over = !more && v > line;
+  const final = L.state === "post";
+  const good = more ? v > line : v < line;
+  const push = v === line;
+  const gap = trim1(Math.abs(v - line));
+
+  /* once the game is over it either hit or missed, so stop saying "needs" */
   let text;
-  if(more) text = cleared ? "cleared by " + trim1(v - line) : "needs " + trim1(line - v) + " more";
-  else     text = over ? "over by " + trim1(v - line) : "under by " + trim1(line - v);
-  /* progress toward the line for More; for Less the bar shows how much room is left */
-  const pct = more ? Math.max(0, Math.min(100, Math.round(v / line * 100)))
-                   : Math.max(0, Math.min(100, Math.round(v / line * 100)));
-  return { v, diff, cleared: more ? cleared : !over, text, pct,
-           tone: (more ? cleared : !over) ? "#4CC17E" : "#FFC53D" };
+  if(push) text = final ? "landed on the number" : "sitting on the number";
+  else if(final) text = good ? "hit by " + gap : "missed by " + gap;
+  else if(more) text = good ? "cleared by " + gap : "needs " + gap + " more";
+  else          text = good ? "under by " + gap : "over by " + gap;
+
+  const pct = final && !good ? 100 : Math.max(0, Math.min(100, Math.round(v / line * 100)));
+  const tone = push ? "#8FA3B8" : good ? "#4CC17E" : (final ? "#E2574C" : "#FFC53D");
+  return { v, final, cleared: good, push, text, pct, tone };
 }
 function liveClock(L){
   if(!L) return "";
@@ -1336,7 +1486,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-13b</span></p>';
+  + '<br><span class="build">build 2026-09-13d</span></p>';
 }
 
 function signInCard(){
@@ -1377,7 +1527,7 @@ function yourLegCard(w, locked){
     return '<div class="card"><h3>Your leg, Week '+(w+1)+'</h3>'
     + (p ? '<div style="display:flex;gap:12px;align-items:center;margin-top:8px">'
          + '<div class="spritebox">'+sprite(p.player,p.stat,48,false,p.team)+'</div><div>'
-         + '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div></div></div>'
+         + '<div class="player">'+esc(p.player)+flavorTag(p)+'</div><div class="prop">'+propText(p)+'</div></div></div>'
          + (p.note?'<p class="note hint">'+esc(p.note)+'</p>':"")
        : '<p class="miss" style="margin-top:8px">You did not get a leg in before the lock.</p>')
     + '<p class="hint" style="margin-top:10px">Signed in as '+esc(memberName(state.me))+'. Week '+(w+1)+' is closed.</p></div>';
@@ -1485,19 +1635,20 @@ function lineupCard(w, locked){
     } else if(locked){
       art = sprite(p.player, p.stat, 48, false, p.team);
       const mt = marginText(p), cls = p.result==="H" ? "h" : p.result==="M" ? "m" : "v";
-      body = '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div>'
+      body = '<div class="player">'+esc(p.player)+flavorTag(p)+'</div><div class="prop">'+propText(p)+'</div>'
            + (p.note?'<div class="note">'+esc(p.note)+'</div>':"")
            + (mt ? '<div class="margin '+cls+'">'+esc(mt)+'</div>' : "")
            + (isAdmin() ? marks(m.id, p) : (p.result?'<span class="tag">'+({H:"Hit",M:"Miss",V:"Void"}[p.result])+'</span>':""));
     } else {
       art = sprite(p.player, p.stat, 48, false, p.team);
-      body = '<div class="player">'+esc(p.player)+'</div><div class="prop">'+propText(p)+'</div>'
+      body = '<div class="player">'+esc(p.player)+flavorTag(p)+'</div><div class="prop">'+propText(p)+'</div>'
            + (p.note?'<div class="note">'+esc(p.note)+'</div>':"")
            + '<span class="tag in">' + (mine ? "Yours, still editable" : "In") + '</span>';
     }
     if(p && locked && !p.result){
       const L = liveFor(w, m.id), ls = liveStatus(p, L);
-      if(ls) body += '<div class="livel" style="color:' + ls.tone + '">' + trim1(ls.v) + ' so far, ' + ls.text + ' <em>' + liveClock(L) + '</em></div>';
+      if(ls) body += '<div class="livel" style="color:' + ls.tone + '">' + trim1(ls.v)
+        + (ls.final ? ' final, ' : ' so far, ') + ls.text + ' <em>' + liveClock(L) + '</em></div>';
       else if(L && L.state === "in") body += '<div class="livel">in progress, no line yet</div>';
     }
     return '<li><div class="spritebox">'+art+'</div><div class="leg">'
@@ -1560,6 +1711,7 @@ function foundBlock(id, p){
    across every leg they have posted, graded or not */
 function countsFor(id){
   const teams = {}, players = {}, pos = {}, stats = {}, sides = {More:0, Less:0};
+  const flavors = {demon:0, goblin:0, standard:0};
   let total = 0;
   for(let w = 0; w < DEADLINES.length; w++){
     const p = (picksOf(w) || {})[id];
@@ -1572,9 +1724,11 @@ function countsFor(id){
     pos[tag] = (pos[tag]||0) + 1;
     if(p.stat) stats[p.stat] = (stats[p.stat]||0) + 1;
     if(p.side) sides[p.side] = (sides[p.side]||0) + 1;
+    flavors[flavorOf(p)]++;
   }
   const rank = o => Object.keys(o).map(k => [k, o[k]]).sort((a,b) => b[1]-a[1] || (a[0] > b[0] ? 1 : -1));
-  return {total:total, teams:rank(teams), players:rank(players), pos:rank(pos), stats:rank(stats), sides:sides};
+  return {total:total, teams:rank(teams), players:rank(players), pos:rank(pos), stats:rank(stats),
+          sides:sides, flavors:flavors};
 }
 
 function barList(rows, total, cap, empty){
@@ -1613,6 +1767,26 @@ function viewProfile(){
   + '<h4 class="sub">Positions</h4>' + barList(c.pos, c.total, 5, "Nothing yet.")
   + '<h4 class="sub">Stat props</h4>' + barList(c.stats, c.total, 6, "Nothing yet.")
   + '<p class="hint" style="margin-top:12px">More ' + c.sides.More + ', Less ' + c.sides.Less + '.</p>'
+  + (function(){
+      const f = c.flavors || {demon:0,goblin:0,standard:0};
+      if(!f.demon && !f.goblin) return '<p class="hint">No demons or goblins so far, all standard lines.</p>';
+      /* how the harder and easier lines actually went for him */
+      const tally = kind => { let h = 0, m = 0;
+        for(let w = 0; w < DEADLINES.length; w++){ const p = (picksOf(w)||{})[state.profile];
+          if(!p || flavorOf(p) !== kind) continue;
+          if(p.result === "H") h++; else if(p.result === "M") m++; }
+        return h + m ? h + " of " + (h + m) : "none graded yet"; };
+      return '<h4 class="sub">Line types</h4><ul class="tally">'
+        + (f.demon ? '<li><span class="tk"><span class="flav demon">Demon</span></span>'
+            + '<span class="tb"><i style="width:' + Math.round(f.demon / c.total * 100) + '%;background:#E2574C"></i></span>'
+            + '<span class="tn">' + f.demon + '</span></li>' : "")
+        + (f.goblin ? '<li><span class="tk"><span class="flav goblin">Goblin</span></span>'
+            + '<span class="tb"><i style="width:' + Math.round(f.goblin / c.total * 100) + '%;background:#4CC17E"></i></span>'
+            + '<span class="tn">' + f.goblin + '</span></li>' : "")
+        + '</ul>'
+        + '<p class="hint">' + (f.demon ? 'Demons hit ' + tally("demon") + '. ' : "")
+        + (f.goblin ? 'Goblins hit ' + tally("goblin") + '.' : "") + '</p>';
+    })()
   + '</div>'
 
   + (badges.length ? '<div class="card"><h3>Trophies</h3><div class="medals">'
@@ -1625,7 +1799,7 @@ function viewProfile(){
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
       return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
-        + '<div class="dplayer">' + esc(p.player) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
+        + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + (p.result ? '<div class="dnum ' + cls + '">'
             + (p.result === "V" ? "landed on the number"
@@ -1651,7 +1825,7 @@ function drillCard(){
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
       return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
-        + '<div class="dplayer">' + esc(p.player) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
+        + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + '<div class="dnum ' + cls + '">'
         + (p.result === "V" ? "landed on the number"
@@ -1812,9 +1986,10 @@ function viewCard(){
         if(!p.result){
           const L = liveFor(w, m.id), ls = liveStatus(p, L);
           if(ls){
-            fin = (trim1(ls.v) + " of " + esc(p.line) + ", " + ls.text + " (" + liveClock(L) + ")").toUpperCase();
+            fin = (trim1(ls.v) + " of " + esc(p.line) + ", " + ls.text
+                   + (ls.final ? " (unofficial final)" : " (" + liveClock(L) + ")")).toUpperCase();
             bar = '<i style="width:' + ls.pct + '%;background:' + ls.tone + '"></i>';
-            if(ls.cleared) cls = " lead";
+            cls = ls.push ? "" : ls.cleared ? " lead" : (ls.final ? " trail" : "");
           } else if(L && L.state === "pre"){
             fin = "KICKS OFF " + (L.detail || "LATER").toUpperCase();
             bar = '<i style="width:8%;background:#3E4A59"></i>';
@@ -1822,8 +1997,8 @@ function viewCard(){
             fin = "IN PROGRESS, NO LINE IN THE BOX SCORE YET";
             bar = '<i style="width:20%;background:#FFC53D"></i>';
           } else if(L && L.state === "post"){
-            fin = "GAME OVER, WAITING ON THE OFFICIAL FINAL";
-            bar = '<i style="width:70%;background:#FFC53D"></i>';
+            fin = "GAME OVER, NO NUMBER IN THE BOX SCORE";
+            bar = '<i style="width:70%;background:#8FA3B8"></i>';
           } else fin = "STILL RUNNING";
         }
       } else {
@@ -1835,7 +2010,7 @@ function viewCard(){
     return '<div class="rcard' + cls + '">'
       + '<div class="rtop">' + avatarFor(m, 24) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
       + '<div class="rport" style="background-color:' + tint + '"><span class="rpos">' + tag + (p && p.team && locked ? ' <em>' + esc(p.team) + '</em>' : '') + '</span>' + art + '</div>'
-      + '<div class="rname">' + esc(name.toUpperCase()) + '</div>'
+      + '<div class="rname">' + esc(name.toUpperCase()) + (p ? flavorTag(p) : "") + '</div>'
       + '<div class="rprop">' + (prop || "&nbsp;") + '</div>'
       + '<div class="rbar">' + bar + '</div>'
       + (fin ? '<div class="rfin">' + esc(fin) + '</div>' : "")
@@ -1865,6 +2040,8 @@ function viewCard(){
     + (locked ? ' Week ' + (w+1) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
   + '</p>' + liveNote(w)
   + '<div class="row-btns"><button class="btn ghost" id="refreshcard">Refresh</button>'
+  + (isAdmin() ? '<label class="btn ghost" for="slipfile">Read a screenshot</label>'
+      + '<input type="file" id="slipfile" accept="image/*" style="display:none">' : "")
   + (locked && STORE_MODE === "live" ? '<button class="btn ghost" id="pulllive">Pull live now</button>' : "")
   + '</div></div>';
 }
@@ -1884,6 +2061,13 @@ function wireCard(){
   q("back").onclick = () => { state.screen = "main"; render(); };
   if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; render(); } };
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; render(); } };
+  const sf = q("slipfile");
+  if(sf) sf.onchange = () => { const f = sf.files && sf.files[0]; if(f) readSlip(f); };
+  if(q("slipclose")) q("slipclose").onclick = () => { state.slip = null; render(); };
+  if(q("slipapply")) q("slipapply").onclick = applySlip;
+  document.querySelectorAll("[data-slip]").forEach(b => {
+    b.onchange = () => { const i = +b.dataset.slip; if(state.slip && state.slip.legs[i]) state.slip.legs[i].use = b.checked; };
+  });
   if(q("pulllive")) q("pulllive").onclick = async () => {
     q("pulllive").textContent = "Pulling";
     await loadLive(true);
