@@ -786,7 +786,7 @@ const BADGES = {
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
                 msg:null, err:null, props:{}, fetching:false, fetchNote:null, look:null, lookMsg:null, rosterMsg:null, rosterBad:null, linkMsg:null, linkErr:null, drill:null, profile:null,
-                pinBuf:"", pinStage:null, pinFirst:null, live:null, slip:null };
+                pinBuf:"", pinStage:null, pinFirst:null, live:null, liveByWeek:null, slip:null };
 
 /* ---------- storage layer, Cloudflare Pages Functions plus D1 -----------------
    Shared documents live in D1 behind /api/kv, with a version on every write so two
@@ -1250,17 +1250,24 @@ async function applySlip(){
 /* ---- live numbers during games, from the Worker's ESPN feed ----------------
    Unofficial. The commissioner's entered final is still what grades a leg. */
 const LIVE_KEY = "ff:live";
-async function loadLive(force){
+async function loadLive(force, week){
   if(STORE_MODE !== "live") return;
+  const w = week === undefined ? state.view : week;
   try{
-    const r = await fetch("/api/live" + (force ? "?refresh=1" : ""), {cache:"no-store"});
+    const r = await fetch("/api/live?week=" + w + (force ? "&refresh=1" : ""), {cache:"no-store"});
     if(!r.ok) return;
     const doc = await r.json();
-    if(doc && doc.legs) state.live = doc;
+    if(doc && doc.legs){
+      state.liveByWeek = state.liveByWeek || {};
+      state.liveByWeek[w] = doc;
+      if(w === state.view) state.live = doc;
+    }
   }catch(e){}
 }
-const liveFor = (w, id) => (state.live && state.live.week === w && state.live.legs) ? state.live.legs[id] : null;
-const liveAge = () => state.live && state.live.updated ? Date.now() - state.live.updated : null;
+function wantLive(){ if(isLocked(state.view) && !liveDoc(state.view)) loadLive(false).then(render); }
+const liveDoc = w => (state.liveByWeek && state.liveByWeek[w]) || null;
+const liveFor = (w, id) => { const d = liveDoc(w); return d && d.legs ? d.legs[id] : null; };
+const liveAge = () => { const d = liveDoc(state.view); return d && d.updated ? Date.now() - d.updated : null; };
 function liveAgeText(){
   const a = liveAge(); if(a === null) return "";
   const m = Math.floor(a / 60000);
@@ -1486,7 +1493,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-13d</span></p>';
+  + '<br><span class="build">build 2026-09-15a</span></p>';
 }
 
 function signInCard(){
@@ -1999,7 +2006,7 @@ function viewCard(){
           } else if(L && L.state === "post"){
             fin = "GAME OVER, NO NUMBER IN THE BOX SCORE";
             bar = '<i style="width:70%;background:#8FA3B8"></i>';
-          } else fin = "STILL RUNNING";
+          } else fin = liveDoc(w) ? "STILL RUNNING" : "WAITING ON THE OFFICIAL FINAL";
         }
       } else {
         fin = "IN, EDITABLE UNTIL THE LOCK";
@@ -2047,8 +2054,8 @@ function viewCard(){
 }
 function liveNote(w){
   if(STORE_MODE !== "live" || !isLocked(w)) return "";
-  const d = state.live;
-  if(!d || d.week !== w || !d.updated) return '<p class="hint">Live numbers appear here once games start. They come from ESPN and are not the official grade.</p>';
+  const d = liveDoc(w);
+  if(!d || !d.updated) return '<p class="hint">No live numbers were recorded for this week. They come from ESPN while games are on and are not the official grade.</p>';
   const inPlay = Object.values(d.games || {}).some(g => g.state === "in");
   const age = liveAge();
   let s = '<p class="hint">Live numbers from ESPN, unofficial, updated ' + liveAgeText() + '.';
@@ -2059,8 +2066,8 @@ function liveNote(w){
 function wireCard(){
   const q = s => document.getElementById(s);
   q("back").onclick = () => { state.screen = "main"; render(); };
-  if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; render(); } };
-  if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; render(); } };
+  if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
+  if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
   const sf = q("slipfile");
   if(sf) sf.onchange = () => { const f = sf.files && sf.files[0]; if(f) readSlip(f); };
   if(q("slipclose")) q("slipclose").onclick = () => { state.slip = null; render(); };
