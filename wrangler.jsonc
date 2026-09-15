@@ -20,15 +20,10 @@
     }
   ],
 
-  // Live box scores. Cron times are UTC. These cover Sunday 1pm through the end of
-  // Sunday night, Monday night, and Thursday night, all Eastern. Every minute while
-  // a window is open; the Worker does nothing expensive when no game is in progress.
+  // Live box scores. One schedule, kept deliberately simple: Cloudflare rejected
+  // the day-of-week form, and the free plan allows only a few triggers anyway.
+  // The Worker decides for itself whether a game window is open, in worker.js.
   "triggers": {
-    "crons": [
-      "* 17-23 * * 0",
-      "* 0-4 * * 1",
-      "* 0-4 * * 2",
-      "* 0-4 * * 5"
-    ]
+    "crons": ["*/2 * * * *"]
   }
 }

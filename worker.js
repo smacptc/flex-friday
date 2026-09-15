@@ -14,6 +14,24 @@ function bytes(b64){
   return a;
 }
 
+/* Eastern time, whatever the server thinks the date is */
+export function inGameWindow(now = new Date()) {
+  const p = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York", weekday: "short", hour: "numeric", hour12: false
+  }).formatToParts(now);
+  const day = p.find(x => x.type === "weekday").value;
+  const hour = +p.find(x => x.type === "hour").value % 24;
+  switch (day) {
+    case "Sun": return hour >= 12;               // early window through Sunday night
+    case "Mon": return hour < 2 || hour >= 19;   // the tail of Sunday night, then Monday night
+    case "Tue": return hour < 2;
+    case "Thu": return hour >= 19;
+    case "Fri": return hour < 2;
+    case "Sat": return hour >= 12;               // late season Saturday games
+    default: return false;
+  }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -37,8 +55,12 @@ export default {
     return env.ASSETS.fetch(request);
   },
 
-  /* the cron trigger, see wrangler.jsonc for the schedule */
+  /* The cron runs every couple of minutes all week. Deciding when a game could
+     be on happens here rather than in the schedule, because Cloudflare's cron
+     syntax refused the day-of-week form and the free plan caps the number of
+     triggers. Outside a window this returns immediately, touching nothing. */
   async scheduled(event, env, ctx) {
+    if (!inGameWindow()) return;
     ctx.waitUntil(refreshLive(env));
   }
 };
