@@ -1132,79 +1132,124 @@ function flavorTag(p){
   return '<span class="flav ' + f + '">' + FLAVORS[f].label + '</span>';
 }
 
-/* shrink to something the reader can handle without eating the upload */
+/* Every step reports itself. A silent failure is worse than an ugly one, so the
+   panel always says where it got to, and any error lands on screen in words. */
+function slipStep(step, extra){
+  state.slip = Object.assign({}, state.slip, {busy:true, step:step, detail:extra || "", error:null});
+  render();
+}
+
+/* Shrink with a canvas, and fall back to sending the file as it is if that fails */
 function shrinkImage(file, maxSide){
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const done = v => { if(!settled){ settled = true; resolve(v); } };
+    const fail = e => { if(!settled){ settled = true; reject(e); } };
+    const timer = setTimeout(() => fail(new Error("the image took too long to open")), 15000);
     const img = new Image(), url = URL.createObjectURL(file);
     img.onload = () => {
-      URL.revokeObjectURL(url);
-      const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-      const c = document.createElement("canvas");
-      c.width = Math.round(img.width * scale); c.height = Math.round(img.height * scale);
-      c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
-      const data = c.toDataURL("image/jpeg", 0.85);
-      resolve({ b64: data.split(",")[1], mediaType: "image/jpeg", w: c.width, h: c.height });
+      clearTimeout(timer);
+      try{
+        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = Math.max(1, Math.round(img.width * scale));
+        c.height = Math.max(1, Math.round(img.height * scale));
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        const data = c.toDataURL("image/jpeg", 0.85);
+        URL.revokeObjectURL(url);
+        if(!data || data.length < 100) return fail(new Error("the shrunken image came out empty"));
+        done({ b64: data.split(",")[1], mediaType: "image/jpeg", w: c.width, h: c.height });
+      }catch(e){ URL.revokeObjectURL(url); fail(e); }
     };
-    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error("could not open that image")); };
+    img.onerror = () => { clearTimeout(timer); URL.revokeObjectURL(url); fail(new Error("could not open that image")); };
     img.src = url;
+  });
+}
+/* the plain path: no canvas, just the bytes */
+function rawImage(file){
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { const s = String(r.result || ""); const i = s.indexOf(",");
+      resolve({ b64: s.slice(i + 1), mediaType: file.type || "image/jpeg", w:0, h:0 }); };
+    r.onerror = () => reject(new Error("could not read that file"));
+    r.readAsDataURL(file);
   });
 }
 
 async function readSlip(file){
-  state.slip = { busy:true, error:null, legs:null, note:"" };
-  render();
+  const kb = Math.round((file.size || 0) / 1024);
+  slipStep("Opening the screenshot", (file.name || "image") + ", " + kb + " KB");
+  let img = null;
   try{
-    const shrunk = await shrinkImage(file, 1568);
-    const r = await fetch("/api/slip", { method:"POST", headers:{"content-type":"application/json"},
-      body: JSON.stringify({ image: shrunk.b64, mediaType: shrunk.mediaType }) });
-    const text = await r.text();
-    let out;
-    try{ out = JSON.parse(text); }
-    catch(e){
-      /* the page came back instead of the route, which means the Worker has no
-         /api/slip, almost always a failed deploy */
-      state.slip = { busy:false, legs:null,
-        error: /<!DOCTYPE|<html/i.test(text)
-          ? "The server has no screenshot reader at /api/slip. The last deploy probably failed, check the Deployments tab."
-          : "The reader sent something unreadable: " + text.slice(0, 120) };
+    img = await shrinkImage(file, 1568);
+    slipStep("Sending it to be read", img.w + " by " + img.h);
+  }catch(e){
+    try{
+      slipStep("Could not shrink it, sending the original", e.message || String(e));
+      img = await rawImage(file);
+      if(img.b64.length * 0.75 > 5 * 1024 * 1024){
+        state.slip = {busy:false, error:"That screenshot is too big to send (" + kb + " KB) and it could not be shrunk. Crop it and try again."};
+        render(); return;
+      }
+    }catch(e2){
+      state.slip = {busy:false, error:"Could not read that file: " + (e2.message || e2)};
       render(); return;
     }
-    if(!r.ok || out.error){ state.slip = { busy:false, error: out.error || ("the reader said " + r.status), legs:null }; render(); return; }
-    /* line each leg up with whoever picked that player */
-    const picks = picksOf(state.view), members = state.roster.members;
-    const rows = (out.legs || []).map(L => {
-      let owner = null;
-      for(const m of members){
-        const p = picks[m.id];
-        if(p && normName(p.player) === normName(L.player)){ owner = m.id; break; }
-      }
-      if(!owner){                                   /* try last names before giving up */
-        const last = normName(L.player).split(" ").pop();
-        const hits = members.filter(m => picks[m.id] && normName(picks[m.id].player).split(" ").pop() === last);
-        if(hits.length === 1) owner = hits[0].id;
-      }
-      return { ...L, owner, use: !!owner };
-    });
-    state.slip = { busy:false, error:null, legs:rows, note: out.note || "" };
-  }catch(e){
-    state.slip = { busy:false, error: e.message || String(e), legs:null };
   }
+
+  let out, r;
+  try{
+    r = await fetch("/api/slip", { method:"POST", headers:{"content-type":"application/json"},
+      body: JSON.stringify({ image: img.b64, mediaType: img.mediaType }) });
+  }catch(e){
+    state.slip = {busy:false, error:"Could not reach the server: " + (e.message || e)};
+    render(); return;
+  }
+  const body = await r.text();
+  try{ out = JSON.parse(body); }
+  catch(e){
+    state.slip = {busy:false, error:"The server did not send back a lineup. It replied with "
+      + r.status + " and " + (body.slice(0,80) || "nothing") + ". If that looks like a web page, the reader is not deployed."};
+    render(); return;
+  }
+  if(!r.ok || out.error){
+    state.slip = {busy:false, error: (out.error || ("the reader said " + r.status))};
+    render(); return;
+  }
+
+  const picks = picksOf(state.view), members = state.roster.members;
+  const rows = (out.legs || []).map(L => {
+    let owner = null;
+    for(const m of members){
+      const p = picks[m.id];
+      if(p && normName(p.player) === normName(L.player)){ owner = m.id; break; }
+    }
+    if(!owner){
+      const last = normName(L.player).split(" ").pop();
+      const hits = members.filter(m => picks[m.id] && normName(picks[m.id].player).split(" ").pop() === last);
+      if(hits.length === 1) owner = hits[0].id;
+    }
+    return Object.assign({}, L, { owner: owner, use: !!owner });
+  });
+  state.slip = { busy:false, error:null, legs:rows, note: out.note || "",
+                 read: (out.legs || []).length };
   render();
 }
 
 function slipPanel(){
   const S = state.slip;
   if(!S) return "";
-  if(S.busy) return '<div class="card"><h3>Reading the screenshot</h3><p class="hint">This takes a few seconds.</p></div>';
+  if(S.busy) return '<div class="card"><h3>' + esc(S.step || "Reading the screenshot") + '</h3>'
+    + '<p class="hint">' + esc(S.detail || "This takes a few seconds.") + '</p></div>';
   if(S.error) return '<div class="card"><h3>Could not read it</h3><p class="err">' + esc(S.error) + '</p>'
     + '<button class="btn ghost" id="slipclose">Close</button></div>';
   if(!S.legs) return "";
-  if(!S.legs.length) return '<div class="card"><h3>Nothing found</h3><p class="hint">'
-    + esc(S.note || "No legs were visible in that image.") + '</p>'
-    + '<button class="btn ghost" id="slipclose">Close</button></div>';
+  if(!S.legs.length) return '<div class="card"><h3>Nothing found in that image</h3><p class="hint">'
+    + esc(S.note || "The reader did not see any PrizePicks legs. Try a screenshot that shows the whole lineup.")
+    + '</p><button class="btn ghost" id="slipclose">Close</button></div>';
 
   const picks = picksOf(state.view);
-  return '<div class="card"><h3>What the screenshot says</h3>'
+  return '<div class="card"><h3>Read ' + S.legs.length + ' leg' + (S.legs.length===1?'':'s') + '</h3>'
   + '<p class="hint">Untick anything that looks wrong. Nothing is saved until you apply it.</p>'
   + '<ul class="sliplist">' + S.legs.map((L, i) => {
       const owner = L.owner ? memberName(L.owner) : null;
@@ -1504,7 +1549,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-15b</span></p>';
+  + '<br><span class="build">build 2026-09-15d</span></p>';
 }
 
 function signInCard(){
@@ -2043,7 +2088,7 @@ function viewCard(){
                : hit + " of " + (hit + miss) + " hit" + (voids ? ", " + voids + " voided" : "")
                  + (none ? ", " + none + " never posted" : ""));
 
-  return topbar("card")
+  return topbar("card") + slipPanel()
   + '<div class="board"><div class="weekrow"><h2>WEEK ' + (w+1) + ' CARD</h2>'
   + '<div class="weeknav"><button id="prev"' + (w===0?" disabled":"") + ' aria-label="Previous week">&#9664;</button>'
   + '<button id="next"' + (w===17?" disabled":"") + ' aria-label="Next week">&#9654;</button></div></div>'
@@ -2084,7 +2129,12 @@ function wireCard(){
   if(sf) sf.onchange = () => { const f = sf.files && sf.files[0]; if(f) readSlip(f); };
   if(q("slipbtn")) q("slipbtn").onclick = () => {
     if(!sf){ state.slip = {busy:false, error:"The file picker is missing. Reload the page."}; render(); return; }
+    /* Open the picker first and synchronously. Safari only honours this while it is
+       still inside the tap, and re-rendering first would replace this very element
+       and lose that. The message goes up afterwards. */
     sf.click();
+    state.slip = {busy:true, step:"Waiting for you to pick a screenshot", detail:"Choose one from your photos."};
+    render();
   };
   if(q("slipclose")) q("slipclose").onclick = () => { state.slip = null; render(); };
   if(q("slipapply")) q("slipapply").onclick = applySlip;
