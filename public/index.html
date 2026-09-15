@@ -1157,7 +1157,18 @@ async function readSlip(file){
     const shrunk = await shrinkImage(file, 1568);
     const r = await fetch("/api/slip", { method:"POST", headers:{"content-type":"application/json"},
       body: JSON.stringify({ image: shrunk.b64, mediaType: shrunk.mediaType }) });
-    const out = await r.json();
+    const text = await r.text();
+    let out;
+    try{ out = JSON.parse(text); }
+    catch(e){
+      /* the page came back instead of the route, which means the Worker has no
+         /api/slip, almost always a failed deploy */
+      state.slip = { busy:false, legs:null,
+        error: /<!DOCTYPE|<html/i.test(text)
+          ? "The server has no screenshot reader at /api/slip. The last deploy probably failed, check the Deployments tab."
+          : "The reader sent something unreadable: " + text.slice(0, 120) };
+      render(); return;
+    }
     if(!r.ok || out.error){ state.slip = { busy:false, error: out.error || ("the reader said " + r.status), legs:null }; render(); return; }
     /* line each leg up with whoever picked that player */
     const picks = picksOf(state.view), members = state.roster.members;
@@ -1493,7 +1504,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-15a</span></p>';
+  + '<br><span class="build">build 2026-09-15b</span></p>';
 }
 
 function signInCard(){
@@ -2006,7 +2017,7 @@ function viewCard(){
           } else if(L && L.state === "post"){
             fin = "GAME OVER, NO NUMBER IN THE BOX SCORE";
             bar = '<i style="width:70%;background:#8FA3B8"></i>';
-          } else fin = liveDoc(w) ? "STILL RUNNING" : "WAITING ON THE OFFICIAL FINAL";
+          } else { const d = liveDoc(w); fin = (d && d.updated) ? "STILL RUNNING" : "WAITING ON THE OFFICIAL FINAL"; }
         }
       } else {
         fin = "IN, EDITABLE UNTIL THE LOCK";
@@ -2047,8 +2058,9 @@ function viewCard(){
     + (locked ? ' Week ' + (w+1) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
   + '</p>' + liveNote(w)
   + '<div class="row-btns"><button class="btn ghost" id="refreshcard">Refresh</button>'
-  + (isAdmin() ? '<label class="btn ghost" for="slipfile">Read a screenshot</label>'
-      + '<input type="file" id="slipfile" accept="image/*" style="display:none">' : "")
+  + (isAdmin() ? '<button class="btn ghost" id="slipbtn">Read a screenshot</button>'
+      + '<input type="file" id="slipfile" accept="image/*" '
+      + 'style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden">' : "")
   + (locked && STORE_MODE === "live" ? '<button class="btn ghost" id="pulllive">Pull live now</button>' : "")
   + '</div></div>';
 }
@@ -2070,6 +2082,10 @@ function wireCard(){
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
   const sf = q("slipfile");
   if(sf) sf.onchange = () => { const f = sf.files && sf.files[0]; if(f) readSlip(f); };
+  if(q("slipbtn")) q("slipbtn").onclick = () => {
+    if(!sf){ state.slip = {busy:false, error:"The file picker is missing. Reload the page."}; render(); return; }
+    sf.click();
+  };
   if(q("slipclose")) q("slipclose").onclick = () => { state.slip = null; render(); };
   if(q("slipapply")) q("slipapply").onclick = applySlip;
   document.querySelectorAll("[data-slip]").forEach(b => {
