@@ -72,7 +72,7 @@ export async function handleSlip(request, env, opts = {}) {
       },
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 1500,
+        max_tokens: 4000,
         messages: [{
           role: "user",
           content: [
@@ -92,13 +92,16 @@ export async function handleSlip(request, env, opts = {}) {
     return json({ error: "the reader said " + res.status + (detail ? ": " + detail : "") }, 502);
   }
 
-  let text = "";
+  let text = "", stop = "";
   try {
     const data = await res.json();
+    stop = data.stop_reason || "";
     text = (data.content || []).filter(c => c.type === "text").map(c => c.text).join("").trim();
   } catch (e) { return json({ error: "unreadable reply from the reader" }, 502); }
 
-  return json(parseSlip(text));
+  const out = parseSlip(text);
+  if (stop === "max_tokens") out.note = (out.note ? out.note + " " : "") + "The reply ran long and was cut off, so check every leg.";
+  return json(out);
 }
 
 /* Pull the JSON out of the reply and sanity check every field. Anything odd is
@@ -108,8 +111,24 @@ export function parseSlip(text) {
   const open = raw.indexOf("{"), close = raw.lastIndexOf("}");
   if (open > 0 || close < raw.length - 1) raw = raw.slice(open === -1 ? 0 : open, close === -1 ? raw.length : close + 1);
 
-  let obj;
-  try { obj = JSON.parse(raw); } catch (e) { return { legs: [], error: "could not read the lineup from that image" }; }
+  let obj, salvaged = false;
+  try { obj = JSON.parse(raw); }
+  catch (e) {
+    /* A reply that was cut off or wrapped in chatter still usually holds complete
+       leg objects. Pull out every one that parses on its own. */
+    const found = [];
+    const re = /\{[^{}]*"player"[^{}]*\}/g;
+    let m;
+    while ((m = re.exec(String(text || ""))) !== null) {
+      try { found.push(JSON.parse(m[0])); } catch (e2) {}
+    }
+    if (!found.length) {
+      const snippet = String(text || "").replace(/\s+/g, " ").slice(0, 160);
+      return { legs: [], error: "could not read the lineup from that image. The reader said: " + (snippet || "nothing") };
+    }
+    obj = { legs: found, note: "" };
+    salvaged = true;
+  }
 
   const num = v => { const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/[^0-9.-]/g, "")); return isNaN(n) ? null : n; };
   const legs = (Array.isArray(obj.legs) ? obj.legs : []).slice(0, 12).map(L => {
@@ -129,5 +148,6 @@ export function parseSlip(text) {
     };
   }).filter(L => L.player && L.line !== null);
 
-  return { legs, note: String(obj.note || "").slice(0, 200) };
+  const note = String(obj.note || "").slice(0, 200);
+  return { legs, note: salvaged ? ((note ? note + " " : "") + "Part of the reply was unreadable, so some legs may be missing. Check the list against the screenshot.") : note };
 }
