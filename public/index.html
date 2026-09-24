@@ -1134,9 +1134,22 @@ function flavorTag(p){
 
 /* Every step reports itself. A silent failure is worse than an ugly one, so the
    panel always says where it got to, and any error lands on screen in words. */
+/* Two channels on purpose. The button text is written straight to the DOM and
+   survives anything, and the panel is the fuller view. If one of them ever goes
+   quiet again, the other still tells you where it got to. */
+function slipSay(msg){
+  const b = document.getElementById("slipbtn");
+  if(b) b.textContent = msg;
+}
 function slipStep(step, extra){
+  slipSay(step);
   state.slip = Object.assign({}, state.slip, {busy:true, step:step, detail:extra || "", error:null});
-  render();
+  try{ render(); }catch(e){ slipSay("Render failed: " + (e.message || e)); }
+}
+function slipFail(msg){
+  slipSay("Failed, see above");
+  state.slip = {busy:false, error:msg};
+  try{ render(); }catch(e){}
 }
 
 /* Shrink with a canvas, and fall back to sending the file as it is if that fails */
@@ -1177,6 +1190,7 @@ function rawImage(file){
 }
 
 async function readSlip(file){
+ try{
   const kb = Math.round((file.size || 0) / 1024);
   slipStep("Opening the screenshot", (file.name || "image") + ", " + kb + " KB");
   let img = null;
@@ -1188,12 +1202,10 @@ async function readSlip(file){
       slipStep("Could not shrink it, sending the original", e.message || String(e));
       img = await rawImage(file);
       if(img.b64.length * 0.75 > 5 * 1024 * 1024){
-        state.slip = {busy:false, error:"That screenshot is too big to send (" + kb + " KB) and it could not be shrunk. Crop it and try again."};
-        render(); return;
+        slipFail("That screenshot is too big to send (" + kb + " KB) and it could not be shrunk. Crop it and try again."); return;
       }
     }catch(e2){
-      state.slip = {busy:false, error:"Could not read that file: " + (e2.message || e2)};
-      render(); return;
+      slipFail("Could not read that file: " + (e2.message || e2)); return;
     }
   }
 
@@ -1202,19 +1214,16 @@ async function readSlip(file){
     r = await fetch("/api/slip", { method:"POST", headers:{"content-type":"application/json"},
       body: JSON.stringify({ image: img.b64, mediaType: img.mediaType }) });
   }catch(e){
-    state.slip = {busy:false, error:"Could not reach the server: " + (e.message || e)};
-    render(); return;
+    slipFail("Could not reach the server: " + (e.message || e)); return;
   }
   const body = await r.text();
   try{ out = JSON.parse(body); }
   catch(e){
-    state.slip = {busy:false, error:"The server did not send back a lineup. It replied with "
-      + r.status + " and " + (body.slice(0,80) || "nothing") + ". If that looks like a web page, the reader is not deployed."};
-    render(); return;
+    slipFail("The server did not send back a lineup. It replied with "
+      + r.status + " and " + (body.slice(0,80) || "nothing") + ". If that looks like a web page, the reader is not deployed."); return;
   }
   if(!r.ok || out.error){
-    state.slip = {busy:false, error: (out.error || ("the reader said " + r.status))};
-    render(); return;
+    slipFail(out.error || ("the reader said " + r.status)); return;
   }
 
   const picks = picksOf(state.view), members = state.roster.members;
@@ -1231,9 +1240,14 @@ async function readSlip(file){
     }
     return Object.assign({}, L, { owner: owner, use: !!owner });
   });
+  slipSay("Read a screenshot");
   state.slip = { busy:false, error:null, legs:rows, note: out.note || "",
                  read: (out.legs || []).length };
   render();
+ }catch(err){
+  /* nothing gets to fail quietly */
+  slipFail("Something went wrong reading that: " + (err && err.message ? err.message : String(err)));
+ }
 }
 
 function slipPanel(){
@@ -1549,7 +1563,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-22a</span></p>';
+  + '<br><span class="build">build 2026-09-22b</span></p>';
 }
 
 function signInCard(){
@@ -2103,7 +2117,8 @@ function viewCard(){
     + (locked ? ' Week ' + (w+1) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
   + '</p>' + liveNote(w)
   + '<div class="row-btns"><button class="btn ghost" id="refreshcard">Refresh</button>'
-  + (isAdmin() ? '<button class="btn ghost" id="slipbtn">Read a screenshot</button>'
+  + (isAdmin() ? '<button class="btn ghost" id="slipbtn">'
+      + ((state.slip && state.slip.error) ? 'Try another screenshot' : 'Read a screenshot') + '</button>'
       + '<input type="file" id="slipfile" accept="image/*" '
       + 'style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden">' : "")
   + (locked && STORE_MODE === "live" ? '<button class="btn ghost" id="pulllive">Pull live now</button>' : "")
@@ -2127,13 +2142,11 @@ function wireCard(){
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
   const sf = q("slipfile");
   if(sf) sf.onchange = () => {
-    const f = sf.files && sf.files[0];
     const b = q("slipbtn");
-    if(!f){                                   /* the picker was cancelled */
-      if(b){ b.textContent = "Read a screenshot"; b.disabled = false; }
-      return;
-    }
-    if(b) b.textContent = "Reading";
+    if(b) b.disabled = false;
+    const f = sf.files && sf.files[0];
+    if(!f){ if(b) b.textContent = "Read a screenshot"; return; }   /* picker cancelled */
+    if(b) b.textContent = "Got it, reading";
     readSlip(f);
   };
   if(q("slipbtn")) q("slipbtn").onclick = () => {
