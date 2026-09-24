@@ -18,29 +18,38 @@ const OK_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
 const PROMPT = `This is a screenshot of a PrizePicks lineup. Read every leg you can see.
 
-PrizePicks marks some projections with a special icon:
-- A demon (a red or dark devil face) means a harder line that pays more.
-- A goblin (a green goblin face) means an easier line that pays less.
-- Most projections have no icon at all, which is a standard line.
+HOW A GRADED PRIZEPICKS LEG IS LAID OUT. Read carefully, these are easy to mix up:
+- The LINE is the number inside the bordered box on the right, under an arrow, with the stat name beneath it.
+  An up arrow means the pick was More. A down arrow means Less.
+- The player's FINAL (what they actually recorded) is the number in the rounded pill sitting on the progress bar.
+- Do not decide which number is the line from how it looks. A final can end in .5 (fantasy scores do), and a line can be a whole number. Go by position only: box on the right is the line, pill on the bar is the final.
+- The ring around the player photo shows the result: a green ring with a check mark means the leg hit, a red ring with an x means it missed.
+
+DEMONS AND GOBLINS:
+- These are small icons shown with the projection: a demon is a red or dark devil face, a goblin is a green goblin face.
+- The green ring around a winning player is NOT a goblin. Colour alone never means demon or goblin.
+- If you do not see an actual demon or goblin face icon, the flavor is "standard". Most legs are standard.
 
 For each leg report:
 - player: the player name exactly as printed
-- stat: the stat type as printed, for example "Pass Yards", "Rush+Rec Yards", "Receptions"
-- line: the projection number, as a number
-- side: "More" or "Less", whichever the lineup shows was taken
+- stat: the stat type as printed
+- line: the number in the box on the right
+- side: "More" for an up arrow, "Less" for a down arrow
+- final: the number in the pill on the bar, or null if not shown
+- mark: "check" for a green ring with a check, "x" for a red ring with an x, "none" if neither is shown
+- result: "H" for a check, "M" for an x, "V" if voided or refunded, null if not graded yet
 - flavor: "demon", "goblin" or "standard"
+- flavor_evidence: if flavor is demon or goblin, describe the icon you saw and where. Otherwise ""
 - team: the team abbreviation if shown, otherwise ""
-- final: the player's actual result for that stat if the screenshot shows it graded, otherwise null
-- result: "H" if this leg is shown as a win or correct, "M" if shown as a loss or incorrect, "V" if voided or refunded, or null if the screenshot does not show a result yet
-- confidence: "high" if you can read every field clearly, "low" if you are guessing at any part
+- confidence: "high" if every field is clearly readable, "low" if you are unsure of any part
 
 Rules:
-- Report only legs that are actually visible. Never invent one to round out a lineup.
-- If a field is cut off or unreadable, use null for it and set confidence to "low".
-- Do not convert or recalculate anything. Report the numbers as printed.
+- Report only legs that are actually visible. Never invent one.
+- If a field is cut off or unreadable, use null and set confidence to "low".
+- Report numbers exactly as printed. Do not recalculate.
 
 Reply with ONLY a JSON object, no prose and no markdown fences:
-{"legs":[{"player":"Bijan Robinson","stat":"Rush+Rec Yards","line":99.5,"side":"More","flavor":"standard","team":"ATL","final":112,"result":"H","confidence":"high"}],"note":""}
+{"legs":[{"player":"Kenneth Walker III","stat":"Rush Yards","line":80.5,"side":"More","final":117,"mark":"check","result":"H","flavor":"standard","flavor_evidence":"","team":"KC","confidence":"high"}],"note":""}
 
 If the image is not a PrizePicks lineup, reply {"legs":[],"note":"say what the image appears to show instead"}.`;
 
@@ -77,6 +86,7 @@ export async function handleSlip(request, env, opts = {}) {
     body: JSON.stringify(Object.assign({
       model: "claude-sonnet-5",
       max_tokens: maxTokens,
+      temperature: 0,
       messages: [{
         role: "user",
         content: [
@@ -178,18 +188,54 @@ export function parseSlip(text) {
   const num = v => { const n = typeof v === "number" ? v : parseFloat(String(v ?? "").replace(/[^0-9.-]/g, "")); return isNaN(n) ? null : n; };
   const legs = (Array.isArray(obj.legs) ? obj.legs : []).slice(0, 12).map(L => {
     const f = String(L.flavor || "").toLowerCase().trim();
-    const flavor = ["demon", "goblin", "standard"].includes(f) ? f : "standard";
+    let flavor = ["demon", "goblin", "standard"].includes(f) ? f : "standard";
     const side = String(L.side || "").toLowerCase().startsWith("l") ? "Less" : "More";
-    const result = ["H", "M", "V"].includes(L.result) ? L.result : null;
+    let result = ["H", "M", "V"].includes(L.result) ? L.result : null;
+    const mark = ["check", "x", "none"].includes(String(L.mark || "").toLowerCase()) ? String(L.mark).toLowerCase() : "none";
+    let line = num(L.line), final = num(L.final);
+    let confidence = L.confidence === "low" ? "low" : "high";
+    const fixes = [];
+
+    /* The ring is the most reliable thing on a graded leg, so it settles the result. */
+    const fromMark = mark === "check" ? "H" : mark === "x" ? "M" : null;
+    if (fromMark && result !== "V") result = fromMark;
+
+    /* Check the numbers against the ring. If they disagree, the usual cause is the
+       line and the final being read the wrong way round, so try them swapped. */
+    const grade = (ln, fn) => (ln === null || fn === null || ln === fn) ? null
+      : ((side === "More" ? fn > ln : fn < ln) ? "H" : "M");
+    if (fromMark && line !== null && final !== null) {
+      const asRead = grade(line, final), swapped = grade(final, line);
+      if (asRead && asRead !== fromMark) {
+        if (swapped === fromMark) {
+          [line, final] = [final, line];
+          fixes.push("line and final looked swapped, so they were flipped to match the result");
+        } else {
+          fixes.push("the numbers do not agree with the result shown");
+        }
+        confidence = "low";
+      }
+    }
+
+    /* A demon or goblin needs an actual icon behind it. Colour is not evidence. */
+    const ev = String(L.flavor_evidence || "").toLowerCase();
+    if (flavor !== "standard") {
+      const sawIcon = /icon|face|devil|demon|goblin|horn/.test(ev) && !/ring|circle|border|check|green outline/.test(ev);
+      if (!sawIcon) {
+        fixes.push("no demon or goblin icon was described, so it was set back to standard");
+        flavor = "standard";
+        confidence = "low";
+      }
+    }
+
     return {
       player: String(L.player || "").slice(0, 60).trim(),
       stat: String(L.stat || "").slice(0, 40).trim(),
-      line: num(L.line),
-      side, flavor,
+      line, side, flavor,
       team: String(L.team || "").slice(0, 4).toUpperCase().trim(),
-      final: num(L.final),
-      result,
-      confidence: L.confidence === "low" ? "low" : "high"
+      final, result, mark,
+      confidence,
+      fixes
     };
   }).filter(L => L.player && L.line !== null);
 
