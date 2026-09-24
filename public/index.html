@@ -1277,12 +1277,13 @@ function slipPanel(){
         + (owner ? esc(owner) : '<span class="dim">nobody on the board</span>') + '</label>'
         + '<div class="slipleg">' + esc(L.player) + ' <em>' + esc(L.side) + ' ' + esc(String(L.line)) + ' ' + esc(L.stat) + '</em>'
           + (L.flavor !== "standard" ? ' <span class="flav ' + L.flavor + '">' + FLAVORS[L.flavor].label + '</span>' : "")
-          + (L.confidence === "low" ? ' <span class="flav low">hard to read</span>' : "") + '</div>'
+          + (L.confidence === "low" ? ' <span class="flav low">check this one</span>' : "") + '</div>'
         + (L.final !== null || L.result
             ? '<div class="slipfin">' + (L.final !== null ? "final " + trim1(L.final) : "")
               + (L.result ? (L.final !== null ? ", " : "") + (L.result === "H" ? "hit" : L.result === "M" ? "missed" : "void") : "")
               + '</div>'
             : '<div class="slipfin dim">no result shown</div>')
+        + ((L.fixes && L.fixes.length) ? '<div class="slipwarn">' + L.fixes.map(esc).join('. ') + '.</div>' : "")
         + (mismatch ? '<div class="slipwarn">the board has ' + esc(p.side) + ' ' + esc(p.line)
             + ', this says ' + esc(L.side) + ' ' + esc(String(L.line)) + '. Applying will update the board.</div>' : "")
         + '</li>';
@@ -1565,7 +1566,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-22c</span></p>';
+  + '<br><span class="build">build 2026-09-22d</span></p>';
 }
 
 function signInCard(){
