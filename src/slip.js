@@ -86,7 +86,6 @@ export async function handleSlip(request, env, opts = {}) {
     body: JSON.stringify(Object.assign({
       model: "claude-sonnet-5",
       max_tokens: maxTokens,
-      temperature: 0,
       messages: [{
         role: "user",
         content: [
