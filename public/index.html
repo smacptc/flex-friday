@@ -1493,6 +1493,32 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
+const BUILD = "2026-09-22f";
+/* Anything that breaks shows up on screen in words, with the build it came from.
+   On a phone there is no console to look at, so an error nobody can see is the
+   same as no error report at all. */
+function showFault(msg){
+  try{
+    let bar = document.getElementById("faultbar");
+    if(!bar){
+      bar = document.createElement("div");
+      bar.id = "faultbar";
+      bar.setAttribute("role", "alert");
+      bar.style.cssText = "position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:9999;"
+        + "background:#E2574C;color:#150A08;border:4px solid #080F17;padding:10px 12px;font:16px/1.4 monospace;"
+        + "box-shadow:5px 5px 0 #080F17;word-break:break-word";
+      bar.onclick = () => bar.remove();
+      document.body.appendChild(bar);
+    }
+    const stamp = "build " + BUILD;
+    bar.textContent = msg + " (" + stamp + "). Tap to dismiss.";
+  }catch(e){}
+}
+window.addEventListener("error", ev => showFault("Error: " + (ev.message || "unknown") + (ev.lineno ? " at line " + ev.lineno : "")));
+window.addEventListener("unhandledrejection", ev => {
+  const r = ev.reason; showFault("Error: " + (r && r.message ? r.message : String(r)));
+});
+
 function render(){
   const app = document.getElementById("app");
   let html, wire;
@@ -1504,7 +1530,10 @@ function render(){
   else { html = viewMain(); wire = wireMain; }
   app.innerHTML = banner() + html;
   /* one missing element must never stop the rest of the screen from working */
-  try{ wire(); }catch(e){ console.error("wiring failed on " + state.screen + ":", e); }
+  try{ wire(); }catch(e){
+    console.error("wiring failed on " + state.screen + ":", e);
+    showFault("Buttons on this screen did not connect: " + (e && e.message ? e.message : String(e)));
+  }
   const retry = document.getElementById("retrystore");
   if(retry) retry.onclick = async () => {
     retry.textContent = "Checking";
@@ -1574,7 +1603,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-22e</span></p>';
+  + '<br><span class="build">build 2026-09-22f</span></p>';
 }
 
 function signInCard(){
@@ -2155,6 +2184,7 @@ function wireCard(){
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
   const sf = q("slipfile");
   if(sf){
+    sf.dataset.wired = "1";
     /* clear it on every tap, so choosing the same screenshot twice still counts */
     sf.onclick = () => {
       try{ sf.value = ""; }catch(e){}
