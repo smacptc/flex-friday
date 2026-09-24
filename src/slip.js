@@ -92,12 +92,31 @@ export async function handleSlip(request, env, opts = {}) {
     return json({ error: "the reader said " + res.status + (detail ? ": " + detail : "") }, 502);
   }
 
-  let text = "", stop = "";
+  let text = "", stop = "", data = null;
   try {
-    const data = await res.json();
+    data = await res.json();
     stop = data.stop_reason || "";
     text = (data.content || []).filter(c => c.type === "text").map(c => c.text).join("").trim();
   } catch (e) { return json({ error: "unreadable reply from the reader" }, 502); }
+
+  /* A 200 with no text at all is unusual, so report exactly what came back
+     instead of a shrug. This is what tells us whether the image arrived, whether
+     the model stopped early, and what kind of blocks it sent. */
+  if (!text) {
+    const blocks = (data && Array.isArray(data.content)) ? data.content : [];
+    const kinds = blocks.map(b => b && b.type).filter(Boolean).join(", ") || "none";
+    const usage = (data && data.usage) || {};
+    return json({
+      legs: [],
+      error: "the reader answered but sent no text back"
+        + ". stop_reason=" + (stop || "unknown")
+        + ", blocks=" + kinds
+        + ", in=" + (usage.input_tokens != null ? usage.input_tokens : "?")
+        + ", out=" + (usage.output_tokens != null ? usage.output_tokens : "?")
+        + ", model=" + ((data && data.model) || "?"),
+      diagnostic: true
+    });
+  }
 
   const out = parseSlip(text);
   if (stop === "max_tokens") out.note = (out.note ? out.note + " " : "") + "The reply ran long and was cut off, so check every leg.";
