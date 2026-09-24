@@ -189,6 +189,8 @@
     font-family:var(--big);font-weight:700;font-size:16px;padding:6px 8px;flex:none}
   .stepcopy:active{transform:translate(2px,2px)}
   a.golink{display:inline-block;text-decoration:none;text-align:center}
+  .slipwrap{position:relative;display:inline-block}
+  .slipover{position:absolute;top:0;left:0;width:100%;height:100%;opacity:0;cursor:pointer;font-size:16px;z-index:2}
   .flav{display:inline-block;font-family:var(--pix);font-size:8px;padding:3px 5px;border:2px solid var(--edge);
     margin-left:5px;vertical-align:middle;line-height:1}
   .flav.demon{background:#E2574C;color:#150A08}
@@ -1563,7 +1565,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-22b</span></p>';
+  + '<br><span class="build">build 2026-09-22c</span></p>';
 }
 
 function signInCard(){
@@ -2117,10 +2119,12 @@ function viewCard(){
     + (locked ? ' Week ' + (w+1) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
   + '</p>' + liveNote(w)
   + '<div class="row-btns"><button class="btn ghost" id="refreshcard">Refresh</button>'
-  + (isAdmin() ? '<button class="btn ghost" id="slipbtn">'
-      + ((state.slip && state.slip.error) ? 'Try another screenshot' : 'Read a screenshot') + '</button>'
-      + '<input type="file" id="slipfile" accept="image/*" '
-      + 'style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden">' : "")
+  /* The file input sits invisibly on top of the button, so your finger taps the
+     input itself. Opening a picker from code with .click() is what iOS was not
+     reporting back on, and a real tap on a real input is the one path it honours. */
+  + (isAdmin() ? '<span class="slipwrap"><span class="btn ghost" id="slipbtn" aria-hidden="true">'
+      + ((state.slip && state.slip.error) ? 'Try another screenshot' : 'Read a screenshot') + '</span>'
+      + '<input type="file" id="slipfile" accept="image/*" class="slipover" aria-label="Read a PrizePicks screenshot"></span>' : "")
   + (locked && STORE_MODE === "live" ? '<button class="btn ghost" id="pulllive">Pull live now</button>' : "")
   + '</div></div>';
 }
@@ -2141,24 +2145,20 @@ function wireCard(){
   if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
   if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
   const sf = q("slipfile");
-  if(sf) sf.onchange = () => {
-    const b = q("slipbtn");
-    if(b) b.disabled = false;
-    const f = sf.files && sf.files[0];
-    if(!f){ if(b) b.textContent = "Read a screenshot"; return; }   /* picker cancelled */
-    if(b) b.textContent = "Got it, reading";
-    readSlip(f);
-  };
-  if(q("slipbtn")) q("slipbtn").onclick = () => {
-    if(!sf){ state.slip = {busy:false, error:"The file picker is missing. Reload the page."}; render(); return; }
-    /* Open the picker and then leave the page completely alone. Re-rendering here
-       would replace this very input while the picker is still attached to it, and
-       the photo you chose would come back to an element that no longer exists. The
-       button text is changed in place instead, with no re-render. */
-    sf.click();
-    const b = q("slipbtn");
-    if(b){ b.textContent = "Waiting for your pick"; b.disabled = true; }
-  };
+  if(sf){
+    /* clear it on every tap, so choosing the same screenshot twice still counts */
+    sf.onclick = () => { try{ sf.value = ""; }catch(e){} slipSay("Waiting for your pick"); };
+    const picked = () => {
+      const f = sf.files && sf.files[0];
+      if(!f){ slipSay("Read a screenshot"); return; }       /* picker cancelled */
+      if(sf.dataset.busy === "1") return;                  /* change and input can both fire */
+      sf.dataset.busy = "1";
+      slipSay("Got it, reading");
+      readSlip(f).finally(() => { const x = document.getElementById("slipfile"); if(x) x.dataset.busy = ""; });
+    };
+    sf.onchange = picked;
+    sf.oninput = picked;
+  }
   if(q("slipclose")) q("slipclose").onclick = () => { state.slip = null; render(); };
   if(q("slipapply")) q("slipapply").onclick = applySlip;
   document.querySelectorAll("[data-slip]").forEach(b => {
