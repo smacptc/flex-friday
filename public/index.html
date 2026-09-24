@@ -1463,8 +1463,16 @@ async function boot(){
   setInterval(tickClock, 1000);
   setInterval(quietRefresh, 60000);
 }
+/* While the photo picker is open, or a screenshot is being read, nothing is
+   allowed to re-render the card. A re-render replaces the file input, and a photo
+   chosen in the picker then comes back to an element that no longer exists. The
+   live feed refreshes every minute during games, which is exactly when this bit. */
+function holdRenders(){
+  return Date.now() < (state.pickingUntil || 0) || !!(state.slip && state.slip.busy);
+}
 async function quietRefresh(){
   if(!(state.screen === "card" || state.screen === "main")) return;
+  if(holdRenders()) return;
   const fresh = await sget(SEASON_KEY, true);
   if(!fresh) return;
   if(!fresh.moments) fresh.moments = [];
@@ -1475,7 +1483,7 @@ async function quietRefresh(){
     await loadLive(false);
     if(state.live && state.live.updated !== before) changed = true;
   }
-  if(changed) render();   /* the card recolors itself as numbers and grades land */
+  if(changed && !holdRenders()) render();   /* the card recolors itself as numbers and grades land */
 }
 async function updateSeason(mutate){
   /* seed from what is already loaded, so a dropped connection cannot blank the season */
@@ -1566,7 +1574,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-22d</span></p>';
+  + '<br><span class="build">build 2026-09-22e</span></p>';
 }
 
 function signInCard(){
@@ -2148,8 +2156,14 @@ function wireCard(){
   const sf = q("slipfile");
   if(sf){
     /* clear it on every tap, so choosing the same screenshot twice still counts */
-    sf.onclick = () => { try{ sf.value = ""; }catch(e){} slipSay("Waiting for your pick"); };
+    sf.onclick = () => {
+      try{ sf.value = ""; }catch(e){}
+      state.pickingUntil = Date.now() + 5 * 60000;      /* hold the card still while you choose */
+      slipSay("Waiting for your pick");
+    };
+    sf.addEventListener("cancel", () => { state.pickingUntil = 0; slipSay("Read a screenshot"); });
     const picked = () => {
+      state.pickingUntil = 0;
       const f = sf.files && sf.files[0];
       if(!f){ slipSay("Read a screenshot"); return; }       /* picker cancelled */
       if(sf.dataset.busy === "1") return;                  /* change and input can both fire */
@@ -2671,7 +2685,7 @@ function tickClock(){
   const el = document.getElementById("clock");
   if(!el) return;
   const cd = countdown(state.view);
-  if(!cd){ if(el.textContent.indexOf("/") < 0) render(); return; }
+  if(!cd){ if(el.textContent.indexOf("/") < 0 && !holdRenders()) render(); return; }
   el.textContent = cd;
 }
 
