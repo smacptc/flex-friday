@@ -61,27 +61,42 @@ export async function handleSlip(request, env, opts = {}) {
   if (b64.length * 0.75 > MAX_BYTES)
     return json({ error: "that image is too big. Crop it or send a smaller screenshot." }, 413);
 
+  /* Claude Sonnet 5 thinks by default when a request does not say otherwise, and
+     max_tokens caps thinking and answer together, so thinking alone could use up
+     the whole budget and leave no answer. Reading a lineup does not need
+     deliberation, so thinking is switched off explicitly. If the API ever refuses
+     that setting, the second attempt keeps thinking on but at low effort with far
+     more room. */
+  const ask = (extra, maxTokens) => fetchFn("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-api-key": env.ANTHROPIC_API_KEY,
+      "anthropic-version": "2023-06-01"
+    },
+    body: JSON.stringify(Object.assign({
+      model: "claude-sonnet-5",
+      max_tokens: maxTokens,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", source: { type: "base64", media_type: mediaType, data: b64 } },
+          { type: "text", text: PROMPT }
+        ]
+      }]
+    }, extra))
+  });
+  const PLAN_A = [{ thinking: { type: "disabled" } }, 4000];
+  const PLAN_B = [{ thinking: { type: "adaptive" }, output_config: { effort: "low" } }, 16000];
+
   let res;
   try {
-    res = await fetchFn("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01"
-      },
-      body: JSON.stringify({
-        model: "claude-sonnet-5",
-        max_tokens: 4000,
-        messages: [{
-          role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: mediaType, data: b64 } },
-            { type: "text", text: PROMPT }
-          ]
-        }]
-      })
-    });
+    res = await ask(...PLAN_A);
+    if (res.status === 400) {
+      let msg = "";
+      try { const e = await res.clone().json(); msg = (e.error && e.error.message) || ""; } catch (e) {}
+      if (/thinking|effort|output_config/i.test(msg)) res = await ask(...PLAN_B);
+    }
   } catch (e) {
     return json({ error: "could not reach the reader: " + (e.message || e) }, 502);
   }
@@ -102,6 +117,17 @@ export async function handleSlip(request, env, opts = {}) {
   /* A 200 with no text at all is unusual, so report exactly what came back
      instead of a shrug. This is what tells us whether the image arrived, whether
      the model stopped early, and what kind of blocks it sent. */
+  if (!text && stop === "max_tokens") {
+    try {
+      const again = await ask(...PLAN_B);
+      if (again.ok) {
+        data = await again.json();
+        stop = data.stop_reason || "";
+        text = (data.content || []).filter(c => c.type === "text").map(c => c.text).join("").trim();
+      }
+    } catch (e) {}
+  }
+
   if (!text) {
     const blocks = (data && Array.isArray(data.content)) ? data.content : [];
     const kinds = blocks.map(b => b && b.type).filter(Boolean).join(", ") || "none";
