@@ -55,18 +55,27 @@ export async function handleFinals(request, env) {
         "x-api-key": env.ANTHROPIC_API_KEY,
         "anthropic-version": "2023-06-01"
       },
+      /* Sonnet 5 thinks by default and max_tokens caps thinking and answer
+         together, so with 1200 tokens the search results plus thinking could
+         leave nothing for the answer. Thinking off, and more room for results. */
       body: JSON.stringify({
         model: "claude-sonnet-5",
-        max_tokens: 1200,
+        max_tokens: 4000,
+        thinking: { type: "disabled" },
         messages: [{ role: "user", content: prompt }],
         tools: [{ type: "web_search_20250305", name: "web_search" }]
       })
     });
-    if (!res.ok) return json({ error: "Anthropic API said " + res.status }, 502);
+    if (!res.ok) {
+      let detail = "";
+      try { const e = await res.json(); detail = (e.error && e.error.message) || ""; } catch (e) {}
+      return json({ error: "Anthropic API said " + res.status + (detail ? ": " + detail : "") }, 502);
+    }
     const data = await res.json();
     const text = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("\n");
     const a = text.indexOf("["), b = text.lastIndexOf("]");
-    if (a < 0 || b < 0) return json({ error: "no usable answer came back" }, 502);
+    if (a < 0 || b < 0) return json({ error: "no usable answer came back"
+      + (data.stop_reason ? " (stop_reason=" + data.stop_reason + ")" : "") }, 502);
     return json({ rows: JSON.parse(text.slice(a, b + 1)) });
   } catch (e) {
     return json({ error: "lookup failed: " + (e && e.message ? e.message : e) }, 502);
