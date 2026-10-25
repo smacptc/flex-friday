@@ -1521,7 +1521,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25a";
+const BUILD = "2026-10-25b";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1631,7 +1631,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25a</span></p>';
+  + '<br><span class="build">build 2026-10-25b</span></p>';
 }
 
 function signInCard(){
@@ -2005,15 +2005,6 @@ function viewSeason(){
       +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
   + '</table></div></div>'
 
-  + (byQual.length ? '<div class="card"><h3>Pick quality</h3>'
-    + '<p class="hint">Hit rate only says whether a leg cashed. Quality also counts by how much, against how much '
-    + 'that stat normally moves, so a near miss costs less than a blowout and a squeaker counts for less than a romp. '
-    + '50 means your legs land right on the line on average. Above 50 your picks beat their lines, below 50 they fall short. '
-    + 'Tap a score to see every leg behind it.</p>'
-    + '<ul class="tally">' + byQual.map(r => '<li><span class="tk">' + esc(r.name) + '</span>'
-      + '<span class="tb"><i style="width:' + qualityOf(r) + '%;background:' + (qualityOf(r) >= 50 ? '#4CC17E' : '#E2574C') + '"></i></span>'
-      + '<span class="tn">' + cell(r.id,"A",q1(qualityOf(r))) + '</span></li>').join("") + '</ul></div>' : "")
-
   + '<div class="card"><h3>Margins</h3>'
   + '<p class="hint">Clear is the cushion on hits, short is the gap on misses. Swing measures that '
   + 'gap against how much the stat moves week to week, so half a touchdown on a 2.5 line counts as a '
@@ -2036,6 +2027,15 @@ function viewSeason(){
     })()
   + '</div>';
 
+  const quality = ''
+  + (byQual.length ? '<div class="card"><h3>Pick quality</h3>'
+    + '<p class="hint">Hit rate only says whether a leg cashed. Quality also counts by how much, against how much '
+    + 'that stat normally moves, so a near miss costs less than a blowout and a squeaker counts for less than a romp. '
+    + '50 means your legs land right on the line on average. Above 50 your picks beat their lines, below 50 they fall short. '
+    + 'Tap a score to see every leg behind it.</p>'
+    + '<ul class="tally">' + byQual.map(r => '<li><span class="tk">' + esc(r.name) + '</span>'
+      + '<span class="tb"><i style="width:' + qualityOf(r) + '%;background:' + (qualityOf(r) >= 50 ? '#4CC17E' : '#E2574C') + '"></i></span>'
+      + '<span class="tn">' + cell(r.id,"A",q1(qualityOf(r))) + '</span></li>').join("") + '</ul></div>' : "");
   const cases = '<div class="card"><h3>Trophy case</h3>'
   + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
   + members.map(m=>{
@@ -2075,7 +2075,7 @@ function viewSeason(){
       : '<p class="hint" style="margin-top:10px">Nothing logged yet. Grade a week and the good ones show up here.</p>')
   + '</div>';
 
-  return topbar("season") + table + drillCard() + cases + feed
+  return topbar("season") + table + drillCard() + quality + cases + feed
   + '<p class="footnote">Records and badges are recalculated from the grades every time this page opens, so fixing a wrong grade fixes the history with it.</p>';
 }
 function wireSeason(){
