@@ -349,73 +349,63 @@ function teamOf(v){
 }
 const teamKey = v => { const t=teamOf(v); return t ? t.k : ""; };
 
-/* Player-to-team snapshot from the 2026 offseason, grouped by club so it can be audited
-   by eye. Starters are solid; the deeper a name sits on a depth chart, the shakier it is.
-   Everything here is overridable from Setup, and corrections sync to the whole pool. */
-const ROSTER_VERSION = "2026 season, free agency checked Sep 9";
-const BY_TEAM = {
-ARI:["Kyler Murray","Jacoby Brissett","James Conner","Trey Benson","Emari Demercado","Marvin Harrison","Michael Wilson","Zay Jones","Greg Dortch","Trey McBride","Elijah Higgins","Chad Ryland","Budda Baker","Zaven Collins","Mack Wilson","Darius Robinson","Walter Nolen"],
-ATL:["Michael Penix","Kirk Cousins","Bijan Robinson","Tyler Allgeier","Drake London","Darnell Mooney","Ray-Ray McCloud","Kyle Pitts","Charlie Woerner","Younghoe Koo","Jessie Bates","Kaden Elliss","Jalon Walker","James Pearce","Divine Deablo"],
-BAL:["Lamar Jackson","Cooper Rush","Derrick Henry","Justice Hill","Keaton Mitchell","Zay Flowers","Rashod Bateman","DeAndre Hopkins","Devontez Walker","Mark Andrews","Isaiah Likely","Tyler Loop","Roquan Smith","Kyle Hamilton","Nnamdi Madubuike","Marlon Humphrey","Odafe Oweh"],
-BUF:["Josh Allen","Mitchell Trubisky","James Cook","Ray Davis","Ty Johnson","Keon Coleman","Khalil Shakir","Joshua Palmer","Curtis Samuel","Dalton Kincaid","Dawson Knox","Tyler Bass","Terrel Bernard","Matt Milano","Ed Oliver","Greg Rousseau","Christian Benford","Taron Johnson"],
-CAR:["Bryce Young","Andy Dalton","Rico Dowdle","Chuba Hubbard","Trevor Etienne","Tetairoa McMillan","Xavier Legette","Jalen Coker","Ja'Tavion Sanders","Tommy Tremble","Ryan Fitzgerald","Derrick Brown","Jaycee Horn","Tre'von Moehrig","Nic Scourton"],
-CHI:["Caleb Williams","Tyson Bagent","D'Andre Swift","Roschon Johnson","Kyle Monangai","DJ Moore","Rome Odunze","Luther Burden","Olamide Zaccheaus","Colston Loveland","Cole Kmet","Cairo Santos","Montez Sweat","Tremaine Edmunds","Jaylon Johnson","Kevin Byard","Grady Jarrett"],
-CIN:["Joe Burrow","Jake Browning","Chase Brown","Samaje Perine","Tahj Brooks","Ja'Marr Chase","Tee Higgins","Andrei Iosivas","Mike Gesicki","Noah Fant","Evan McPherson","Trey Hendrickson","Logan Wilson","Germaine Pratt","Geno Stone","Shemar Stewart"],
-CLE:["Joe Flacco","Dillon Gabriel","Shedeur Sanders","Quinshon Judkins","Jerome Ford","Dylan Sampson","Jerry Jeudy","Cedric Tillman","Isaiah Bond","David Njoku","Harold Fannin","Andre Szmyt","Myles Garrett","Grant Delpit","Denzel Ward","Mason Graham","Devin Bush"],
-DAL:["Dak Prescott","Joe Milton","Javonte Williams","Jaydon Blue","Miles Sanders","CeeDee Lamb","George Pickens","Jalen Tolbert","KaVontae Turpin","Jake Ferguson","Luke Schoonmaker","Brandon Aubrey","DaRon Bland","Trevon Diggs","Quinnen Williams","Kenny Clark","Osa Odighizuwa"],
-DEN:["Bo Nix","Jarrett Stidham","RJ Harvey","Jaleel McLaughlin","Tyler Badie","Courtland Sutton","Marvin Mims","Troy Franklin","Pat Bryant","Evan Engram","Adam Trautman","Wil Lutz","Patrick Surtain","Nik Bonitto","Jonathon Cooper","Zach Allen","Dre Greenlaw"],
-DET:["Jared Goff","Hendon Hooker","Jahmyr Gibbs","David Montgomery","Craig Reynolds","Amon-Ra St. Brown","Jameson Williams","Isaac TeSlaa","Kalif Raymond","Sam LaPorta","Brock Wright","Jake Bates","Aidan Hutchinson","Alex Anzalone","Brian Branch","Kerby Joseph","Jack Campbell"],
-GB:["Jordan Love","Malik Willis","Josh Jacobs","Emanuel Wilson","MarShawn Lloyd","Matthew Golden","Jayden Reed","Romeo Doubs","Dontayvion Wicks","Tucker Kraft","Luke Musgrave","Brandon McManus","Micah Parsons","Quay Walker","Xavier McKinney","Devonte Wyatt","Edgerrin Cooper"],
-HOU:["C.J. Stroud","Davis Mills","Joe Mixon","Nick Chubb","Woody Marks","Nico Collins","Christian Kirk","Jayden Higgins","Jaylin Noel","Dalton Schultz","Cade Stover","Ka'imi Fairbairn","Will Anderson","Danielle Hunter","Azeez Al-Shaair","Derek Stingley","Jalen Pitre"],
-IND:["Daniel Jones","Anthony Richardson","Jonathan Taylor","Khalil Herbert","DJ Giddens","Michael Pittman","Josh Downs","Alec Pierce","Adonai Mitchell","Tyler Warren","Mo Alie-Cox","Spencer Shrader","Zaire Franklin","Kwity Paye","Laiatu Latu","DeForest Buckner","Sauce Gardner"],
-JAX:["Trevor Lawrence","Nick Mullens","Travis Etienne","Tank Bigsby","Bhayshul Tuten","Brian Thomas","Travis Hunter","Dyami Brown","Jakobi Meyers","Brenton Strange","Hunter Long","Cam Little","Josh Hines-Allen","Travon Walker","Devin Lloyd","Foyesade Oluokun","Tyson Campbell"],
-KC:["Patrick Mahomes","Gardner Minshew","Isiah Pacheco","Kareem Hunt","Brashard Smith","Rashee Rice","Xavier Worthy","Hollywood Brown","Travis Kelce","Noah Gray","Harrison Butker","Chris Jones","Nick Bolton","Trent McDuffie","George Karlaftis","Bryan Cook"],
-LAC:["Justin Herbert","Trey Lance","Omarion Hampton","Najee Harris","Kimani Vidal","Ladd McConkey","Quentin Johnston","Keenan Allen","Tre Harris","Will Dissly","Oronde Gadsden","Cameron Dicker","Khalil Mack","Derwin James","Tuli Tuipulotu","Daiyan Henley","Denzel Perryman"],
-LAR:["Matthew Stafford","Jimmy Garoppolo","Kyren Williams","Blake Corum","Jarquez Hunter","Puka Nacua","Davante Adams","Tutu Atwell","Konata Mumpfield","Tyler Higbee","Terrance Ferguson","Joshua Karty","Jared Verse","Byron Young","Kobie Turner","Braden Fiske","Quentin Lake"],
-LV:["Geno Smith","Kenny Pickett","Ashton Jeanty","Raheem Mostert","Zamir White","Tre Tucker","Jack Bech","Dont'e Thornton","Brock Bowers","Michael Mayer","Daniel Carlson","Maxx Crosby","Malcolm Koonce","Jeremy Chinn","Elandon Roberts"],
-MIA:["Tua Tagovailoa","Zach Wilson","De'Von Achane","Jaylen Wright","Ollie Gordon","Tyreek Hill","Jaylen Waddle","Malik Washington","Nick Westbrook-Ikhine","Darren Waller","Julian Hill","Jason Sanders","Bradley Chubb","Jaelan Phillips","Zach Sieler","Jordyn Brooks","Minkah Fitzpatrick"],
-MIN:["J.J. McCarthy","Sam Howell","Aaron Jones","Jordan Mason","Ty Chandler","Justin Jefferson","Jordan Addison","Jalen Nailor","Rondale Moore","T.J. Hockenson","Josh Oliver","Will Reichard","Jonathan Greenard","Andrew Van Ginkel","Byron Murphy","Harrison Smith","Blake Cashman"],
-NE:["Drake Maye","Joshua Dobbs","Rhamondre Stevenson","TreVeyon Henderson","Antonio Gibson","Stefon Diggs","DeMario Douglas","Kayshon Boutte","Mack Hollins","Hunter Henry","Austin Hooper","Andres Borregales","Christian Gonzalez","Milton Williams","Harold Landry","Robert Spillane","Kyle Dugger"],
-NO:["Spencer Rattler","Tyler Shough","Alvin Kamara","Kendre Miller","Devin Neal","Chris Olave","Brandin Cooks","Devaughn Vele","Juwan Johnson","Foster Moreau","Blake Grupe","Cameron Jordan","Demario Davis","Alontae Taylor","Bryan Bresee","Chase Young"],
-NYG:["Jaxson Dart","Russell Wilson","Tyrone Tracy","Devin Singletary","Cam Skattebo","Malik Nabers","Wan'Dale Robinson","Darius Slayton","Jalin Hyatt","Theo Johnson","Daniel Bellinger","Graham Gano","Brian Burns","Dexter Lawrence","Abdul Carter","Bobby Okereke","Kayvon Thibodeaux"],
-NYJ:["Justin Fields","Tyrod Taylor","Breece Hall","Braelon Allen","Isaiah Davis","Garrett Wilson","Allen Lazard","Josh Reynolds","Mason Taylor","Jeremy Ruckert","Nick Folk","Will McDonald","Jamien Sherwood","Quincy Williams","Andre Cisco"],
-PHI:["Jalen Hurts","Tanner McKee","Saquon Barkley","Will Shipley","A.J. Brown","DeVonta Smith","Jahan Dotson","Dallas Goedert","Grant Calcaterra","Jake Elliott","Nolan Smith","Zack Baun","Jalen Carter","Quinyon Mitchell","Cooper DeJean","Jihaad Campbell"],
-PIT:["Aaron Rodgers","Mason Rudolph","Jaylen Warren","Kaleb Johnson","Kenneth Gainwell","DK Metcalf","Calvin Austin","Roman Wilson","Pat Freiermuth","Jonnu Smith","Chris Boswell","T.J. Watt","Alex Highsmith","Cameron Heyward","Patrick Queen","Joey Porter"],
-SF:["Brock Purdy","Mac Jones","Christian McCaffrey","Isaac Guerendo","Brian Robinson","Jauan Jennings","Ricky Pearsall","Demarcus Robinson","George Kittle","Luke Farrell","Eddy Pineiro","Nick Bosa","Fred Warner","Deommodore Lenoir","Mykel Williams","Ji'Ayir Brown"],
-SEA:["Sam Darnold","Drew Lock","Kenneth Walker","Zach Charbonnet","George Holani","Jaxon Smith-Njigba","Cooper Kupp","Rashid Shaheed","Tory Horton","AJ Barner","Elijah Arroyo","Jason Myers","Leonard Williams","Ernest Jones","Devon Witherspoon","Julian Love","Uchenna Nwosu"],
-TB:["Baker Mayfield","Teddy Bridgewater","Bucky Irving","Rachaad White","Sean Tucker","Mike Evans","Chris Godwin","Emeka Egbuka","Jalen McMillan","Cade Otton","Payne Durham","Chase McLaughlin","Lavonte David","Vita Vea","Antoine Winfield","Calijah Kancey","Haason Reddick"],
-TEN:["Cam Ward","Brandon Allen","Tony Pollard","Tyjae Spears","Kalel Mullings","Calvin Ridley","Tyler Lockett","Elic Ayomanor","Van Jefferson","Chig Okonkwo","Gunnar Helm","Joey Slye","Jeffery Simmons","L'Jarius Sneed","Cody Barton"],
-WAS:["Jayden Daniels","Marcus Mariota","Austin Ekeler","Chris Rodriguez","Jacory Croskey-Merritt","Terry McLaurin","Deebo Samuel","Luke McCaffrey","Noah Brown","Zach Ertz","John Bates","Matt Gay","Bobby Wagner","Frankie Luvu","Marshon Lattimore","Mike Sainristil","Dorance Armstrong"]
+/* Current NFL rosters with positions, from nflverse (roster_2026, pulled Oct 25 2026):
+   every QB, RB, WR, TE and K on an active or injured list, plus defenders with real
+   production last season or this one. Entries read "POS Name". The earlier
+   hand-written snapshot had about one player in five on the wrong team after the
+   offseason, which also broke live numbers, so this replaces it. Corrections pasted
+   in Setup still override it and sync to the whole pool. */
+const ROSTER_VERSION = "2026 season, nflverse rosters pulled Oct 25";
+const ROSTER_2026 = {
+ARI:["QB Carson Beck", "QB Gardner Minshew", "QB Jacoby Brissett", "RB Bam Knight", "RB James Conner", "RB Jeremiyah Love", "RB Trey Benson", "RB Tyler Allgeier", "WR Devin Duvernay", "WR Jalen Brooks", "WR Kendrick Bourne", "WR Michael Wilson", "WR Reggie Virgil", "WR Simi Fehoko", "TE Elijah Higgins", "TE Hunter Long", "TE Jameson Geers", "TE Teagan Quitoriano", "TE Tip Reiman", "TE Trey McBride", "K Chad Ryland", "DEF Andrew Wingard", "DEF Budda Baker", "DEF Cody Simon", "DEF Dadrion Taylor-Demerson", "DEF Jack Gibbens", "DEF Josh Sweat", "DEF Mack Wilson", "DEF Max Melton", "DEF Roy Lopez"],
+ATL:["QB Andy Dalton", "QB Cooper Rush", "QB Jack Strand", "QB Michael Penix Jr.", "QB Tua Tagovailoa", "RB Bijan Robinson", "RB Brian Robinson", "RB Trey Sermon", "WR Beaux Collins", "WR Chris Blair", "WR Drake London", "WR Jahan Dotson", "WR Olamide Zaccheaus", "WR Zachariah Branch", "TE Austin Hooper", "TE Charlie Woerner", "TE Kyle Pitts", "TE Nick Muse", "K Nick Folk", "DEF A.J. Terrell", "DEF Brandon Dorlus", "DEF C.J. Henderson", "DEF Cameron Thomas", "DEF Divine Deablo", "DEF Gervon Dexter Sr.", "DEF Harold Perkins Jr.", "DEF Jalon Walker", "DEF James Pearce Jr.", "DEF Jessie Bates", "DEF Kendal Daniels", "DEF LaCale London", "DEF Mike Hughes", "DEF Samson Ebukam", "DEF Sydney Brown", "DEF Xavier Watts", "DEF Za'Darius Smith", "DEF Zach Harrison"],
+BAL:["QB Joe Fagnano", "QB Lamar Jackson", "QB Skylar Thompson", "QB Tyler Huntley", "RB Adam Randall", "RB Derrick Henry", "RB Justice Hill", "RB Rasheen Ali", "WR Devontez Walker", "WR Elijah Sarratt", "WR Ja'Kobi Lane", "WR LaJohntay Wester", "WR Rashod Bateman", "WR Zay Flowers", "TE Durham Smythe", "TE Josh Cuevas", "TE Mark Andrews", "TE Matthew Hibner", "TE Nick Vannett", "K Tyler Loop", "DEF Calais Campbell", "DEF Jaylinn Hawkins", "DEF Kyle Hamilton", "DEF Malaki Starks", "DEF Marlon Humphrey", "DEF Mike Green", "DEF Nate Wiggins", "DEF Roquan Smith", "DEF Tavius Robinson", "DEF Teddye Buchanan", "DEF Travis Jones", "DEF Trenton Simpson", "DEF Trey Hendrickson"],
+BUF:["QB Josh Allen", "QB Kyle Allen", "RB James Cook", "RB Ray Davis", "RB Ty Johnson", "WR DJ Moore", "WR Greg Dortch", "WR Josh Palmer", "WR Keon Coleman", "WR Khalil Shakir", "WR Skyler Bell", "WR Tyrell Shavers", "TE Dalton Kincaid", "TE Dawson Knox", "TE Jackson Hawes", "TE Keleki Latu", "K Tyler Bass", "DEF Bradley Chubb", "DEF C.J. Gardner-Johnson", "DEF Christian Benford", "DEF Cole Bishop", "DEF Davison Igbinosun", "DEF Dee Alford", "DEF Deone Walker", "DEF Dorian Williams", "DEF Greg Rousseau", "DEF Terrel Bernard"],
+CAR:["QB Bryce Young", "QB Haynes King", "QB Kenny Pickett", "RB AJ Dillon", "RB Anthony Tyus III", "RB Chuba Hubbard", "RB Jonathon Brooks", "RB Trevor Etienne", "WR Brycen Tremayne", "WR Chris Brazzell II", "WR David Moore", "WR Jalen Coker", "WR John Metchie III", "WR Tetairoa McMillan", "WR Xavier Legette", "TE Darren Waller", "TE Feleipe Franks", "TE Ja'Tavion Sanders", "TE Mitchell Evans", "TE Tommy Tremble", "K Ryan Fitzgerald", "DEF Akayleb Evans", "DEF Bobby Okereke", "DEF Chau Smith-Wade", "DEF Derrick Brown", "DEF Devin Lloyd", "DEF Jaelan Phillips", "DEF Lathan Ransom", "DEF Mike Jackson", "DEF Nic Scourton", "DEF Nick Scott", "DEF Princely Umanmielen", "DEF Tre'von Moehrig", "DEF Tyrel Dodson", "DEF Will Lee III"],
+CHI:["QB Caleb Williams", "QB Case Keenum", "QB Tyson Bagent", "RB Brittain Brown", "RB D'Andre Swift", "RB Kyle Monangai", "RB Roschon Johnson", "RB Zavier Scott", "WR Jahdae Walker", "WR Kalif Raymond", "WR Luther Burden III", "WR Ray-Ray McCloud", "WR Rome Odunze", "WR Zavion Thomas", "TE Cole Kmet", "TE Colston Loveland", "TE Hayden Large", "TE Nikola Kalinic", "TE Sam Roush", "K Cairo Santos", "DEF Austin Booker", "DEF Cam Lewis", "DEF Coby Bryant", "DEF D'Marco Jackson", "DEF Dayo Odeyingbo", "DEF Devin Bush", "DEF Dillon Thieneman", "DEF Kyler Gordon", "DEF Malik Muhammad", "DEF Montez Sweat", "DEF Noah Sewell", "DEF T.J. Edwards", "DEF Tyrique Stevenson"],
+CIN:["QB Joe Burrow", "QB Joe Flacco", "RB Chase Brown", "RB Samaje Perine", "RB Tahj Brooks", "WR Andrei Iosivas", "WR Colbie Young", "WR Dohnte Meyers", "WR Ja'Marr Chase", "WR Mitchell Tinsley", "WR Tee Higgins", "TE Drew Sample", "TE Erick All", "TE Jack Endries", "TE Mike Gesicki", "TE Tanner Hudson", "K Evan McPherson", "DEF B.J. Hill", "DEF Barrett Carter", "DEF Boye Mafe", "DEF Bryan Cook", "DEF Cedric Johnson", "DEF Daxton Hill", "DEF Demetrius Knight Jr.", "DEF Dexter Lawrence", "DEF Jonathan Allen", "DEF Jordan Battle", "DEF Kris Jenkins", "DEF Kyle Dugger", "DEF Myles Murphy", "DEF Tedarrell Slaton"],
+CLE:["QB Deshaun Watson", "QB Dillon Gabriel", "QB Shedeur Sanders", "QB Taylen Green", "RB Audric Estimé", "RB Dylan Sampson", "RB Jaleel McLaughlin", "RB Michael Burton", "RB Quinshon Judkins", "RB Raheim Sanders", "WR Denzel Boston", "WR Isaiah Bond", "WR Jerry Jeudy", "WR KC Concepcion", "WR Malachi Corley", "WR Tylan Wallace", "TE Blake Whiteheart", "TE Carsen Ryan", "TE Harold Fannin Jr.", "TE Joe Royer", "K Andre Szmyt", "DEF Alex Wright", "DEF Carson Schwesinger", "DEF Denzel Ward", "DEF Derek Barnett", "DEF Emmanuel McNeil-Warren", "DEF Grant Delpit", "DEF Isaiah McGuire", "DEF Jared Verse", "DEF Maliek Collins", "DEF Mason Graham", "DEF Mekhi Blackmon", "DEF Myles Harden", "DEF Quincy Williams", "DEF Ronnie Hickman Jr.", "DEF Tyson Campbell"],
+DAL:["QB Dak Prescott", "QB Sam Howell", "RB Emari Demercado", "RB Hunter Luepke", "RB Javonte Williams", "RB Malik Davis", "RB Tyler Goodson", "WR Camden Brown", "WR CeeDee Lamb", "WR George Pickens", "WR Jonathan Mingo", "WR KaVontae Turpin", "WR Ryan Flournoy", "TE Brevyn Spann-Ford", "TE DJ Rogers", "TE Jake Ferguson", "TE Luke Schoonmaker", "TE Princeton Fant", "K Brandon Aubrey", "DEF Caleb Downs", "DEF DaRon Bland", "DEF Dee Winters", "DEF Donovan Ezeiruaku", "DEF Jaishawn Barham", "DEF Jalen Thompson", "DEF James Houston", "DEF Joey Porter Jr.", "DEF Markquese Bell", "DEF Otito Ogbonnia", "DEF Quinnen Williams", "DEF Rashan Gary", "DEF Shemar James", "DEF Von Miller"],
+DEN:["QB Bo Nix", "QB Jarrett Stidham", "QB Sam Ehlinger", "RB Adam Prentice", "RB J.K. Dobbins", "RB Jonah Coleman", "RB RJ Harvey", "RB Tyler Badie", "WR Courtland Sutton", "WR Jaylen Waddle", "WR Lil'Jordan Humphrey", "WR Marvin Mims Jr.", "WR Pat Bryant", "WR Troy Franklin", "TE Adam Trautman", "TE Caleb Lohner", "TE Dallen Bentley", "TE Evan Engram", "TE Nate Adkins", "K Wil Lutz", "DEF Alex Singleton", "DEF Brandon Jones", "DEF Dondrea Tillman", "DEF Ja'Quan McMillian", "DEF Jahdae Barron", "DEF Jonathon Cooper", "DEF Justin Strnad", "DEF Malcolm Roach", "DEF Nik Bonitto", "DEF Pat Surtain II", "DEF Que Robinson", "DEF Riley Moss", "DEF Talanoa Hufanga", "DEF Zach Allen"],
+DET:["QB Jared Goff", "QB Joshua Dobbs", "RB Isiah Pacheco", "RB Jacob Saylors", "RB Jahmyr Gibbs", "RB Sione Vaki", "WR Amon-Ra St. Brown", "WR DeAndre Carter", "WR Isaac TeSlaa", "WR Jameson Williams", "WR Kendrick Law", "WR Tay Martin", "WR Tom Kennedy", "TE Brock Wright", "TE Jackson Meeks", "TE Sam LaPorta", "TE Tyler Conklin", "K Jake Bates", "DEF Aidan Hutchinson", "DEF Alim McNeill", "DEF Brian Branch", "DEF Christian Izien", "DEF Chuck Clark", "DEF D.J. Reed", "DEF D.J. Wonnum", "DEF Derrick Barnes", "DEF Devin White", "DEF Jack Campbell"],
+GB:["QB Jordan Love", "QB Tyrod Taylor", "RB Chris Brooks", "RB Josh Jacobs", "RB Kaleb Johnson", "RB MarShawn Lloyd", "RB Pierre Strong", "WR Bo Melton", "WR Christian Watson", "WR J. Michael Sturdivant", "WR Jayden Reed", "WR Matthew Golden", "WR Savion Williams", "WR Skyy Moore", "TE Jonnu Smith", "TE Josh Whyle", "TE Luke Musgrave", "TE Mark Redman", "TE McCallan Castles", "TE Thomas Yassmin", "TE Tucker Kraft", "K Trey Smack", "DEF Brandon Cisse", "DEF Devonte Wyatt", "DEF Edgerrin Cooper", "DEF Evan Williams", "DEF Isaiah McDuffie", "DEF Javon Bullard", "DEF Javon Hargrave", "DEF Keisean Nixon", "DEF Lukas Van Ness", "DEF Micah Parsons", "DEF Xavier McKinney", "DEF Zaire Franklin"],
+HOU:["QB C.J. Stroud", "QB Davis Mills", "QB Graham Mertz", "RB British Brooks", "RB Dare Ogunbowale", "RB David Montgomery", "RB Woody Marks", "WR Jayden Higgins", "WR Jaylin Noel", "WR Kayshon Boutte", "WR Marvin Harrison Jr.", "WR Nico Collins", "WR Tank Dell", "WR Xavier Hutchinson", "TE Brevin Jordan", "TE Cade Stover", "TE Dalton Schultz", "TE Foster Moreau", "TE Marlin Klein", "K Ka'imi Fairbairn", "DEF Azeez Al-Shaair", "DEF Calen Bullock", "DEF Danielle Hunter", "DEF E.J. Speed", "DEF Henry To'oTo'o", "DEF Jadeveon Clowney", "DEF Jake Hansen", "DEF Jalen Pitre", "DEF Kamari Lassiter", "DEF Reed Blankenship", "DEF Sheldon Rankins", "DEF Tommy Togiai", "DEF Will Anderson Jr."],
+IND:["QB Anthony Richardson", "QB Daniel Jones", "QB Riley Leonard", "RB DJ Giddens", "RB Jonathan Taylor", "RB Seth McGowan", "WR Alec Pierce", "WR Anthony Gould", "WR Ashton Dulin", "WR D.J. Montgomery", "WR Deion Burks", "WR Josh Downs", "WR Keenan Allen", "WR Laquon Treadwell", "TE Andrew Ogletree", "TE Carson Towt", "TE Mo Alie-Cox", "TE Pharaoh Brown", "TE Tyler Warren", "TE Will Mallory", "K Spencer Shrader", "DEF A.J. Haulcy", "DEF Adetomiwa Adebawore", "DEF Akeem Davis-Gaither", "DEF Arden Key", "DEF Bryce Boettcher", "DEF Camryn Bynum", "DEF DeForest Buckner", "DEF Grover Stewart", "DEF Justin Walley", "DEF Laiatu Latu"],
+JAX:["QB Carter Bradley", "QB Quinn Ewers", "QB Trevor Lawrence", "RB Ameer Abdullah", "RB Bhayshul Tuten", "RB Chris Rodriguez Jr.", "RB LeQuint Allen Jr.", "WR Brian Thomas Jr.", "WR C.J. Williams", "WR Jakobi Meyers", "WR Josh Cameron", "WR Parker Washington", "WR Travis Hunter", "TE Brenton Strange", "TE Nate Boerkircher", "TE Quintin Morris", "TE Tanner Koziol", "K Cam Little", "DEF Antonio Johnson", "DEF Arik Armstead", "DEF Eric Murray", "DEF Foyesade Oluokun", "DEF Jarrian Jones", "DEF Josh Hines-Allen", "DEF Montaric Brown", "DEF Travon Walker", "DEF Ventrell Miller"],
+KC:["QB Chris Oladokun", "QB Garrett Nussmeier", "QB Justin Fields", "QB Patrick Mahomes", "RB Ben VanSumeren", "RB Brashard Smith", "RB EJ Smith", "RB Emmett Johnson", "RB Kenneth Walker III", "WR Andrew Armstrong", "WR Cyrus Allen", "WR Jalen Royals", "WR Jeff Caldwell", "WR Jimmy Holiday", "WR Nikko Remigio", "WR Rashee Rice", "WR Tyquan Thornton", "WR Xavier Worthy", "TE Jake Briningstool", "TE Jared Wiley", "TE John Michael Gyllenborg", "TE Noah Gray", "TE Travis Kelce", "K Harrison Butker", "DEF Alohi Gilman", "DEF Chamarri Conner", "DEF Chris Jones", "DEF Drue Tranquill", "DEF George Karlaftis", "DEF Jaden Hicks", "DEF L'Jarius Sneed", "DEF Mansoor Delane", "DEF Nick Bolton"],
+LAC:["QB DJ Uiagalelei", "QB Justin Herbert", "QB Trey Lance", "RB Alec Ingold", "RB Keaton Mitchell", "RB Kimani Vidal", "RB Omarion Hampton", "RB Scott Matlock", "WR Brenen Thompson", "WR Derius Davis", "WR KeAndre Lambert-Smith", "WR Ladd McConkey", "WR Quentin Johnston", "WR Sincere Brown", "WR Theo Wease Jr.", "WR Tre Harris", "TE Charlie Kolar", "TE David Njoku", "TE Hayden Rucci", "TE Oronde Gadsden II", "K Cameron Dicker", "DEF Akheem Mesidor", "DEF Cam Hart", "DEF Daiyan Henley", "DEF Del'Shawn Phillips", "DEF Derwin James", "DEF Elijah Molden", "DEF Justin Eboigbe", "DEF Khalil Mack", "DEF Tarheeb Still", "DEF Tony Jefferson", "DEF Troy Dye", "DEF Tuli Tuipulotu"],
+LAR:["QB Matthew Caldwell", "QB Matthew Stafford", "QB Stetson Bennett", "QB Ty Simpson", "RB Blake Corum", "RB Dean Connors", "RB Kyren Williams", "RB Ronnie Rivers", "WR Alex Bachman", "WR CJ Daniels", "WR Davante Adams", "WR Jordan Whittington", "WR Konata Mumpfield", "WR Puka Nacua", "WR Tutu Atwell", "TE Colby Parkinson", "TE Davis Allen", "TE Max Klare", "TE Terrance Ferguson", "TE Tyler Higbee", "K Blake Grupe", "K Brandon McManus", "DEF Byron Young", "DEF Jaylen McCollough", "DEF Jaylen Watson", "DEF Kam Curl", "DEF Kamren Kinchens", "DEF Kobie Turner", "DEF Myles Garrett", "DEF Nate Landman", "DEF Omar Speights", "DEF Quentin Lake", "DEF Trent McDuffie"],
+LV:["QB Aidan O'Connell", "QB Fernando Mendoza", "QB Kirk Cousins", "RB Ashton Jeanty", "RB Chris Collier", "RB Connor Heyward", "RB Dylan Laube", "RB Mike Washington Jr.", "WR Chase Roberts", "WR Cody White", "WR Dareke Young", "WR Dont'e Thornton Jr.", "WR Jack Bech", "WR Jalen Nailor", "WR Malik Benson", "WR Tre Tucker", "TE Brock Bowers", "TE Carter Runyon", "TE Ian Thomas", "TE Michael Mayer", "K Matt Gay", "DEF Eric Stokes", "DEF Hezekiah Masses", "DEF Isaiah Pola-Mao", "DEF Jeremy Chinn", "DEF Jonah Laulu", "DEF Kwity Paye", "DEF Malcolm Koonce", "DEF Maxx Crosby", "DEF Nakobe Dean", "DEF Quay Walker", "DEF Taron Johnson", "DEF Tonka Hemingway", "DEF Treydan Stukes"],
+MIA:["QB Kyle McCord", "QB Malik Willis", "RB DJ Herman", "RB De'Von Achane", "RB Jaylen Wright", "RB Kaytron Allen", "RB Ollie Gordon II", "WR Caleb Douglas", "WR Chris Bell", "WR Jalen Tolbert", "WR Jared Wayne", "WR Kevin Coleman Jr.", "WR Malik Washington", "TE Cole Turner", "TE Greg Dulcich", "TE Justin Joly", "TE Seydou Traore", "TE Will Kacmarek", "DEF Chop Robinson", "DEF Chris Johnson", "DEF Clelin Ferrell", "DEF Dante Trader Jr.", "DEF Darrell Baker Jr.", "DEF Jacob Rodriguez", "DEF Jordyn Brooks", "DEF Joshua Uche", "DEF Julius Brents", "DEF Michael Taaffe", "DEF Zach Sieler"],
+MIN:["QB Carson Wentz", "QB Kyler Murray", "QB Max Brosmer", "RB Aaron Jones", "RB Demond Claiborne", "RB Jordan Mason", "RB Max Bredeson", "WR Jauan Jennings", "WR Jordan Addison", "WR Justin Jefferson", "WR Myles Price", "WR Tai Felton", "TE Ben Yurosek", "TE Bryson Nesbit", "TE Gavin Bartholomew", "TE Josh Oliver", "TE T.J. Hockenson", "K Will Reichard", "DEF Andrew Van Ginkel", "DEF Blake Cashman", "DEF Byron Murphy", "DEF Dallas Turner", "DEF Eric Wilson", "DEF Harrison Smith", "DEF Isaiah Rodgers", "DEF Ivan Pace Jr.", "DEF Jalen Redmond", "DEF Josh Metellus"],
+NE:["QB Behren Morton", "QB Drake Maye", "QB Tommy DeVito", "RB Corey Kiner", "RB Myles Montgomery", "RB Reggie Gilliam", "RB Rhamondre Stevenson", "RB TreVeyon Henderson", "WR A.J. Brown", "WR DeMario Douglas", "WR Efton Chism III", "WR Kyle Williams", "WR Mack Hollins", "WR Romeo Doubs", "TE Cameron Latu", "TE Eli Raridon", "TE Hunter Henry", "TE Julian Hill", "TE Tanner Arkin", "K Andy Borregales", "DEF Carlton Davis III", "DEF Charles Woods", "DEF Christian Barmore", "DEF Christian Elliss", "DEF Christian Gonzalez", "DEF Craig Woodson", "DEF Darius Muasau", "DEF Dre'Mont Jones", "DEF Elijah Ponder", "DEF Gabe Jacas", "DEF Harold Landry III", "DEF Kevin Byard", "DEF Leonard Taylor III", "DEF Marcus Jones", "DEF Robert Spillane"],
+NO:["QB Spencer Rattler", "QB Tyler Shough", "QB Zach Wilson", "RB Alvin Kamara", "RB CJ Donaldson", "RB Kendre Miller", "RB Travis Etienne", "RB Ty Chandler", "WR Barion Brown", "WR Bryce Lance", "WR Chris Olave", "WR Devaughn Vele", "WR Jordyn Tyson", "WR Mason Tipton", "TE Juwan Johnson", "TE Moliki Matavao", "TE Noah Fant", "TE Oscar Delp", "TE Treyton Welch", "K Daniel Carlson", "DEF Cameron Jordan", "DEF Carl Granderson", "DEF Chase Young", "DEF Danny Stutsman", "DEF Jonas Sanker", "DEF Julian Blackmon", "DEF Justin Reid", "DEF Kaden Elliss", "DEF Kool-Aid McKinstry", "DEF Pete Werner", "DEF Quincy Riley", "DEF Tyree Wilson"],
+NYG:["QB J.J. McCarthy", "QB Jake Haener", "QB Jameis Winston", "QB Jaxson Dart", "RB Cam Skattebo", "RB Devin Singletary", "RB Patrick Ricard", "RB Tyrone Tracy Jr.", "WR Braxton Berrios", "WR Calvin Austin III", "WR Charlie Jones", "WR Darnell Mooney", "WR Gunner Olszewski", "WR Malachi Fields", "WR Malik Nabers", "TE Chris Manhertz", "TE Isaiah Likely", "TE Theo Johnson", "TE Thomas Fidone II", "K Dominic Zvada", "DEF Abdul Carter", "DEF Andru Phillips", "DEF Arvell Reese", "DEF Brian Burns", "DEF DJ Reader", "DEF Greg Newsome II", "DEF Jevon Holland", "DEF Paulson Adebo", "DEF Tremaine Edmunds", "DEF Tyler Nubin"],
+NYJ:["QB Cade Klubnik", "QB Geno Smith", "RB Andrew Beck", "RB Braelon Allen", "RB Breece Hall", "RB Chip Trayanum", "RB Dominic Richardson", "RB Isaiah Davis", "RB Kene Nwangwu", "WR Adonai Mitchell", "WR Arian Smith", "WR Garrett Wilson", "WR Isaiah Williams", "WR Malik McClain", "WR Omar Cooper Jr.", "WR Tim Patrick", "TE Connor Hulstein", "TE Jelani Woods", "TE Jeremy Ruckert", "TE Kenyon Sadiq", "TE Mason Taylor", "K Jason Sanders", "DEF Andre Cisco", "DEF Azareye'h Thomas", "DEF Brandon Stephens", "DEF Dane Belton", "DEF David Bailey", "DEF David Onyemata", "DEF Demario Davis", "DEF Harrison Phillips", "DEF Jamien Sherwood", "DEF Jarvis Brownlee Jr.", "DEF Joseph Ossai", "DEF Jowon Briggs", "DEF Kingsley Enagbare", "DEF Malachi Moore", "DEF Minkah Fitzpatrick", "DEF Nahshon Wright", "DEF Trevin Wallace", "DEF Will McDonald IV"],
+PHI:["QB Cole Payton", "QB Jalen Hurts", "QB Joe Milton III", "QB Tanner McKee", "RB Carson Steele", "RB Dameon Pierce", "RB Saquon Barkley", "RB Tank Bigsby", "RB Will Shipley", "WR Britain Covey", "WR Darius Cooper", "WR DeVonta Smith", "WR Dontayvion Wicks", "WR Elijah Moore", "WR Johnny Wilson", "WR Makai Lemon", "WR Marquise Brown", "TE Dallas Goedert", "TE Eli Stowers", "TE Grant Calcaterra", "TE Johnny Mundt", "K Jake Elliott", "DEF Andrew Mukuba", "DEF Cooper DeJean", "DEF Jalen Carter", "DEF Jalyx Hunt", "DEF Jeremiah Trotter Jr.", "DEF Jihaad Campbell", "DEF Jordan Davis", "DEF Kenny Moore II", "DEF Moro Ojomo", "DEF Nolan Smith", "DEF Quinyon Mitchell", "DEF Riq Woolen", "DEF Zack Baun"],
+PIT:["QB Aaron Rodgers", "QB Drew Allar", "QB Mason Rudolph", "QB Will Howard", "RB Eli Heidenreich", "RB Jaylen Warren", "RB Lew Nichols III", "RB Rico Dowdle", "RB Riley Nowakowski", "RB Travis Homer", "WR Ben Skowronek", "WR Cole Burgess", "WR DK Metcalf", "WR Germie Bernard", "WR Kaden Wetjen", "WR Michael Pittman", "WR Roman Wilson", "TE Darnell Washington", "TE Pat Freiermuth", "TE Robert Tonyan", "K Chris Boswell", "DEF Alex Highsmith", "DEF Asante Samuel Jr.", "DEF Cameron Heyward", "DEF Jalen Ramsey", "DEF Jaquan Brisker", "DEF Keeanu Benton", "DEF Nick Herbig", "DEF Patrick Queen", "DEF Payton Wilson", "DEF T.J. Watt"],
+SEA:["QB Drew Lock", "QB Jalen Milroe", "QB Sam Darnold", "RB Brady Russell", "RB Emanuel Wilson", "RB George Holani", "RB Jadarian Price", "RB Robbie Ouzts", "RB Robert Henry Jr.", "RB Velus Jones Jr.", "RB Zach Charbonnet", "WR Cooper Kupp", "WR Jake Bobo", "WR Jaxon Smith-Njigba", "WR Montorie Foster Jr", "WR Rashid Shaheed", "WR Tory Horton", "TE AJ Barner", "TE Elijah Arroyo", "TE Eric Saubert", "TE Nick Kallerup", "K Jason Myers", "DEF Byron Murphy II", "DEF DeMarcus Lawrence", "DEF Derick Hall", "DEF Devon Witherspoon", "DEF Drake Thomas", "DEF Ernest Jones", "DEF Josh Jobe", "DEF Julian Love", "DEF Leonard Williams", "DEF Nick Emmanwori", "DEF Ty Okada", "DEF Tyrice Knight", "DEF Uchenna Nwosu"],
+SF:["QB Brock Purdy", "QB Kurtis Rourke", "QB Mac Jones", "RB Christian McCaffrey", "RB Isaac Guerendo", "RB Jordan James", "RB Kaelon Black", "RB Kyle Juszczyk", "WR Brandin Cooks", "WR Christian Kirk", "WR De'Zhaun Stribling", "WR Deebo Samuel Sr.", "WR Demarcus Robinson", "WR Jacob Cowing", "WR Jordan Watkins", "WR Mike Evans", "WR Ricky Pearsall", "TE Brayden Willis", "TE George Kittle", "TE Jake Tonges", "TE Luke Farrell", "K Eddy Pineiro", "DEF Ashtyn Davis", "DEF Deommodore Lenoir", "DEF Dre Greenlaw", "DEF Fred Warner", "DEF Gracen Halton", "DEF Jack Jones", "DEF Jaden Dugger", "DEF Ji'Ayir Brown", "DEF Keion White", "DEF Malik Mustapha", "DEF Marques Sigle", "DEF Osa Odighizuwa", "DEF Renardo Green", "DEF Tatum Bethune", "DEF Upton Stout"],
+TB:["QB Baker Mayfield", "QB Jalon Daniels", "RB Bucky Irving", "RB Kenny Gainwell", "RB Sean Tucker", "WR Chris Godwin Jr.", "WR David Sills", "WR Emeka Egbuka", "WR Jalen McMillan", "WR Kameron Johnson", "WR Ted Hurst III", "WR Tez Johnson", "TE Bauer Sharp", "TE Cade Otton", "TE Ko Kieft", "TE Payne Durham", "K Chase McLaughlin", "DEF A'Shawn Robinson", "DEF Al-Quadin Muhammad", "DEF Alex Anzalone", "DEF Antoine Winfield Jr.", "DEF Christian Rozeboom", "DEF David Walker", "DEF Ifeatu Melifonwu", "DEF Jacob Parrish", "DEF Josiah Trotter", "DEF Keionte Scott", "DEF SirVocea Dennis", "DEF Tykee Smith", "DEF Vita Vea", "DEF Yaya Diaby", "DEF Zyon McCollum"],
+TEN:["QB Cam Ward", "QB Mitchell Trubisky", "RB Julius Chestnut", "RB Michael Carter", "RB Nicholas Singleton", "RB Tony Pollard", "RB Tyjae Spears", "WR Calvin Ridley", "WR Carnell Tate", "WR Chimere Dike", "WR Elic Ayomanor", "WR Wan'Dale Robinson", "TE Daniel Bellinger", "TE David Martin-Robinson", "TE Gunnar Helm", "TE Jaren Kanak", "TE Kylen Granson", "K Joey Slye", "DEF Alontae Taylor", "DEF Amani Hooker", "DEF Anthony Hill Jr.", "DEF Cedric Gray", "DEF Cody Barton", "DEF Jacob Martin", "DEF Jaylen Harrell", "DEF Jeffery Simmons", "DEF Jermaine Johnson II", "DEF John Franklin-Myers", "DEF Kevin Winston Jr.", "DEF Marcus Harris", "DEF Tony Adams"],
+WAS:["QB Athan Kaliakmanis", "QB Jayden Daniels", "QB Marcus Mariota", "RB Austin Ekeler", "RB Jacory Croskey-Merritt", "RB Jeremy McNichols", "RB Rachaad White", "WR Antonio Williams", "WR Dyami Brown", "WR Jaylin Lane", "WR Luke McCaffrey", "WR Stefon Diggs", "WR Terry McLaurin", "WR Treylon Burks", "TE Ben Sinnott", "TE Chig Okonkwo", "TE Colson Yankoff", "TE John Bates", "K Drew Stevens", "DEF Amik Robertson", "DEF Dorance Armstrong", "DEF Frankie Luvu", "DEF Jer'Zhan Newton", "DEF Jeremy Reaves", "DEF Jordan Magee", "DEF K'Lavon Chaisson", "DEF Leo Chenal", "DEF Mike Sainristil", "DEF Nick Cross", "DEF Odafe Oweh", "DEF Quan Martin", "DEF Rasul Douglas", "DEF Sonny Styles"]
 };
-const ROSTER_SEED = {};
-Object.keys(BY_TEAM).forEach(k => BY_TEAM[k].forEach(n => { ROSTER_SEED[normName(n)] = k; }));
+const BY_TEAM = {}, POS_SEED = {}, ROSTER_SEED = {};
+Object.keys(ROSTER_2026).forEach(t => {
+  BY_TEAM[t] = ROSTER_2026[t].map(e => {
+    const i = e.indexOf(" "), pos = e.slice(0, i), name = e.slice(i + 1), k = normName(name);
+    POS_SEED[k] = pos; ROSTER_SEED[k] = t;
+    return name;
+  });
+});
 
-/* Fact-checked against reporting on Sep 6 2026. The offseason moved a lot of people
-   after my snapshot was written, so these override the club lists above. */
-const VERIFIED_2026 = {
-"Kyler Murray":"MIN","Tua Tagovailoa":"ATL","Malik Willis":"MIA","Kirk Cousins":"LV",
-"Geno Smith":"NYJ","Deshaun Watson":"CLE","Fernando Mendoza":"LV","Jacoby Brissett":"ARI",
-"A.J. Brown":"NE","Jaylen Waddle":"DEN","Mike Evans":"SF","DJ Moore":"BUF",
-"Romeo Doubs":"NE","Travis Etienne":"NO","David Montgomery":"HOU","Kayshon Boutte":"HOU",
-"Chig Okonkwo":"WAS","Antonio Williams":"WAS","Omar Cooper":"NYJ","Kenyon Sadiq":"NYJ",
-"Jarquez Hunter":"MIA","Tutu Atwell":"LAR",
-"Myles Garrett":"LAR","Jared Verse":"CLE","Trent McDuffie":"LAR","Jaylen Watson":"LAR",
-"Osa Odighizuwa":"SF","Zaire Franklin":"GB","Tyree Wilson":"NO",
-"Jauan Jennings":"MIN","Justin Fields":"KC","Stefon Diggs":"WAS","Cooper Rush":"ATL",
-/* checked against the 2026 free agency trackers on Sep 9 */
-"Kenneth Walker":"KC","Emari Demercado":"KC","Isiah Pacheco":"DET","Trey Hendrickson":"BAL",
-"Michael Pittman":"PIT","Minkah Fitzpatrick":"NYJ","Brian Robinson":"ATL",
-"J.K. Dobbins":"DEN","A.J. Dillon":"CAR","Solomon Thomas":"TEN","K'Lavon Chaisson":"WAS",
-"Calais Campbell":"BAL","David Onyemata":"NYJ","Greg Newsome":"NYG","D.J. Reader":"NYG"
-};
-/* Nothing outstanding: the four I could not place were confirmed and moved up. */
-/* moved this offseason, destination unconfirmed, so they return blank rather than wrong */
-const UNPLACED_2026 = ["Kareem Hunt"];
-Object.keys(VERIFIED_2026).forEach(n => { ROSTER_SEED[normName(n)] = VERIFIED_2026[n]; });
-UNPLACED_2026.forEach(n => { delete ROSTER_SEED[normName(n)]; });
-
-const TIGHT_SEED = {};
-Object.keys(ROSTER_SEED).forEach(k => { TIGHT_SEED[k.replace(/ /g,"")] = ROSTER_SEED[k]; });
+const TIGHT_SEED = {}, TIGHT_POS = {};
+Object.keys(ROSTER_SEED).forEach(k => { TIGHT_SEED[k.replace(/ /g,"")] = ROSTER_SEED[k]; TIGHT_POS[k.replace(/ /g,"")] = POS_SEED[k]; });
+/* a player's real position, or "" when he is not on the roster */
+function playerPos(name){
+  const k = normName(name);
+  return k ? (POS_SEED[k] || TIGHT_POS[k.replace(/ /g,"")] || "") : "";
+}
 
 function teamForPlayer(name){
   const k = normName(name);
@@ -428,7 +418,7 @@ function teamForPlayer(name){
 }
 function rosterStamp(){
   const n = Object.keys((state.season && state.season.roster) || {}).length;
-  return "Snapshot from the " + ROSTER_VERSION + ", " + Object.keys(ROSTER_SEED).length + " players"
+  return "Rosters from the " + ROSTER_VERSION + ", " + Object.keys(ROSTER_SEED).length + " players"
        + (n ? ", plus " + n + " correction" + (n === 1 ? "" : "s") : "");
 }
 function parseRosterPaste(text){
@@ -704,9 +694,14 @@ function avatarSVG(look, px){
 const avatarFor = (m,px) => avatarSVG(lookOf(m), px);
 const lookDesc = l => HATNAMES[l.hat % 6] + ", " + FACENAMES[l.face % 4];
 
-const POSTAG={qb:"QB",rb:"RB",wr:"WR",k:"K",def:"DEF",stand:"?"};
-const posTag=stat=>stat?POSTAG[poseFor(stat)]:"?";
-const posTint=stat=>(stat&&poseFor(stat)==="def")?"#A8443A":"#2E6FA8";
+const POSTAG={qb:"QB",rb:"RB",wr:"WR",te:"TE",k:"K",def:"DEF",stand:"?"};
+/* The player's real position wins. The stat name only decides it for someone not on
+   the roster, which used to be everyone: fantasy score defaulted to RB, and every
+   tight end counted as a WR. */
+const POS_POSE={QB:"qb",RB:"rb",WR:"wr",TE:"te",K:"k",DEF:"def"};
+const poseOf=(stat,player)=>{ const r=player?playerPos(player):""; return r ? POS_POSE[r] : poseFor(stat); };
+const posTag=(stat,player)=>(stat||player)?POSTAG[poseOf(stat,player)]:"?";
+const posTint=(stat,player)=>((stat||player)&&poseOf(stat,player)==="def")?"#A8443A":"#2E6FA8";
 
 
 const HELM=["..HHHH..",".HHHHHH.",".HHSSHH.",".HFFFFH.",".HFFFF..","..HHH...","........","........"];
@@ -741,7 +736,8 @@ function gridSVG(rows,colors,px,cls){
 function sprite(name,stat,px,dim,team){
   const tm=dim?null:teamOf(team);
   const pal=tm?{j:tm.j,t:tm.t,h:tm.h}:(dim?GREY:PALETTES[hashIdx(name,PALETTES.length)]);
-  const rows=POSES[stat===null?"stand":poseFor(stat)];
+  const pz=stat===null?"stand":poseOf(stat,name);
+  const rows=POSES[pz==="te"?"wr":pz];
   const skin = dim ? "#55636F" : SKIN;
   return gridSVG(outlineGrid(rows,"O"), {
     O: dim ? "#28323D" : "#1B2130",
@@ -968,8 +964,17 @@ function takenBy(w, player, exceptId){
 function margin(p){
   const a = num(p.actual), l = num(p.line);
   if(a === null || l === null) return null;
-  return p.side === "More" ? a - l : l - a;
+  return p.side === "Less" ? l - a : a - l;
 }
+/* hit, miss or push for a final number. Finals like 63.2 against a 62.7 line do not
+   subtract to exactly 0.5 in floating point, so near-equal counts as equal. */
+const EPS = 1e-6;
+function grade(p, a){
+  const l = num(p.line); if(a === null || a === undefined || l === null) return null;
+  const mg = p.side === "Less" ? l - a : a - l;
+  return mg > EPS ? "H" : mg < -EPS ? "M" : "V";
+}
+const isHalf = mg => mg !== null && Math.abs(Math.abs(mg) - 0.5) < EPS;
 function marginText(p){
   const m = margin(p);
   if(m === null) return "";
@@ -1452,6 +1457,10 @@ function analyze(){
     const picks = picksOf(w);
     if(!Object.keys(picks).length) continue;
     const hits = [], misses = [];
+    /* Cooler, Backbone and Perfect card describe the whole card, so they wait until
+       every leg posted that week has a grade. Otherwise 3 hits and 1 miss with two
+       games still to play would hand out a Cooler early. */
+    const cardDone = Object.keys(picks).every(id => !!picks[id].result);
 
     members.forEach(m => {
       const r = rec[m.id], p = picks[m.id];
@@ -1478,22 +1487,23 @@ function analyze(){
       else if(p.result === "V"){ r.V++; }
       r.best = Math.max(r.best, r.cur);
 
-      if(mg !== null && p.result === "H" && Math.abs(mg) === 0.5) give(m.id,"razor",w,leg+", "+marginText(p));
-      if(mg !== null && p.result === "M" && Math.abs(mg) === 0.5) give(m.id,"hook",w,leg+", "+marginText(p));
+      if(p.result === "H" && isHalf(mg)) give(m.id,"razor",w,leg+", "+marginText(p));
+      if(p.result === "M" && isHalf(mg)) give(m.id,"hook",w,leg+", "+marginText(p));
       const l = num(p.line);
       if(mg !== null && p.result === "H" && l && Math.abs(l) > 0 && mg >= 2 && mg/Math.abs(l) >= 0.5) give(m.id,"cushion",w,leg+", "+marginText(p));
 
-      const early = DEADLINES[w] - (p.ts || DEADLINES[w]);
-      if(early <= 900000 && early >= 0) give(m.id,"buzzer",w,"Posted "+leg+" with minutes to spare");
+      const early = p.ts ? DEADLINES[w] - p.ts : null;
+      if(early === null){}
+      else if(early <= 900000 && early >= 0) give(m.id,"buzzer",w,"Posted "+leg+" with minutes to spare");
       else if(early >= 259200000) give(m.id,"earlybird",w,"Had "+leg+" in three days early");
 
       if(p.result === "H" && (r.cur === 3 || r.cur === 5 || r.cur === 10)) give(m.id,"heater",w,r.cur+" hits in a row");
       if(p.result === "M" && (r.cur === -3 || r.cur === -5)) give(m.id,"freeze",w,(-r.cur)+" misses in a row");
     });
 
-    if(misses.length === 1 && hits.length >= 3) give(misses[0],"cooler",w,"The only leg to miss on a "+hits.length+" hit card");
-    if(hits.length === 1 && misses.length >= 3) give(hits[0],"backbone",w,"Carried a card that went 1 for "+(hits.length+misses.length));
-    if(misses.length === 0 && hits.length === members.length) hits.forEach(id => give(id,"perfect",w,"The card went "+hits.length+" for "+hits.length));
+    if(cardDone && misses.length === 1 && hits.length >= 3) give(misses[0],"cooler",w,"The only leg to miss on a "+hits.length+" hit card");
+    if(cardDone && hits.length === 1 && misses.length >= 3) give(hits[0],"backbone",w,"Carried a card that went 1 for "+(hits.length+misses.length));
+    if(cardDone && misses.length === 0 && hits.length === members.length) hits.forEach(id => give(id,"perfect",w,"The card went "+hits.length+" for "+hits.length));
   }
 
   (state.season.moments||[]).forEach(mo => moments.push({w:mo.week, who:mo.by, label:"Noted", detail:mo.text, manual:true, id:mo.id}));
@@ -1548,7 +1558,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25e";
+const BUILD = "2026-10-25f";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1658,7 +1668,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25e</span></p>';
+  + '<br><span class="build">build 2026-10-25f</span></p>';
 }
 
 function signInCard(){
@@ -1892,7 +1902,7 @@ function countsFor(id){
     if(p.team) teams[p.team] = (teams[p.team]||0) + 1;
     const nm = p.player || "";
     if(nm) players[nm] = (players[nm]||0) + 1;
-    const tag = p.stat ? posTag(p.stat) : "?";
+    const tag = posTag(p.stat, p.player);
     pos[tag] = (pos[tag]||0) + 1;
     if(p.stat) stats[p.stat] = (stats[p.stat]||0) + 1;
     if(p.side) sides[p.side] = (sides[p.side]||0) + 1;
@@ -2222,8 +2232,8 @@ function viewCard(){
     let name = locked ? "No leg" : "Nothing yet", prop = "";
     if(p){
       name = p.player;
-      tag = posTag(p.stat);
-      tint = posTint(p.stat);
+      tag = posTag(p.stat, p.player);
+      tint = posTint(p.stat, p.player);
       prop = propText(p);
       if(locked){
         cls = p.result === "H" ? " hit" : p.result === "M" ? " miss" : p.result === "V" ? " void" : "";
@@ -2270,7 +2280,15 @@ function viewCard(){
   const headline = !locked ? (inCount + "/" + r.members.length) : (hit + miss + voids === 0 ? "0" : String(hit));
   const sub = !locked
     ? inCount + " of " + r.members.length + " in, locks " + esc(deadlineText(w))
-    : (pending ? hit + " hit, " + miss + " missed, " + pending + " still running"
+    : (pending ? hit + " hit, " + miss + " missed, " + (function(){
+        /* a leg without a grade is only "still running" if its game is on */
+        let live = 0, notYet = 0, done = 0;
+        r.members.forEach(m => { const p = picks[m.id]; if(!p || p.result) return;
+          const L = liveFor(w, m.id), st = L && L.state;
+          if(st === "in") live++; else if(st === "pre") notYet++; else done++; });
+        return [live ? live + " in play" : "", notYet ? notYet + " yet to play" : "",
+                done ? done + " awaiting grade" + (done === 1 ? "" : "s") : ""].filter(Boolean).join(", ");
+      })()
                : hit + " of " + (hit + miss) + " hit" + (voids ? ", " + voids + " voided" : "")
                  + (none ? ", " + none + " never posted" : ""));
 
@@ -2489,10 +2507,8 @@ async function applyFinal(id, a){
     if(!t) return;
     t.actual = a;
     if(!t.team && found && found.team) t.team = found.team;
-    if(a !== null){
-      const mg = t.side === "More" ? a - num(t.line) : num(t.line) - a;
-      t.result = mg > 0 ? "H" : mg < 0 ? "M" : "V";
-    }
+    /* clearing the number clears the grade it set, instead of leaving a stale hit or miss */
+    t.result = a !== null ? grade(t, a) : null;
     t.gradedBy = memberName(state.me);
   });
   if(state.props[w] && state.props[w][id]) delete state.props[w][id];
