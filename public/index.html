@@ -1000,20 +1000,47 @@ async function hash(pin){
    79.5 line and a half-touchdown miss on 2.5 stop counting the same. These are my
    estimates, not measured from your results, and they are tunable once you have a
    season of grades to check them against. */
+/* Roughly how much each stat moves from game to game. Stat names are typed by
+   hand ("Rec yards", "Passing yards", "Anytime Tud"), so they are folded to one
+   spelling first and matched in order, combined props before single ones. These
+   spreads are estimates, not measured from your results. */
+const statNorm = s => String(s || "").toLowerCase()
+  .replace(/%/g, " pct ").replace(/percent(age)?/g, " pct ")
+  .replace(/\btuds?\b/g, "td").replace(/\btouchdowns?\b/g, "td").replace(/\btds\b/g, "td")
+  .replace(/yds/g, "yards").replace(/receiving/g, "rec").replace(/receptions?/g, "receptions")
+  .replace(/rushing/g, "rush").replace(/passing/g, "pass")
+  .replace(/&/g, "+").replace(/\band\b/g, "+")
+  .replace(/[^a-z+]+/g, " ").replace(/\s*\+\s*/g, "+").replace(/\s+/g, " ").trim();
 const SPREADS = [
-  [/pass\s*yards|pass\+rush/i, 70], [/pass\s*td/i, 1], [/pass\s*attempts/i, 8],
-  [/completions/i, 6], [/interceptions/i, 0.8],
-  [/rush\+rec/i, 35], [/rush\s*yards/i, 30], [/rush\s*attempts/i, 5],
-  [/longest\s*rec/i, 12], [/longest\s*rush/i, 10],
-  [/receiving\s*yards/i, 30], [/receptions/i, 2],
-  [/fantasy/i, 7], [/kicking/i, 3.5], [/tackle/i, 3], [/sack/i, 0.8]
+  [/^pass\+rush\+rec\s*td/, 1], [/^rush\+rec\s*td/, 0.8],
+  [/any\s*time\s*td|^any\s*td|td\s*scorer/, 0.6], [/^(total\s*)?td/, 1],
+  [/^pass\+rush\s*yard/, 70], [/^rush\+rec\s*yard/, 35],
+  [/fantasy/, 7],
+  [/^pass\s*yard/, 70], [/^pass\s*td/, 1], [/^pass\s*(attempt|att)/, 8],
+  [/comp(letion)?s?\s*pct/, 8], [/completion/, 6], [/interception/, 0.8],
+  [/^rush\s*yard/, 30], [/^rush\s*(attempt|att|carr)/, 5], [/^rush\s*td/, 0.6],
+  [/longest\s*rec/, 12], [/longest\s*rush/, 10],
+  [/^rec\s*yard/, 30], [/^rec\s*td/, 0.6], [/target/, 3], [/receptions|^rec$|catches/, 2],
+  [/kick/, 3.5], [/tackle/, 3], [/sack/, 0.8]
 ];
 function spreadFor(stat, line){
-  const s = String(stat || "");
+  const s = statNorm(stat);
   for(const [re, v] of SPREADS) if(re.test(s)) return v;
   const l = Math.abs(num(line) || 0);          /* unknown stat: a third of its line */
   return Math.max(0.5, l * 0.35);
 }
+/* Pick quality: every graded leg scores how far it beat or missed its line, in
+   swings, capped at two either way so one blowout cannot carry a season. The
+   average maps to 0 to 100, where 50 means legs land right on the line on
+   average. A leg graded without a final number counts as a modest hit or miss. */
+function legQuality(p){
+  if(p.result !== "H" && p.result !== "M") return null;
+  const mg = margin(p);
+  const sw = mg === null ? 0.5 : Math.abs(mg) / spreadFor(p.stat, p.line);
+  return Math.max(-2, Math.min(2, p.result === "H" ? sw : -sw));
+}
+const qualityOf = r => r.qual && r.qual.length ? Math.round(50 + 25 * avg(r.qual)) : null;
+const q1 = v => v === null ? "-" : String(v);
 const sw1 = v => v === null ? "-" : (Math.round(v*100)/100).toFixed(2);
 
 /* every graded leg for one member, newest first */
@@ -1386,7 +1413,7 @@ const hitRate = r => (r.H + r.M) ? (r.H / (r.H + r.M)) * 100 : null;
 function analyze(){
   const members = state.roster.members;
   const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0,
-    badges:{}, cur:0, best:0, hitPct:[], missPct:[], hitAbs:[], missAbs:[], hitSw:[], missSw:[]});
+    badges:{}, cur:0, best:0, hitPct:[], missPct:[], hitAbs:[], missAbs:[], hitSw:[], missSw:[], qual:[]});
   const moments = [];
   const give = (id, key, w, detail) => {
     rec[id].badges[key] = (rec[id].badges[key]||0) + 1;
@@ -1411,6 +1438,7 @@ function analyze(){
       const offPct = (off !== null && lineAbs > 0) ? (off / lineAbs) * 100 : null;
 
       const swing = off === null ? null : off / spreadFor(p.stat, p.line);
+      const lq = legQuality(p); if(lq !== null) r.qual.push(lq);
 
       if(p.result === "H"){ r.H++; hits.push(m.id); r.cur = r.cur > 0 ? r.cur+1 : 1;
         if(off !== null) r.hitAbs.push(off);
@@ -1493,7 +1521,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-09-22f";
+const BUILD = "2026-10-25a";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1603,7 +1631,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-09-22f</span></p>';
+  + '<br><span class="build">build 2026-10-25a</span></p>';
 }
 
 function signInCard(){
@@ -1868,8 +1896,8 @@ function viewProfile(){
   + '<div class="card"><div class="phead">' + avatarFor(m, 72)
     + '<div><h3 style="margin:0">' + esc(m.name.toUpperCase()) + '</h3>'
     + '<p class="hint">' + (m.admin ? "Commissioner. " : "") + c.total + ' leg' + (c.total===1?'':'s') + ' posted.</p></div></div>'
-  + '<div class="scroller"><table><tr><th>Hit</th><th>Miss</th><th>Rate</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
-  + '<tr><td>'+r.H+'</td><td>'+r.M+'</td><td>'+pct1(hitRate(r))+'</td><td>'+r.V+'</td><td>'+r.skip
+  + '<div class="scroller"><table><tr><th>Hit</th><th>Miss</th><th>Rate</th><th>Qual</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
+  + '<tr><td>'+r.H+'</td><td>'+r.M+'</td><td>'+pct1(hitRate(r))+'</td><td>'+q1(qualityOf(r))+'</td><td>'+r.V+'</td><td>'+r.skip
     +'</td><td>'+(r.cur>0?r.cur+"H":r.cur<0?(-r.cur)+"M":"0")+'</td><td>'+r.best+'</td></tr></table></div>'
   + '<p class="hint" style="margin-top:10px">Clears by ' + num1(avg(r.hitAbs)) + ' on average ('
     + sw1(avg(r.hitSw)) + ' swings), comes up ' + num1(avg(r.missAbs)) + ' short ('
@@ -1936,7 +1964,7 @@ function drillCard(){
   if(!state.drill) return "";
   const {id, kind} = state.drill;
   const legs = legsFor(id, kind);
-  const label = kind === "H" ? "hits" : kind === "M" ? "misses" : "graded legs";
+  const label = kind === "H" ? "hits" : kind === "M" ? "misses" : "every graded leg";
   return '<div class="card"><h3>' + esc(memberName(id)) + ", " + label + '</h3>'
   + '<p class="hint">' + (legs.length ? legs.length + ' of them, newest first.' : 'Nothing here yet.') + '</p>'
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
@@ -1964,15 +1992,27 @@ function viewSeason(){
     : '<button class="drillcell" data-drill="' + id + ':' + kind + '">' + text + '</button>';
   const face = r => avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24);
   const nameCell = r => '<button class="namecell" data-profile="' + r.id + '">' + face(r) + esc(r.name) + '</button>';
-  const byRate = a.table.slice().sort((x,y) => (hitRate(y)===null?-1:hitRate(y)) - (hitRate(x)===null?-1:hitRate(x)));
+  const byRate = a.table.slice().sort((x,y) =>
+    ((hitRate(y)===null?-1:hitRate(y)) - (hitRate(x)===null?-1:hitRate(x)))
+    || ((qualityOf(y)===null?-1:qualityOf(y)) - (qualityOf(x)===null?-1:qualityOf(x))));
+  const byQual = a.table.filter(r => qualityOf(r) !== null).sort((x,y) => qualityOf(y) - qualityOf(x));
 
   const table = '<div class="card"><h3>Records</h3>'
-  + '<p class="hint">Every graded leg since Week 1.</p><div class="scroller">'
-  + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
+  + '<p class="hint">Every graded leg since Week 1. Ties on hit rate are broken by pick quality.</p><div class="scroller">'
+  + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Qual</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
   + byRate.map(r=>'<tr><td>'+nameCell(r)+'</td><td>'+r.H+'</td><td>'+r.M
-      +'</td><td>'+pct1(hitRate(r))+'</td><td>'+r.V+'</td><td>'+r.skip
+      +'</td><td>'+pct1(hitRate(r))+'</td><td>'+cell(r.id,"A",q1(qualityOf(r)))+'</td><td>'+r.V+'</td><td>'+r.skip
       +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
   + '</table></div></div>'
+
+  + (byQual.length ? '<div class="card"><h3>Pick quality</h3>'
+    + '<p class="hint">Hit rate only says whether a leg cashed. Quality also counts by how much, against how much '
+    + 'that stat normally moves, so a near miss costs less than a blowout and a squeaker counts for less than a romp. '
+    + '50 means your legs land right on the line on average. Above 50 your picks beat their lines, below 50 they fall short. '
+    + 'Tap a score to see every leg behind it.</p>'
+    + '<ul class="tally">' + byQual.map(r => '<li><span class="tk">' + esc(r.name) + '</span>'
+      + '<span class="tb"><i style="width:' + qualityOf(r) + '%;background:' + (qualityOf(r) >= 50 ? '#4CC17E' : '#E2574C') + '"></i></span>'
+      + '<span class="tn">' + cell(r.id,"A",q1(qualityOf(r))) + '</span></li>').join("") + '</ul></div>' : "")
 
   + '<div class="card"><h3>Margins</h3>'
   + '<p class="hint">Clear is the cushion on hits, short is the gap on misses. Swing measures that '
@@ -2393,7 +2433,11 @@ async function pullFinals(){
       state.props[w][leg.id] = {final: r.status === "ok" ? f : null, game: r.game || "", status: r.status || "unsure", team: teamKey(r.team || "")};
       if(r.status === "ok" && f !== null) ok++;
     });
-    state.fetchNote = ok + " of " + legs.length + " came back with a number. Confirm each one to lock the grade in.";
+    const toConfirm = legs.filter(x => { const f = state.props[w][x.id];
+      return f && f.status === "ok" && f.final !== null && num(x.p.actual) !== f.final; }).length;
+    state.fetchNote = !ok ? "Nothing solid came back. Enter the finals by hand."
+      : !toConfirm ? ok + " of " + legs.length + " came back, and they match what is already entered. Nothing to confirm."
+      : toConfirm + " need confirming. Tap Use it under each one, or Use all to take them together.";
   }catch(e){
     state.fetchNote = "Lookup failed: " + errText(e) + " Enter the finals by hand.";
   }
