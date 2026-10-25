@@ -4,6 +4,10 @@
   "main": "worker.js",
   "compatibility_date": "2026-09-01",
 
+  // Keep a log of each run, so if the live feed goes quiet again the reason is
+  // written down in the dashboard under Observability instead of guessed at.
+  "observability": { "enabled": true },
+
   // index.html is served straight from the edge. The icons are handled in worker.js.
   "assets": {
     "directory": "./public",

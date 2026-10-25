@@ -85,6 +85,8 @@ export function flattenPlayers(summary) {
    than on an exact string. Returns null when the box score has no line for it
    yet, which is different from zero. */
 export const statKey = s => String(s || "").toLowerCase()
+  .replace(/%/g, " pct ").replace(/percent(age)?/g, " pct ")
+  .replace(/\btuds?\b/g, "td").replace(/\btouchdowns?\b/g, "td")
   .replace(/&/g, "+").replace(/\band\b/g, "+")
   .replace(/yds/g, "yards").replace(/rec\b/g, "rec").replace(/tds?\b/g, "td")
   .replace(/receiving/g, "rec").replace(/receptions?/g, "receptions")
@@ -101,6 +103,7 @@ export function readStat(rec, stat) {
   const rushA = num(g("rushing.rushingAttempts")), longRush = num(g("rushing.longRushing"));
   const rec_ = num(g("receiving.receptions")), recY = num(g("receiving.receivingYards"));
   const recTD = num(g("receiving.receivingTouchdowns")), longRec = num(g("receiving.longReception"));
+  const targets = num(g("receiving.receivingTargets"));
   const fumLost = num(g("fumbles.fumblesLost"));
   const sum = (...xs) => xs.some(x => x !== null) ? xs.reduce((a, x) => a + (x || 0), 0) : null;
 
@@ -116,14 +119,19 @@ export function readStat(rec, stat) {
   const RULES = [
     [/^pass\+rush\+rec\s*td/,        () => sum(passTD, rushTD, recTD)],
     [/^rush\+rec\s*td/,               () => sum(rushTD, recTD)],
-    [/^(total|any)?\s*td/,             () => sum(passTD, rushTD, recTD)],
+    /* PrizePicks "Anytime TD" is a rushing or receiving touchdown, never a thrown one */
+    [/any\s*time\s*td|^any\s*td|td\s*scorer/, () => sum(rushTD, recTD)],
+    [/^(total\s*)?td/,                 () => sum(passTD, rushTD, recTD)],
     [/^pass\+rush\s*yard/,            () => sum(passY, rushY)],
     [/^rush\+rec\s*yard/,             () => sum(rushY, recY)],
     [/fantasy/,                       fantasy],
     [/^pass\s*yard/,                   () => passY],
     [/^pass\s*td/,                     () => passTD],
     [/^pass\s*(attempt|att)/,          () => att],
+    /* a percentage line has to be read as a percentage, not as a count of completions */
+    [/comp(letion)?s?\s*pct/,          () => (comp !== null && att) ? Math.round(comp / att * 1000) / 10 : null],
     [/completion/,                    () => comp],
+    [/target/,                        () => targets],
     [/interception/,                  () => ints],
     [/^rush\s*yard/,                   () => rushY],
     [/^rush\s*(attempt|att|carr)/,     () => rushA],
@@ -239,11 +247,31 @@ export async function refreshLive(env, opts = {}) {
       const g = p.team && byTeam[teamCanon(p.team)];
       if (g) wanted[g.id] = g;
     }
+    /* A finished game's numbers do not change, so once they are captured they are
+       reused instead of downloaded again. Box scores are large, and parsing every one
+       of them every two minutes is the most likely reason the feed went quiet late
+       on a Monday, once most of the week's games had finished and all of them were
+       being re-read each run. */
+    const prev = await readKey(env, liveKey(week));
+    const prevLeg = (m, p, g) => {
+      const L = prev && prev.legs && prev.legs[m.id];
+      return (L && L.game === g.id && L.player === p.player && L.stat === p.stat
+              && String(L.line) === String(p.line)) ? L : null;
+    };
+    const reusable = (m, p, g) => { const L = prevLeg(m, p, g);
+      return !!(L && L.state === "post" && L.matched && L.value !== null && L.value !== undefined); };
+
     const boxes = {};
+    doc.fetched = 0; doc.reused = 0;
     for (const id of Object.keys(wanted)) {
       const g = wanted[id];
       if (g.state === "pre") continue;                      // nothing to read before kickoff
-      try { boxes[id] = flattenPlayers(await getJson("/summary?event=" + id, fetchFn, doc)); }
+      if (g.state === "post") {
+        const all = members.filter(m => { const p = picks[m.id];
+          return p && p.team && byTeam[teamCanon(p.team)] && byTeam[teamCanon(p.team)].id === id; });
+        if (all.length && all.every(m => reusable(m, picks[m.id], g))) { doc.reused++; continue; }
+      }
+      try { boxes[id] = flattenPlayers(await getJson("/summary?event=" + id, fetchFn, doc)); doc.fetched++; }
       catch (e) { doc.error = (doc.error ? doc.error + "; " : "") + e.message; }
     }
 
@@ -257,7 +285,13 @@ export async function refreshLive(env, opts = {}) {
         leg.score = g.teams.map(t => t.abbr + " " + (t.score ?? "")).join(", ");
         doc.games[g.id] = { state: g.state, detail: g.detail, clock: g.clock, period: g.period, teams: g.teams };
         const box = boxes[g.id];
-        if (box) {
+        const old = prevLeg(m, p, g);
+        if (!box && old && old.value !== null && old.value !== undefined && g.state !== "pre") {
+          /* a finished game that was already captured, or a box score that failed to
+             load this run: keep the last number rather than blanking the tile */
+          leg.matched = !!old.matched; leg.espnName = old.espnName; leg.value = old.value;
+          if (g.state !== "post") leg.note = "box score did not load this run, showing the last number";
+        } else if (box) {
           const k = normName(p.player);
           let rec = box[k];
           if (!rec) {                                       // fall back to last name on the right team

@@ -61,6 +61,10 @@ export default {
      triggers. Outside a window this returns immediately, touching nothing. */
   async scheduled(event, env, ctx) {
     if (!inGameWindow()) return;
-    ctx.waitUntil(refreshLive(env));
+    ctx.waitUntil(refreshLive(env).then(
+      d => console.log("live feed week " + (d.week + 1) + ": fetched " + (d.fetched || 0) + ", reused " + (d.reused || 0)
+                       + (d.error ? ", error: " + d.error : "")),
+      e => console.error("live feed run failed: " + (e && e.message ? e.message : e))
+    ));
   }
 };
