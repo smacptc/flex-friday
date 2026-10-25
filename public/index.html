@@ -1521,7 +1521,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25b";
+const BUILD = "2026-10-25c";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1631,7 +1631,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25b</span></p>';
+  + '<br><span class="build">build 2026-10-25c</span></p>';
 }
 
 function signInCard(){
@@ -1897,7 +1897,7 @@ function viewProfile(){
     + '<div><h3 style="margin:0">' + esc(m.name.toUpperCase()) + '</h3>'
     + '<p class="hint">' + (m.admin ? "Commissioner. " : "") + c.total + ' leg' + (c.total===1?'':'s') + ' posted.</p></div></div>'
   + '<div class="scroller"><table><tr><th>Hit</th><th>Miss</th><th>Rate</th><th>Qual</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
-  + '<tr><td>'+r.H+'</td><td>'+r.M+'</td><td>'+pct1(hitRate(r))+'</td><td>'+q1(qualityOf(r))+'</td><td>'+r.V+'</td><td>'+r.skip
+  + '<tr><td>'+r.H+'</td><td>'+r.M+'</td><td>'+pct1(hitRate(r))+'</td><td>'+(qualityOf(r)===null ? '-' : '<button class="drillcell" id="profqual">'+q1(qualityOf(r))+'</button>')+'</td><td>'+r.V+'</td><td>'+r.skip
     +'</td><td>'+(r.cur>0?r.cur+"H":r.cur<0?(-r.cur)+"M":"0")+'</td><td>'+r.best+'</td></tr></table></div>'
   + '<p class="hint" style="margin-top:10px">Clears by ' + num1(avg(r.hitAbs)) + ' on average ('
     + sw1(avg(r.hitSw)) + ' swings), comes up ' + num1(avg(r.missAbs)) + ' short ('
@@ -1958,14 +1958,67 @@ function viewProfile(){
 function wireProfile(){
   const b = document.getElementById("back");
   if(b) b.onclick = () => { state.screen = "season"; state.profile = null; render(); };
+  const pq = document.getElementById("profqual");
+  if(pq) pq.onclick = () => {
+    state.drill = {id: state.profile, kind: "Q"}; state.screen = "season"; state.profile = null; render();
+    const dp = document.getElementById("drillpanel");
+    if(dp && dp.scrollIntoView) try{ dp.scrollIntoView({block:"start"}); }catch(e){}
+  };
+}
+
+/* What each graded leg did to a member's pick quality: how far it beat or missed
+   its line in swings, whether the cap kicked in, and how many points of the 0 to
+   100 score it is worth. The points add up to the score exactly. */
+function qualityRows(id){
+  const rows = [];
+  for(let w = 0; w < DEADLINES.length; w++){
+    if(!isLocked(w)) continue;
+    const p = (picksOf(w) || {})[id];
+    if(!p || !p.result) continue;
+    const lq = legQuality(p), mg = margin(p);
+    const raw = (lq === null || mg === null) ? null : Math.abs(mg) / spreadFor(p.stat, p.line);
+    rows.push({w:w, p:p, lq:lq, raw:raw, spread:spreadFor(p.stat, p.line), capped: raw !== null && raw > 2});
+  }
+  const counted = rows.filter(r => r.lq !== null);
+  counted.forEach(r => { r.pts = 25 * r.lq / counted.length; });
+  return {rows: rows.reverse(), counted: counted};
+}
+const signed = (v, d) => (v > 0 ? "+" : v < 0 ? "\u2212" : "") + Math.abs(v).toFixed(d);
+function qualityDrill(id){
+  const {rows, counted} = qualityRows(id);
+  const score = counted.length ? Math.round(50 + 25 * avg(counted.map(r => r.lq))) : null;
+  const mean = counted.length ? avg(counted.map(r => r.lq)) : 0;
+  return '<div class="card" id="drillpanel"><h3>' + esc(memberName(id)) + ', pick quality ' + q1(score) + '</h3>'
+  + (counted.length
+      ? '<p class="hint">Every member starts at 50. Each leg below moves the score up or down by the points shown, '
+        + 'and those points add up to the score. A leg is worth how far it beat or missed its line, measured in swings, '
+        + 'capped at 2 either way. ' + counted.length + ' leg' + (counted.length === 1 ? '' : 's') + ' averaging '
+        + signed(mean, 2) + ' swings: 50 ' + (mean < 0 ? '\u2212' : '+') + ' ' + Math.abs(25 * mean).toFixed(1) + ' = ' + score + '.</p>'
+      : '<p class="hint">Nothing graded yet.</p>')
+  + (rows.length ? '<ul class="drill">' + rows.map(r => {
+      const p = r.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
+      let how;
+      if(r.lq === null) how = "void, does not count";
+      else if(r.raw === null) how = (p.result === "H" ? "hit" : "missed") + " with no final entered, counted as " + signed(r.lq, 2);
+      else how = (p.result === "H" ? "beat the line by " : "missed by ") + num1(Math.abs(margin(p)))
+        + ", " + sw1(r.raw) + " swings" + (r.capped ? ", capped at 2" : "");
+      return '<li><div class="dwk">WK' + (r.w+1) + '</div><div class="dbody">'
+        + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
+        + '<div class="dprop">' + propText(p) + (p.actual != null ? ', final ' + esc(trim1(num(p.actual))) : '') + '</div>'
+        + '<div class="dnum ' + cls + '">' + (r.lq === null ? 'no effect' : signed(r.pts, 1) + ' points') + '</div>'
+        + '<div class="dfin">' + how + (r.lq !== null && r.raw !== null ? '. One swing here is ' + trim1(r.spread) : '') + '</div>'
+        + '</div></li>';
+    }).join("") + '</ul>' : "")
+  + '<button class="btn ghost" id="closedrill">Close</button></div>';
 }
 
 function drillCard(){
   if(!state.drill) return "";
   const {id, kind} = state.drill;
+  if(kind === "Q") return qualityDrill(id);
   const legs = legsFor(id, kind);
   const label = kind === "H" ? "hits" : kind === "M" ? "misses" : "every graded leg";
-  return '<div class="card"><h3>' + esc(memberName(id)) + ", " + label + '</h3>'
+  return '<div class="card" id="drillpanel"><h3>' + esc(memberName(id)) + ", " + label + '</h3>'
   + '<p class="hint">' + (legs.length ? legs.length + ' of them, newest first.' : 'Nothing here yet.') + '</p>'
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
@@ -2001,7 +2054,7 @@ function viewSeason(){
   + '<p class="hint">Every graded leg since Week 1. Ties on hit rate are broken by pick quality.</p><div class="scroller">'
   + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Qual</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
   + byRate.map(r=>'<tr><td>'+nameCell(r)+'</td><td>'+r.H+'</td><td>'+r.M
-      +'</td><td>'+pct1(hitRate(r))+'</td><td>'+cell(r.id,"A",q1(qualityOf(r)))+'</td><td>'+r.V+'</td><td>'+r.skip
+      +'</td><td>'+pct1(hitRate(r))+'</td><td>'+cell(r.id,"Q",q1(qualityOf(r)))+'</td><td>'+r.V+'</td><td>'+r.skip
       +'</td><td>'+streak(r)+'</td><td>'+r.best+'</td></tr>').join("")
   + '</table></div></div>'
 
@@ -2035,7 +2088,7 @@ function viewSeason(){
     + 'Tap a score to see every leg behind it.</p>'
     + '<ul class="tally">' + byQual.map(r => '<li><span class="tk">' + esc(r.name) + '</span>'
       + '<span class="tb"><i style="width:' + qualityOf(r) + '%;background:' + (qualityOf(r) >= 50 ? '#4CC17E' : '#E2574C') + '"></i></span>'
-      + '<span class="tn">' + cell(r.id,"A",q1(qualityOf(r))) + '</span></li>').join("") + '</ul></div>' : "");
+      + '<span class="tn">' + cell(r.id,"Q",q1(qualityOf(r))) + '</span></li>').join("") + '</ul></div>' : "");
   const cases = '<div class="card"><h3>Trophy case</h3>'
   + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
   + members.map(m=>{
@@ -2075,7 +2128,8 @@ function viewSeason(){
       : '<p class="hint" style="margin-top:10px">Nothing logged yet. Grade a week and the good ones show up here.</p>')
   + '</div>';
 
-  return topbar("season") + table + drillCard() + quality + cases + feed
+  const dq = state.drill && state.drill.kind === "Q";
+  return topbar("season") + table + (dq ? "" : drillCard()) + quality + (dq ? drillCard() : "") + cases + feed
   + '<p class="footnote">Records and badges are recalculated from the grades every time this page opens, so fixing a wrong grade fixes the history with it.</p>';
 }
 function wireSeason(){
@@ -2088,6 +2142,8 @@ function wireSeason(){
       const [id, kind] = b.dataset.drill.split(":");
       state.drill = (state.drill && state.drill.id === id && state.drill.kind === kind) ? null : {id:id, kind:kind};
       render();
+      const dp = document.getElementById("drillpanel");
+      if(dp && dp.scrollIntoView) try{ dp.scrollIntoView({behavior:"smooth", block:"start"}); }catch(e){}
     };
   });
   const cd = document.getElementById("closedrill");
