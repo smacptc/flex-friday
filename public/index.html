@@ -236,6 +236,38 @@
   .mbar.silver i{background:#BFC7D1}
   .mbar.gold i{background:#F0B429}
   .mnext{display:block;font-family:var(--pix);font-size:8px;color:var(--dim);line-height:1.6;margin-top:4px}
+  .medal[data-badge]{cursor:pointer;-webkit-tap-highlight-color:transparent;border-radius:0}
+  .medal[data-badge]:active .mart{transform:translate(2px,2px)}
+  .medal[data-badge]:focus-visible,.legrow[data-badge]:focus-visible{outline:2px dashed var(--amber);outline-offset:3px}
+  @media (hover:hover){ .medal[data-badge]:hover .mname{text-decoration:underline} .legrow[data-badge]:hover b{text-decoration:underline} }
+  .legrow[data-badge]{cursor:pointer;-webkit-tap-highlight-color:transparent}
+  body.sheeton{overflow:hidden}
+  .sheetback{position:fixed;inset:0;background:rgba(4,8,13,.72);z-index:60}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;max-width:560px;margin:0 auto;max-height:80vh;overflow-y:auto;
+    -webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:var(--panel);border-top:4px solid #fff;
+    padding:18px 16px calc(24px + env(safe-area-inset-bottom));box-shadow:0 -8px 0 rgba(0,0,0,.45)}
+  @media (max-width:599px){ .sheet{animation:sheetup .18s ease-out} }
+  @media (min-width:600px){ .sheet{bottom:auto;top:50%;transform:translateY(-50%);border:4px solid #fff;box-shadow:8px 8px 0 rgba(0,0,0,.65)} }
+  @media (prefers-reduced-motion:reduce){ .sheet{animation:none} }
+  @keyframes sheetup{from{transform:translateY(100%)}to{transform:none}}
+  .sheetx{position:absolute;right:12px;top:12px;width:40px;height:40px;font-family:var(--pix);font-size:12px;color:var(--chalk);
+    background:var(--panel2);border:3px solid var(--edge);box-shadow:3px 3px 0 var(--edge);padding:0}
+  .sheetx:active{transform:translate(3px,3px);box-shadow:none}
+  .sheethead{display:flex;gap:14px;align-items:center;padding-right:44px}
+  .sheethead .badgeicon{flex:none}
+  .sheetname{font-family:var(--big);font-weight:700;font-size:20px;color:#fff;text-shadow:2px 2px 0 var(--edge);line-height:1.2}
+  .sheettier{font-family:var(--pix);font-size:8px;line-height:1.8;margin-top:8px;color:var(--dim)}
+  .sheettier.bronze{color:#E0A96D} .sheettier.silver{color:#EDF1F5} .sheettier.gold{color:#FFE08A}
+  .sheetdesc{font-size:16px;color:var(--chalk);line-height:1.6;margin:14px 0 4px}
+  .dwhy{font-family:var(--pix);font-size:8px;color:var(--amber);margin-top:6px;line-height:1.7}
+  .dtier{padding:1px 3px;border:2px solid currentColor}
+  .dtier.bronze{color:#E0A96D} .dtier.silver{color:#EDF1F5} .dtier.gold{color:#FFE08A}
+  .sheetladder{display:block;color:var(--dim);margin-top:4px}
+  ul.holders{list-style:none;margin:0;padding:0}
+  ul.holders li{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-top:2px solid #16222F;font-size:16px}
+  ul.holders li:first-child{border-top:0}
+  ul.holders b{font-family:var(--pix);font-size:8px;font-weight:400;align-self:center}
+  ul.holders li.bronze b{color:#E0A96D} ul.holders li.silver b{color:#EDF1F5} ul.holders li.gold b{color:#FFE08A}
   .casecount{display:block;font-family:var(--pix);font-size:8px;color:var(--dim);margin:-2px 0 4px}
   .medal.gold .mname{color:#FFE08A}
   .medal.silver .mname{color:#EDF1F5}
@@ -792,18 +824,44 @@ const BADGES = {
   bounce:    {name:"Bounce back",     desc:"Hit right after two or more misses in a row"},
   backbone:  {name:"Backbone",        desc:"The only leg that hit that week"},
   perfect:   {name:"Perfect card",    desc:"Part of a lineup where every leg hit"},
-  heater:    {name:"Heater",          desc:"Three, five or ten hits in a row"},
-  specialist:{name:"Specialist",      desc:"Three hits at the same position"},
-  homer:     {name:"Homer",           desc:"A third leg from the same team"},
-  rideordie: {name:"Ride or die",     desc:"Picked the same player a third time"},
+  heater:    {name:"Heater",          desc:"Hit 3, 5 or 8 in a row"},
+  specialist:{name:"Specialist",      desc:"Hit 3, 6 or 10 legs at the same position"},
+  homer:     {name:"Homer",           desc:"Picked 3, 6 or 9 legs from the same team"},
+  rideordie: {name:"Ride or die",     desc:"Picked the same player 3, 5 or 7 times"},
   earlybird: {name:"Early bird",      desc:"Posted three or more days early"},
   buzzer:    {name:"Buzzer beater",   desc:"Posted in the last 15 minutes before the lock"},
   brick:     {name:"Brick",           desc:"Missed by more swings than anyone else that week"},
   hook:      {name:"Hook",            desc:"Missed by exactly 0.5"},
   cooler:    {name:"Cooler",          desc:"The only leg that missed that week"},
-  freeze:    {name:"Deep freeze",     desc:"Three or five misses in a row"},
+  freeze:    {name:"Deep freeze",     desc:"Missed 3, 5 or 8 in a row"},
   ghost:     {name:"Ghost",           desc:"Never got a leg in before the lock"}
 };
+
+/* These five are running totals, so they level up as the number climbs instead of
+   being earned over and over: bronze, silver and gold at these marks. */
+const LEVELS = {
+  heater:     {at:[3,5,8],  unit:"hits in a row"},
+  freeze:     {at:[3,5,8],  unit:"misses in a row"},
+  specialist: {at:[3,6,10], unit:"hits at one position"},
+  homer:      {at:[3,6,9],  unit:"legs on one team"},
+  rideordie:  {at:[3,5,7],  unit:"picks of one player"}
+};
+const TIER_KEYS = ["bronze","silver","gold"];
+/* where one member stands on one badge, whichever way it levels */
+function standing(r, k){
+  if(LEVELS[k]){
+    const v = (r && r.level && r.level[k]) || 0, at = LEVELS[k].at;
+    const i = v >= at[2] ? 2 : v >= at[1] ? 1 : v >= at[0] ? 0 : -1;
+    const nx = i < 2 ? TIER_KEYS[i + 1] : null;
+    return {tier:i < 0 ? null : TIER_KEYS[i], rank:i + 1, value:v, chip:"", level:true, on:(r && r.levelOn && r.levelOn[k]) || "", nx:i < 0 ? null : nx,
+            need:nx ? at[i + 1] : null, left:nx ? at[i + 1] - v : 0, pct:nx ? v / at[i + 1] : 1};
+  }
+  const n = (r && r.badges && r.badges[k]) || 0, t = n ? tierOf(n) : null, nx = n ? nextTier(n) : null;
+  return {tier:t, rank:t ? TIER_KEYS.indexOf(t) + 1 : 0, value:n, chip:n > 1 ? "x" + n : "", nx:nx,
+          need:nx ? TIERS[nx].at : null, left:nx ? TIERS[nx].at - n : 0, pct:nx ? n / TIERS[nx].at : 1};
+}
+const ordinal = n => ["","First","Second","Third","Fourth","Fifth","Sixth","Seventh","Eighth","Ninth","Tenth"][n] || (n + "th");
+const levelsText = k => "Bronze at " + LEVELS[k].at[0] + ", silver at " + LEVELS[k].at[1] + ", gold at " + LEVELS[k].at[2] + " " + LEVELS[k].unit;
 
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
 const state = { roster:null, season:null, me:null, view:0, screen:"main", claiming:null, side:"More",
@@ -1324,7 +1382,7 @@ function badgeGrid(key, tier){
 }
 function badgeSVG(key, count, px, locked){
   if(!ICONS[key]) return "";
-  const g = badgeGrid(key, locked ? "locked" : tierOf(count));
+  const g = badgeGrid(key, locked ? "locked" : (typeof count === "string" ? count : tierOf(count)));
   let out = "";
   for(let y = 0; y < BF; y++){ let x = 0;
     while(x < BF){ const c = g[y][x]; if(!c){ x++; continue; }
@@ -1335,20 +1393,94 @@ function badgeSVG(key, count, px, locked){
     + '" shape-rendering="crispEdges" aria-hidden="true">' + out + '</svg>';
 }
 /* one medal with its name, tier, and how far it is from the next tier */
-function medalHTML(k, n, compact){
-  if(!n) return '<div class="medal locked"><span class="mart">' + badgeSVG(k, 0, 60, true) + '</span>'
+function medalTap(k, who, earned){
+  const tip = BADGES[k].name + ": " + (earned && earned.length
+    ? earned.map(e => "WK" + (e.w + 1) + " " + (e.p ? e.p.player + ", " : "") + e.why).join("\n")
+    : BADGES[k].desc + (who ? " (not earned yet)" : ""));
+  return ' data-badge="' + k + '"' + (who ? ' data-who="' + esc(who) + '"' : '')
+    + ' role="button" tabindex="0" title="' + esc(tip) + '"';
+}
+function medalHTML(k, st, compact, who, earned){
+  if(!st || !st.tier) return '<div class="medal locked"' + medalTap(k, who, null) + '><span class="mart">' + badgeSVG(k, 0, 60, true) + '</span>'
     + '<span class="mname">' + esc(BADGES[k].name) + '</span><span class="mcount">Not yet</span></div>';
-  const t = tierOf(n), nx = nextTier(n);
-  return '<div class="medal ' + t + '"><span class="mart">' + badgeSVG(k, n, 60)
-    + (n > 1 ? '<b class="mx">x' + n + '</b>' : '') + '</span>'
+  const t = st.tier, nx = st.nx;
+  return '<div class="medal ' + t + '"' + medalTap(k, who, earned) + '><span class="mart">' + badgeSVG(k, t, 60)
+    + (st.chip ? '<b class="mx">' + st.chip + '</b>' : '') + '</span>'
     + '<span class="mname">' + esc(BADGES[k].name) + '</span>'
     + (compact ? '' : '<span class="mcount">' + TIERS[t].name + '</span>')
-    + (nx ? '<span class="mbar ' + nx + '"><i style="width:' + Math.round(n / TIERS[nx].at * 100) + '%"></i></span>'
-          + (compact ? '' : '<span class="mnext">' + (TIERS[nx].at - n) + ' to ' + TIERS[nx].name.toLowerCase() + '</span>') : '')
+    + (nx ? '<span class="mbar ' + nx + '"><i style="width:' + Math.round(st.pct * 100) + '%"></i></span>'
+          + (compact ? '' : '<span class="mnext">' + (st.level ? nx + ' at ' + st.need : st.left + ' to ' + nx) + '</span>') : '')
     + '</div>';
 }
+/* earned badges first, highest tier first, then the most times */
+const byStanding = r => (x, y) => { const a = standing(r, x), b = standing(r, y); return b.rank - a.rank || b.value - a.value; };
 
 
+
+/* ---- the badge panel ---------------------------------------------------------
+   Tapping a medal opens a panel over the screen with every time it was earned:
+   the week, the leg, how it finished, and why it counted. It lives outside the
+   app container, so the live feed redrawing the screen underneath leaves it alone. */
+function badgeSheetHTML(k, who){
+  const a = analyze(), B = BADGES[k], members = state.roster.members;
+  const r = who && a.rec[who] ? a.rec[who] : null, st = standing(r, k), lv = LEVELS[k];
+  const list = r ? (r.earned[k] || []).slice().sort((x, y) => x.w - y.w) : [];
+  const t = st.tier, nx = st.nx;
+  const holders = members.map(m => [m, standing(a.rec[m.id], k)]).filter(x => x[1].tier)
+    .sort((x, y) => y[1].rank - x[1].rank || y[1].value - x[1].value);
+  const art = r ? (t ? badgeSVG(k, t, 90) : badgeSVG(k, 0, 90, true)) : badgeSVG(k, 1, 90);
+  const ladder = lv ? levelsText(k) : "Bronze the first time, silver at 3, gold at 5";
+  const tierLine = !r ? ladder
+    : t ? esc(r.name) + ", " + TIERS[t].name + (st.chip ? " " + st.chip : "") + (lv ? ", best is " + st.value + (st.on ? " on " + esc(st.on) : "") : "")
+        + (nx ? ". " + (lv ? TIERS[nx].name + " at " + st.need : st.left + " more for " + nx) : ". Top tier")
+    : esc(r.name) + " has not earned this yet" + (lv && st.value ? ", best so far is " + st.value + (st.on ? " on " + esc(st.on) : "") : "");
+  return '<div class="sheetback" id="sheetback"></div>'
+    + '<div class="sheet" role="dialog" aria-modal="true" aria-label="' + esc(B.name) + '">'
+    + '<button class="sheetx" id="sheetx" aria-label="Close">X</button>'
+    + '<div class="sheethead">' + art + '<div><div class="sheetname">' + esc(B.name) + '</div>'
+    + '<div class="sheettier ' + (t || "") + '">' + tierLine + '</div></div></div>'
+    + '<p class="sheetdesc">' + esc(B.desc) + '.' + (r ? '<span class="sheetladder">' + ladder + '.</span>' : '') + '</p>'
+    + (list.length ? '<h4 class="sub">What it came from</h4><ul class="drill">' + list.map(e => {
+        const p = e.p, cls = p && p.result === "H" ? "h" : p && p.result === "M" ? "m" : "v";
+        return '<li><div class="dwk">WK' + (e.w + 1) + '</div><div class="dbody">'
+          + (p ? '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : '') + '</div>'
+               + '<div class="dprop">' + propText(p) + '</div>'
+               + (p.result && marginText(p) ? '<div class="dnum ' + cls + '">' + esc(marginText(p)) + '</div>' : '') : '')
+          + '<div class="dwhy">' + (e.tier ? '<span class="dtier ' + e.tier + '">' + TIERS[e.tier].name + '</span> ' : '') + esc(e.why) + '</div></div></li>'; }).join("") + '</ul>' : '')
+    + '<h4 class="sub">Around the pool</h4>'
+    + (holders.length ? '<ul class="holders">' + holders.map(([m, h]) => '<li class="' + h.tier + '">'
+        + '<span>' + esc(m.name) + '</span><b>' + TIERS[h.tier].name + (lv ? ', best ' + h.value : h.chip ? ' ' + h.chip : '') + '</b></li>').join("") + '</ul>'
+      : '<p class="hint">Nobody has this one yet.</p>')
+    + '</div>';
+}
+function drawSheet(){
+  let root = document.getElementById("sheetroot");
+  if(!root){ root = document.createElement("div"); root.id = "sheetroot"; document.body.appendChild(root); }
+  if(!state.sheet || !state.roster){ root.innerHTML = ""; document.body.classList.remove("sheeton"); return; }
+  root.innerHTML = badgeSheetHTML(state.sheet.k, state.sheet.who);
+  document.body.classList.add("sheeton");
+  document.getElementById("sheetback").onclick = closeBadge;
+  const x = document.getElementById("sheetx");
+  x.onclick = closeBadge;
+  try{ x.focus({preventScroll:true}); }catch(e){}
+}
+function openBadge(k, who){ if(!BADGES[k]) return; state.sheet = {k:k, who:who || null}; drawSheet(); }
+function closeBadge(){
+  const back = state.sheet; state.sheet = null; drawSheet();
+  /* hand focus back to the medal that opened it */
+  if(back){ const el = document.querySelector('[data-badge="' + back.k + '"]' + (back.who ? '[data-who="' + back.who + '"]' : ':not([data-who])'));
+    if(el) try{ el.focus({preventScroll:true}); }catch(e){} }
+}
+function onBadgeTap(e){
+  const el = e.target && e.target.closest ? e.target.closest("[data-badge]") : null;
+  if(!el || el.closest("#sheetroot")) return;
+  e.preventDefault();
+  openBadge(el.getAttribute("data-badge"), el.getAttribute("data-who"));
+}
+function onBadgeKey(e){
+  if(e.key === "Escape" && state.sheet){ closeBadge(); return; }
+  if((e.key === "Enter" || e.key === " ") && e.target && e.target.matches && e.target.matches("[data-badge]")) onBadgeTap(e);
+}
 
 /* ---- reading a PrizePicks screenshot ---------------------------------------
    The picture is shrunk in the browser first, then sent to the Worker. Nothing is
@@ -1615,14 +1747,24 @@ const hitRate = r => (r.H + r.M) ? (r.H / (r.H + r.M)) * 100 : null;
 function analyze(){
   const members = state.roster.members;
   const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0,
-    badges:{}, cur:0, best:0, hitPct:[], missPct:[], hitAbs:[], missAbs:[], hitSw:[], missSw:[], qual:[]});
+    badges:{}, earned:{}, level:{}, levelOn:{}, cur:0, best:0, hitPct:[], missPct:[], hitAbs:[], missAbs:[], hitSw:[], missSw:[], qual:[]});
   const moments = [];
   /* running season counts behind Homer, Ride or die and Specialist */
   const teamN = {}, playerN = {}, posHits = {};
   members.forEach(m => { teamN[m.id] = {}; playerN[m.id] = {}; posHits[m.id] = {}; });
-  const give = (id, key, w, detail) => {
+  /* detail is the Moments line; p and why are what the badge panel shows when you tap a medal */
+  const give = (id, key, w, detail, p, why, tier) => {
     rec[id].badges[key] = (rec[id].badges[key]||0) + 1;
-    moments.push({w:w, who:rec[id].name, label:BADGES[key].name, detail:detail});
+    (rec[id].earned[key] = rec[id].earned[key] || []).push({w:w, detail:detail, p:p || null, why:why || detail, tier:tier || null});
+    moments.push({w:w, who:rec[id].name, label:BADGES[key].name + (tier ? ", " + tier : ""), detail:detail});
+  };
+  /* a level badge moves up only when a new season best lands on one of its marks */
+  const climb = (id, key, w, value, detail, p, why, on) => {
+    const r = rec[id];
+    if(value <= (r.level[key] || 0)) return;
+    r.level[key] = value; r.levelOn[key] = on || "";
+    const i = LEVELS[key].at.indexOf(value);
+    if(i >= 0) give(id, key, w, detail, p, why, TIER_KEYS[i]);
   };
 
   for(let w=0; w<DEADLINES.length; w++){
@@ -1662,35 +1804,39 @@ function analyze(){
       else if(p.result === "V"){ r.V++; }
       r.best = Math.max(r.best, r.cur);
 
-      if(p.result === "H" && isHalf(mg)) give(m.id,"razor",w,leg+", "+marginText(p));
-      if(p.result === "M" && isHalf(mg)) give(m.id,"hook",w,leg+", "+marginText(p));
+      if(p.result === "H" && isHalf(mg)) give(m.id,"razor",w,leg+", "+marginText(p),p,"Cleared it by exactly half a point");
+      if(p.result === "M" && isHalf(mg)) give(m.id,"hook",w,leg+", "+marginText(p),p,"Came up exactly half a point short");
       const l = num(p.line);
-      if(mg !== null && p.result === "H" && l && Math.abs(l) > 0 && mg >= 2 && mg/Math.abs(l) >= 0.5) give(m.id,"cushion",w,leg+", "+marginText(p));
+      if(mg !== null && p.result === "H" && l && Math.abs(l) > 0 && mg >= 2 && mg/Math.abs(l) >= 0.5)
+        give(m.id,"cushion",w,leg+", "+marginText(p),p,"Cleared the line by " + Math.round(mg/Math.abs(l)*100) + " percent");
 
       const early = p.ts ? DEADLINES[w] - p.ts : null;
       if(early === null){}
-      else if(early <= 900000 && early >= 0) give(m.id,"buzzer",w,"Posted "+leg+" with minutes to spare");
-      else if(early >= 259200000) give(m.id,"earlybird",w,"Had "+leg+" in three days early");
+      else if(early <= 900000 && early >= 0){ const mins = Math.max(1, Math.round(early/60000));
+        give(m.id,"buzzer",w,"Posted "+leg+" with minutes to spare",p,"Posted " + mins + " minute" + (mins===1?"":"s") + " before the lock"); }
+      else if(early >= 259200000){ const days = Math.floor(early/86400000);
+        give(m.id,"earlybird",w,"Had "+leg+" in three days early",p,"Posted " + days + " days before the lock"); }
 
-      if(p.result === "H" && (r.cur === 3 || r.cur === 5 || r.cur === 10)) give(m.id,"heater",w,r.cur+" hits in a row");
-      if(p.result === "M" && (r.cur === -3 || r.cur === -5)) give(m.id,"freeze",w,(-r.cur)+" misses in a row");
+      if(p.result === "H") climb(m.id,"heater",w,r.cur,r.cur+" hits in a row",p,"Made it " + r.cur + " hits in a row");
+      if(p.result === "M") climb(m.id,"freeze",w,-r.cur,(-r.cur)+" misses in a row",p,"Made it " + (-r.cur) + " misses in a row");
 
       /* habits across the season, counted from every leg posted */
       const team = String(p.team || "").toUpperCase();
       if(team){ const n = teamN[m.id][team] = (teamN[m.id][team] || 0) + 1;
-        if(n === 3) give(m.id,"homer",w,"Third " + team + " leg of the season, " + p.player); }
+        climb(m.id,"homer",w,n,ordinal(n) + " " + team + " leg of the season, " + p.player,p,ordinal(n) + " " + team + " leg of the season", team); }
       const pk = normName(p.player);
       if(pk){ const n = playerN[m.id][pk] = (playerN[m.id][pk] || 0) + 1;
-        if(n === 3) give(m.id,"rideordie",w,"Went back to " + p.player + " a third time"); }
+        climb(m.id,"rideordie",w,n,"Went back to " + p.player + " a " + ordinal(n).toLowerCase() + " time",p,ordinal(n) + " time picking " + p.player, p.player); }
 
       if(p.result === "H"){
         const pos = playerPos(p.player);
         if(pos){ const n = posHits[m.id][pos] = (posHits[m.id][pos] || 0) + 1;
-          if(n === 3) give(m.id,"specialist",w,"Third hit on a " + pos + ", " + leg); }
-        if(prevCur <= -2) give(m.id,"bounce",w,"Hit " + leg + " after " + (-prevCur) + " straight misses");
-        if(flavorOf(p) === "demon") give(m.id,"slayer",w,"Cashed a demon, " + leg + ", " + marginText(p));
-        if(p.side === "Less") give(m.id,"fade",w,"Took the under and hit, " + leg);
-        if(swing !== null && mg !== null && mg > EPS && swing < 0.1) give(m.id,"photo",w,leg + ", " + marginText(p) + ", " + sw1(swing) + " of a swing");
+          climb(m.id,"specialist",w,n,ordinal(n) + " hit on a " + pos + ", " + leg,p,ordinal(n) + " hit on a " + pos + " this season", pos + "s"); }
+        if(prevCur <= -2) give(m.id,"bounce",w,"Hit " + leg + " after " + (-prevCur) + " straight misses",p,"Hit after " + (-prevCur) + " straight misses");
+        if(flavorOf(p) === "demon") give(m.id,"slayer",w,"Cashed a demon, " + leg + ", " + marginText(p),p,"Cashed a demon line");
+        if(p.side === "Less") give(m.id,"fade",w,"Took the under and hit, " + leg,p,"Took the Less and it hit");
+        if(swing !== null && mg !== null && mg > EPS && swing < 0.1)
+          give(m.id,"photo",w,leg + ", " + marginText(p) + ", " + sw1(swing) + " of a swing",p,"Won by " + sw1(swing) + " of a swing");
       }
       if(swing !== null && (p.result === "H" || p.result === "M"))
         weekSw.push({id:m.id, sw:p.result === "H" ? swing : -swing, leg:leg, p:p});
@@ -1700,14 +1846,14 @@ function analyze(){
     if(cardDone && weekSw.length){
       const hi = Math.max(...weekSw.map(x => x.sw)), lo = Math.min(...weekSw.map(x => x.sw));
       if(hi > 0) weekSw.filter(x => Math.abs(x.sw - hi) < 1e-9).forEach(x =>
-        give(x.id,"legweek",w,"Best leg of the week, " + x.leg + ", " + marginText(x.p) + ", " + sw1(hi) + " swings"));
+        give(x.id,"legweek",w,"Best leg of the week, " + x.leg + ", " + marginText(x.p) + ", " + sw1(hi) + " swings",x.p,"Best leg that week, " + sw1(hi) + " swings over"));
       if(lo < 0) weekSw.filter(x => Math.abs(x.sw - lo) < 1e-9).forEach(x =>
-        give(x.id,"brick",w,"Worst miss of the week, " + x.leg + ", " + marginText(x.p) + ", " + sw1(-lo) + " swings"));
+        give(x.id,"brick",w,"Worst miss of the week, " + x.leg + ", " + marginText(x.p) + ", " + sw1(-lo) + " swings",x.p,"Worst miss that week, " + sw1(-lo) + " swings under"));
     }
 
-    if(cardDone && misses.length === 1 && hits.length >= 3) give(misses[0],"cooler",w,"The only leg to miss on a "+hits.length+" hit card");
-    if(cardDone && hits.length === 1 && misses.length >= 3) give(hits[0],"backbone",w,"Carried a card that went 1 for "+(hits.length+misses.length));
-    if(cardDone && misses.length === 0 && hits.length === members.length) hits.forEach(id => give(id,"perfect",w,"The card went "+hits.length+" for "+hits.length));
+    if(cardDone && misses.length === 1 && hits.length >= 3) give(misses[0],"cooler",w,"The only leg to miss on a "+hits.length+" hit card",picks[misses[0]],"The only miss on a card with " + hits.length + " hits");
+    if(cardDone && hits.length === 1 && misses.length >= 3) give(hits[0],"backbone",w,"Carried a card that went 1 for "+(hits.length+misses.length),picks[hits[0]],"The only hit on a card that went 1 for " + (hits.length+misses.length));
+    if(cardDone && misses.length === 0 && hits.length === members.length) hits.forEach(id => give(id,"perfect",w,"The card went "+hits.length+" for "+hits.length,picks[id],"The card went " + hits.length + " for " + hits.length));
   }
 
   (state.season.moments||[]).forEach(mo => moments.push({w:mo.week, who:mo.by, label:"Noted", detail:mo.text, manual:true, id:mo.id}));
@@ -1730,6 +1876,8 @@ async function boot(){
   /* once Friday 5 has passed, the card is what you want to see, not the entry form */
   state.screen = !roster ? "setup" : (isLocked(state.view) ? "card" : "main");
   render();
+  document.addEventListener("click", onBadgeTap);
+  document.addEventListener("keydown", onBadgeKey);
   setInterval(tickClock, 1000);
   setInterval(quietRefresh, 60000);
 }
@@ -1776,7 +1924,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25g";
+const BUILD = "2026-10-25h";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1886,7 +2034,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25g</span></p>';
+  + '<br><span class="build">build 2026-10-25h</span></p>';
 }
 
 function signInCard(){
@@ -2145,7 +2293,7 @@ function viewProfile(){
   if(!m) return topbar("profile") + '<div class="card"><h3>Nobody here</h3></div>';
   const a = analyze(), r = a.rec[id], c = countsFor(id);
   const legs = legsFor(id, "all");
-  const badges = Object.keys(r.badges).sort((x,y) => r.badges[y]-r.badges[x]);
+  const badges = Object.keys(r.badges).sort(byStanding(r));
 
   return topbar("profile")
   + '<div class="card"><div class="phead">' + avatarFor(m, 72)
@@ -2190,9 +2338,10 @@ function viewProfile(){
   + '</div>'
 
   + '<div class="card"><h3>Trophies</h3>'
-    + '<p class="hint">' + badges.length + ' of ' + Object.keys(BADGES).length + ' earned. Bronze the first time, silver at 3, gold at 5.</p>'
-    + '<div class="medals">' + badges.map(k => medalHTML(k, r.badges[k])).join("")
-    + Object.keys(BADGES).filter(k => !r.badges[k]).map(k => medalHTML(k, 0)).join("") + '</div></div>'
+    + '<p class="hint">' + badges.length + ' of ' + Object.keys(BADGES).length + ' earned.</p>'
+    + '<div class="medals">' + badges.map(k => medalHTML(k, standing(r, k), false, id, r.earned[k])).join("")
+    + Object.keys(BADGES).filter(k => !r.badges[k]).map(k => medalHTML(k, null, false, id)).join("") + '</div>'
+    + '<p class="hint" style="margin-top:12px">Tap a badge to see what it came from.</p></div>'
 
   + '<div class="card"><h3>Every leg</h3>'
   + (function(){ const q = qualityRows(id).counted;
@@ -2353,25 +2502,27 @@ function viewSeason(){
       + '<span class="tb"><i style="width:' + qualityOf(r) + '%;background:' + (qualityOf(r) >= 50 ? '#4CC17E' : '#E2574C') + '"></i></span>'
       + '<span class="tn">' + cell(r.id,"Q",q1(qualityOf(r))) + '</span></li>').join("") + '</ul></div>' : "");
   const cases = '<div class="card"><h3>Trophy case</h3>'
-  + '<p class="hint">Earned automatically off the final numbers you enter each week.</p>'
+  + '<p class="hint">Earned automatically off the final numbers you enter each week. Tap any badge to see what it came from.</p>'
   + members.map(m=>{
       const b = a.rec[m.id].badges;
-      const keys = Object.keys(b).sort((x,y) => b[y]-b[x]);
+      const keys = Object.keys(b).sort(byStanding(a.rec[m.id]));
       return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div style="flex:1;min-width:0"><h4>'+esc(m.name.toUpperCase())+'</h4>'
       + '<span class="casecount">' + keys.length + ' of ' + Object.keys(BADGES).length + '</span>'
       + (keys.length
-          ? '<div class="medals">' + keys.map(k => medalHTML(k, b[k], true)).join("") + '</div>'
+          ? '<div class="medals">' + keys.map(k => medalHTML(k, standing(a.rec[m.id], k), true, m.id, a.rec[m.id].earned[k])).join("") + '</div>'
           : '<span class="hint">Nothing yet.</span>')
       + '</div></div>';
     }).join("")
-  + '<p class="hint" style="margin-top:14px">Each one is a bronze coin the first time you earn it, '
-  + 'a silver shield at three and a gold rosette at five. The ones still out there sit as empty slots on your profile.</p>'
+  + '<p class="hint" style="margin-top:14px">Most badges are a bronze coin the first time you earn one, '
+  + 'a silver shield at three and a gold rosette at five. Heater, Deep freeze, Specialist, Homer and Ride or die '
+  + 'level up instead as the streak or count climbs, so the badge itself turns silver and gold. '
+  + 'The ones still out there sit as empty slots on your profile.</p>'
   + '<div class="tierdemo">' + ["bronze","silver","gold"].map(t =>
       '<div class="medal ' + t + '"><span class="mart">' + badgeSVG("perfect", TIERS[t].at, 60) + '</span>'
       + '<span class="mname">' + TIERS[t].name + '</span><span class="mcount">' + "At " + TIERS[t].at + '</span></div>').join("")
       + '<div class="medal locked"><span class="mart">' + badgeSVG("perfect", 0, 60, true) + '</span><span class="mname">Empty</span><span class="mcount">Not yet</span></div></div>'
   + '<p class="legend">'+Object.keys(BADGES).map(k=>
-      '<span class="legrow">' + badgeSVG(k, 1, 30) + '<span><b>'+BADGES[k].name+'</b>, '+BADGES[k].desc + '</span></span>').join("")+'</p></div>';
+      '<span class="legrow"' + medalTap(k, null, null) + '>' + badgeSVG(k, 1, 30) + '<span><b>'+BADGES[k].name+'</b>, '+BADGES[k].desc + '</span></span>').join("")+'</p></div>';
 
   const feed = '<div class="card"><h3>Moments</h3>'
   + (state.me
