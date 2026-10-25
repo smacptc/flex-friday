@@ -89,7 +89,7 @@ export const statKey = s => String(s || "").toLowerCase()
   .replace(/\btuds?\b/g, "td").replace(/\btouchdowns?\b/g, "td")
   .replace(/&/g, "+").replace(/\band\b/g, "+")
   .replace(/yds/g, "yards").replace(/rec\b/g, "rec").replace(/tds?\b/g, "td")
-  .replace(/receiving/g, "rec").replace(/receptions?/g, "receptions")
+  .replace(/receiving/g, "rec").replace(/receptions?/g, "receptions").replace(/\brecs\b/g, "receptions")
   .replace(/rushing/g, "rush").replace(/passing/g, "pass")
   .replace(/[^a-z+]+/g, " ").replace(/\s*\+\s*/g, "+").replace(/\s+/g, " ").trim();
 
@@ -108,10 +108,14 @@ export function readStat(rec, stat) {
   const sum = (...xs) => xs.some(x => x !== null) ? xs.reduce((a, x) => a + (x || 0), 0) : null;
 
   const k = statKey(stat);
+  /* PrizePicks' published NFL scoring: 0.04 per pass yard, 4 per pass TD, -1 per pick,
+     0.1 per rush and receiving yard, 6 per rush and receiving TD, 1 per catch, -1 per
+     lost fumble. Two-point conversions (+2) are not in ESPN's box score, so a leg with
+     a 2-point play reads 2 low until the official final is entered. */
   const fantasy = () => {
     if ([passY, rushY, recY, rec_].every(x => x === null)) return null;
     const v = (passY || 0) * 0.04 + (passTD || 0) * 4 - (ints || 0) + (rushY || 0) * 0.1 + (rushTD || 0) * 6
-            + (recY || 0) * 0.1 + (recTD || 0) * 6 + (rec_ || 0) - (fumLost || 0) * 2;
+            + (recY || 0) * 0.1 + (recTD || 0) * 6 + (rec_ || 0) - (fumLost || 0);
     return Math.round(v * 100) / 100;
   };
 

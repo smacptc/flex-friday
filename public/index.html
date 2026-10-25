@@ -1002,34 +1002,59 @@ async function hash(pin){
    79.5 line and a half-touchdown miss on 2.5 stop counting the same. These are my
    estimates, not measured from your results, and they are tunable once you have a
    season of grades to check them against. */
-/* Roughly how much each stat moves from game to game. Stat names are typed by
-   hand ("Rec yards", "Passing yards", "Anytime Tud"), so they are folded to one
-   spelling first and matched in order, combined props before single ones. These
-   spreads are estimates, not measured from your results. */
+/* How much each stat moves from game to game, measured from five regular seasons of
+   real NFL box scores (2021 to 2025, nflverse). For each stat: every player-season
+   with 6+ games, that player's own game-to-game standard deviation, pooled across
+   players at the same level. Higher-volume players swing more, so each stat has a
+   curve,  spread = a * line^b,  fitted against the player's median game, because a
+   PrizePicks line sits at the median. The line is held inside the range the curve
+   was measured on [lo, hi] so it never extrapolates. Passing stats use only games
+   where the QB was his team's main passer. Checked on a held-out season: fitted on
+   2021 to 2024, the curves predicted 2025's actual variation within 7% for every
+   stat but longest rush. Method and data: analysis/spreads in the repo.
+
+   Stat names are typed by hand ("Rec yards", "Passing yards", "Anytime Tud"), so they
+   are folded to one spelling first and matched in order, combined props first. */
 const statNorm = s => String(s || "").toLowerCase()
   .replace(/%/g, " pct ").replace(/percent(age)?/g, " pct ")
   .replace(/\btuds?\b/g, "td").replace(/\btouchdowns?\b/g, "td").replace(/\btds\b/g, "td")
   .replace(/yds/g, "yards").replace(/receiving/g, "rec").replace(/receptions?/g, "receptions")
+  .replace(/\brecs\b/g, "receptions")
   .replace(/rushing/g, "rush").replace(/passing/g, "pass")
   .replace(/&/g, "+").replace(/\band\b/g, "+")
   .replace(/[^a-z+]+/g, " ").replace(/\s*\+\s*/g, "+").replace(/\s+/g, " ").trim();
+/*  [pattern, a, b, lo, hi]  */
 const SPREADS = [
-  [/^pass\+rush\+rec\s*td/, 1], [/^rush\+rec\s*td/, 0.8],
-  [/any\s*time\s*td|^any\s*td|td\s*scorer/, 0.6], [/^(total\s*)?td/, 1],
-  [/^pass\+rush\s*yard/, 70], [/^rush\+rec\s*yard/, 35],
-  [/fantasy/, 7],
-  [/^pass\s*yard/, 70], [/^pass\s*td/, 1], [/^pass\s*(attempt|att)/, 8],
-  [/comp(letion)?s?\s*pct/, 8], [/completion/, 6], [/interception/, 0.8],
-  [/^rush\s*yard/, 30], [/^rush\s*(attempt|att|carr)/, 5], [/^rush\s*td/, 0.6],
-  [/longest\s*rec/, 12], [/longest\s*rush/, 10],
-  [/^rec\s*yard/, 30], [/^rec\s*td/, 0.6], [/target/, 3], [/receptions|^rec$|catches/, 2],
-  [/kick/, 3.5], [/tackle/, 3], [/sack/, 0.8]
+  [/^pass\+rush\+rec\s*td/, 0.935968, 0.35279, 0.80, 2.56],   // Pass+rush+rec TDs, 187 player-seasons
+  [/^rush\+rec\s*td/, 0.960507, 0.47486, 0.16, 0.88],   // Anytime TD / Rush+rec TDs, 976 player-seasons
+  [/any\s*time\s*td|^any\s*td|td\s*scorer|^(total\s*)?td/, 0.960507, 0.47486, 0.16, 0.88],   // Anytime TD / Rush+rec TDs, 976 player-seasons
+  [/^pass\+rush\s*yard/, 59.1278, 0.03144, 185.83, 309.55],   // Pass+rush yards, 188 player-seasons
+  [/^rush\+rec\s*yard/, 12.0106, 0.26897, 16.96, 100.30],   // Rush+rec yards, 993 player-seasons
+  [/fantasy/, 3.99916, 0.24298, 3.45, 21.07],   // Fantasy score, 1229 player-seasons
+  [/^pass\s*yard/, 35.5921, 0.12030, 161.61, 289.29],   // Pass yards, 188 player-seasons
+  [/^pass\s*td/, 0.93038, 0.38831, 0.68, 2.36],   // Pass TDs, 187 player-seasons
+  [/^pass\s*(attempt|att)/, 5.88633, 0.07731, 23.64, 40.59],   // Pass attempts, 188 player-seasons
+  [/comp(letion)?s?\s*pct/, 35.1302, -0.32289, 56.76, 71.67],   // Completion %, 187 player-seasons
+  [/completion/, 2.32579, 0.28484, 14.56, 27.02],   // Completions, 188 player-seasons
+  [/interception/, 0.987614, 0.40839, 0.35, 1.26],   // Interceptions, 184 player-seasons
+  [/^rush\s*yard/, 10.8217, 0.27750, 8.91, 85.57],   // Rush yards, 454 player-seasons
+  [/^rush\s*(attempt|att|carr)/, 3.23009, 0.19266, 2.81, 18.57],   // Rush attempts, 421 player-seasons
+  [/^rush\s*td/, 0.960507, 0.47486, 0.16, 0.88],   // Anytime TD / Rush+rec TDs, 976 player-seasons
+  [/longest\s*rec/, 3.85223, 0.40519, 7.22, 27.76],   // Longest reception, 526 player-seasons
+  [/longest\s*rush/, 4.15925, 0.38990, 4.86, 19.52],   // Longest rush, 223 player-seasons
+  [/^rec\s*yard/, 9.28023, 0.32293, 8.44, 78.80],   // Receiving yards, 1043 player-seasons
+  [/^rec\s*td/, 0.960507, 0.47486, 0.16, 0.88],   // Anytime TD / Rush+rec TDs, 976 player-seasons
+  [/target/, 1.57823, 0.31871, 1.95, 9.30],   // Targets, 995 player-seasons
+  [/receptions|^rec$|catches/, 1.43715, 0.29677, 0.99, 6.27],   // Receptions, 1079 player-seasons
+  [/kick/, 2.76337, 0.14175, 4.48, 9.30],   // Kicking points, 175 player-seasons
+  [/tackle/, 1.69569, 0.24342, 1.46, 7.87],   // Tackles+assists, 2016 player-seasons
+  [/sack/, 0.977581, 0.50406, 0.16, 0.85],   // Sacks, 996 player-seasons
 ];
 function spreadFor(stat, line){
-  const s = statNorm(stat);
-  for(const [re, v] of SPREADS) if(re.test(s)) return v;
-  const l = Math.abs(num(line) || 0);          /* unknown stat: a third of its line */
-  return Math.max(0.5, l * 0.35);
+  const s = statNorm(stat), l = Math.abs(num(line) || 0);
+  for(const [re, a, b, lo, hi] of SPREADS)
+    if(re.test(s)) return a * Math.pow(Math.min(Math.max(l, lo), hi), b);
+  return Math.max(0.5, l * 0.35);              /* a stat nobody has measured: a third of its line */
 }
 /* Pick quality: every graded leg scores how far it beat or missed its line, in
    swings, capped at two either way so one blowout cannot carry a season. The
@@ -1523,7 +1548,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25d";
+const BUILD = "2026-10-25e";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1633,7 +1658,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25d</span></p>';
+  + '<br><span class="build">build 2026-10-25e</span></p>';
 }
 
 function signInCard(){
@@ -2015,7 +2040,7 @@ function qualityDrill(id){
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + (p.actual != null ? ', final ' + esc(trim1(num(p.actual))) : '') + '</div>'
         + '<div class="dnum ' + cls + '">' + (r.lq === null ? 'no effect' : signed(r.pts, 1) + ' points') + '</div>'
-        + '<div class="dfin">' + how + (r.lq !== null && r.raw !== null ? '. One swing here is ' + trim1(r.spread) : '') + '</div>'
+        + '<div class="dfin">' + how + (r.lq !== null && r.raw !== null ? '. One swing at this line is ' + trim1(Math.round(r.spread * 10) / 10) : '') + '</div>'
         + '</div></li>';
     }).join("") + '</ul>' : "")
   + '<button class="btn ghost" id="closedrill">Close</button></div>';
@@ -2069,8 +2094,9 @@ function viewSeason(){
 
   + '<div class="card"><h3>Margins</h3>'
   + '<p class="hint">Clear is the cushion on hits, short is the gap on misses. Swing measures that '
-  + 'gap against how much the stat moves week to week, so half a touchdown on a 2.5 line counts as a '
-  + 'real miss and half a yard on 79.5 counts as bad luck. Tap any number to see the legs behind it.</p>'
+  + 'gap against how much the stat really moves game to game for a player at that line, measured from '
+  + 'five seasons of NFL box scores, so half a touchdown counts as a real miss and half a yard on 79.5 '
+  + 'counts as bad luck. Tap any number to see the legs behind it.</p>'
   + '<div class="scroller">'
   + '<table><tr><th>Player</th><th>Clear</th><th>Short</th><th>Swing +</th><th>Swing -</th></tr>'
   + a.table.map(r=>'<tr><td>'+nameCell(r)+'</td>'
@@ -2092,7 +2118,8 @@ function viewSeason(){
   const quality = ''
   + (byQual.length ? '<div class="card"><h3>Pick quality</h3>'
     + '<p class="hint">Hit rate only says whether a leg cashed. Quality also counts by how much, against how much '
-    + 'that stat normally moves, so a near miss costs less than a blowout and a squeaker counts for less than a romp. '
+    + 'that stat normally moves for a player at that line, measured from five seasons of real NFL box scores. '
+    + 'So a near miss costs less than a blowout and a squeaker counts for less than a romp. '
     + '50 means your legs land right on the line on average. Above 50 your picks beat their lines, below 50 they fall short. '
     + 'Tap a score to see every leg behind it.</p>'
     + '<ul class="tally">' + byQual.map(r => '<li><span class="tk">' + esc(r.name) + '</span>'
