@@ -254,6 +254,8 @@
   .dprop{font-size:16px;color:var(--dim);line-height:1.5}
   .dnum{font-size:16px;font-weight:700;margin-top:3px}
   .dnum.h{color:var(--green)} .dnum.m{color:var(--red)} .dnum.v{color:var(--void)}
+  .dqual{font-family:var(--pix);font-size:8px;margin-top:6px;line-height:1.6}
+  .dqual.h{color:var(--green)} .dqual.m{color:var(--red)}
   .dfin{font-family:var(--pix);font-size:8px;color:var(--dim);margin-top:4px;line-height:1.6}
   td button.drillcell{background:none;border:0;color:var(--chalk);font-family:var(--pix);font-size:8px;
     padding:4px 2px;text-decoration:underline}
@@ -1521,7 +1523,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25c";
+const BUILD = "2026-10-25d";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1631,7 +1633,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25c</span></p>';
+  + '<br><span class="build">build 2026-10-25d</span></p>';
 }
 
 function signInCard(){
@@ -1941,8 +1943,12 @@ function viewProfile(){
       + '</div></div>' : "")
 
   + '<div class="card"><h3>Every leg</h3>'
+  + (function(){ const q = qualityRows(id).counted;
+      return q.length ? '<p class="hint">Each graded leg shows what it did to the pick quality score of '
+        + q1(qualityOf(r)) + '. Everyone starts at 50 and the points add up to the score.</p>' : ""; })()
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
+      const qr = qualityRows(id).counted.find(x => x.w === L.w);
       return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
@@ -1950,6 +1956,9 @@ function viewProfile(){
             + (p.result === "V" ? "landed on the number"
                : (p.result === "H" ? "hit by " : "missed by ") + num1(L.off)
                  + (L.swing !== null ? ", " + sw1(L.swing) + " swings" : "")) + '</div>'
+            + (qr ? '<div class="dqual ' + (qr.pts >= 0 ? "h" : "m") + '">' + signed(qr.pts, 1) + ' quality points'
+                + (qr.capped ? ', capped' : '') + '</div>'
+                  : (p.result === "V" ? '<div class="dfin">no effect on quality</div>' : ""))
           : '<div class="dfin">not graded yet</div>')
         + '</div></li>';
     }).join("") + '</ul>' : '<p class="hint">Nothing posted yet.</p>')
