@@ -220,18 +220,31 @@
     padding:16px 0;text-shadow:2px 2px 0 var(--edge)}
   .keypad button:active{transform:translate(5px,5px);box-shadow:none}
   .badgeicon{display:block}
-  .medals{display:flex;flex-wrap:wrap;gap:12px;margin-top:6px}
-  .medal{text-align:center;width:64px}
+  .medals{display:flex;flex-wrap:wrap;gap:14px 0;margin-top:8px}
+  .medal{text-align:center;width:80px}
   .medal svg{margin:0 auto}
-  .mname{display:block;font-family:var(--pix);font-size:8px;color:var(--chalk);margin-top:6px;line-height:1.5}
+  .mart{position:relative;display:block;width:60px;height:60px;margin:0 auto}
+  .mx{position:absolute;right:-8px;bottom:0;font-family:var(--pix);font-size:8px;font-weight:400;line-height:1;
+    color:var(--chalk);background:var(--edge);border:2px solid #B87333;padding:3px 3px 2px}
+  .medal.silver .mx{border-color:#BFC7D1}
+  .medal.gold .mx{border-color:#F0B429}
+  .mname{display:block;font-family:var(--pix);font-size:8px;color:var(--chalk);margin-top:6px;line-height:1.5;min-height:3em}
+  .medal.locked .mname{color:#53677D}
+  .medal.locked .mcount{color:#41536A}
+  .mbar{display:block;width:52px;height:8px;margin:5px auto 0;background:#0F1926;border:2px solid var(--edge);box-sizing:content-box}
+  .mbar i{display:block;height:100%}
+  .mbar.silver i{background:#BFC7D1}
+  .mbar.gold i{background:#F0B429}
+  .mnext{display:block;font-family:var(--pix);font-size:8px;color:var(--dim);line-height:1.6;margin-top:4px}
+  .casecount{display:block;font-family:var(--pix);font-size:8px;color:var(--dim);margin:-2px 0 4px}
   .medal.gold .mname{color:#FFE08A}
   .medal.silver .mname{color:#EDF1F5}
   .medal.bronze .mname{color:#E0A96D}
-  .mcount{display:block;font-size:16px;color:var(--dim);line-height:1.4}
-  .tierdemo{display:flex;gap:16px;justify-content:center;margin-top:12px;padding:12px 0;
+  .mcount{display:block;font-size:14px;color:var(--dim);line-height:1.4;margin-top:2px}
+  .tierdemo{display:flex;flex-wrap:wrap;gap:0;justify-content:center;margin-top:12px;padding:12px 0;
     border-top:2px solid #16222F;border-bottom:2px solid #16222F}
   .legend .legrow{display:flex;align-items:flex-start;gap:8px;margin-bottom:8px}
-  .legend .legrow svg{flex:none;margin-top:2px}
+  .legend .legrow svg{flex:none;margin-top:0}
   .phead{display:flex;gap:14px;align-items:center;margin-bottom:12px}
   .phead .spritebox,.phead svg{flex:none}
   h4.sub{font-family:var(--pix);font-size:8px;color:var(--dim);margin:16px 0 6px;font-weight:400;letter-spacing:0}
@@ -770,17 +783,26 @@ const STATS = ["Pass Yards","Pass TDs","Pass Attempts","Pass Completions","Inter
 const POSENAME = {qb:"Quarterback",rb:"Ball carrier",wr:"Receiver",k:"Kicker",def:"Defense",stand:"Anybody"};
 
 const BADGES = {
-  razor:    {name:"Razor",         desc:"Hit by exactly 0.5, the thinnest margin there is"},
-  hook:     {name:"Hook",          desc:"Missed by exactly 0.5"},
-  cushion:  {name:"Cushion",       desc:"Cleared the line by 50 percent or more"},
-  backbone: {name:"Backbone",      desc:"The only leg that hit that week"},
-  cooler:   {name:"Cooler",        desc:"The only leg that missed that week"},
-  perfect:  {name:"Perfect card",  desc:"Part of a lineup where every leg hit"},
-  buzzer:   {name:"Buzzer beater", desc:"Posted in the last 15 minutes before the lock"},
-  earlybird:{name:"Early bird",    desc:"Posted three or more days early"},
-  heater:   {name:"Heater",        desc:"Three, five or ten hits in a row"},
-  freeze:   {name:"Deep freeze",   desc:"Three or five misses in a row"},
-  ghost:    {name:"Ghost",         desc:"Never got a leg in before the lock"}
+  legweek:   {name:"Leg of the week", desc:"Beat the line by more swings than anyone else that week"},
+  cushion:   {name:"Cushion",         desc:"Cleared the line by 50 percent or more"},
+  slayer:    {name:"Demon slayer",    desc:"Cashed a demon line"},
+  fade:      {name:"Fade",            desc:"Took a Less and hit it"},
+  photo:     {name:"Photo finish",    desc:"Hit by less than a tenth of a swing"},
+  razor:     {name:"Razor",           desc:"Hit by exactly 0.5, the thinnest margin there is"},
+  bounce:    {name:"Bounce back",     desc:"Hit right after two or more misses in a row"},
+  backbone:  {name:"Backbone",        desc:"The only leg that hit that week"},
+  perfect:   {name:"Perfect card",    desc:"Part of a lineup where every leg hit"},
+  heater:    {name:"Heater",          desc:"Three, five or ten hits in a row"},
+  specialist:{name:"Specialist",      desc:"Three hits at the same position"},
+  homer:     {name:"Homer",           desc:"A third leg from the same team"},
+  rideordie: {name:"Ride or die",     desc:"Picked the same player a third time"},
+  earlybird: {name:"Early bird",      desc:"Posted three or more days early"},
+  buzzer:    {name:"Buzzer beater",   desc:"Posted in the last 15 minutes before the lock"},
+  brick:     {name:"Brick",           desc:"Missed by more swings than anyone else that week"},
+  hook:      {name:"Hook",            desc:"Missed by exactly 0.5"},
+  cooler:    {name:"Cooler",          desc:"The only leg that missed that week"},
+  freeze:    {name:"Deep freeze",     desc:"Three or five misses in a row"},
+  ghost:     {name:"Ghost",           desc:"Never got a leg in before the lock"}
 };
 
 const ROSTER_KEY = "ff:roster", SEASON_KEY = "ff:season", ME_KEY = "ff:me";
@@ -1093,89 +1115,237 @@ function legsFor(id, kind){
   return out;
 }
 
-/* ---- badge icons -------------------------------------------------------------
-   One 16x16 symbol per badge, struck in bronze, silver or gold depending on how
-   many times it has been earned. O outline, D shadow, M body, L highlight. */
-const TIERS = {
-  bronze: {at:1, O:"#3A2410", D:"#7A4A1E", M:"#B87333", L:"#E0A96D", name:"Bronze"},
-  silver: {at:3, O:"#2B3138", D:"#7C858F", M:"#BFC7D1", L:"#EDF1F5", name:"Silver"},
-  gold:   {at:5, O:"#4A3405", D:"#B8860B", M:"#F0B429", L:"#FFE08A", name:"Gold"}
+/* ---- badge art ---------------------------------------------------------------
+   Every badge is a 16x16 symbol in its own colors, set on a 30x30 frame whose
+   shape and metal say the tier: a bronze coin, a silver shield, a gold rosette
+   with ribbons. An unearned badge is an empty slot pressed into the card. */
+const BPAL = {
+  O:"#1A1410",                                   /* ink outline */
+  w:"#FBF8EF", W:"#C8C3B4", u:"#EFE4C6", U:"#B8A67E",           /* whites, bone */
+  r:"#E2574C", R:"#9E2F27", e:"#F7A196",                        /* reds */
+  o:"#F28C28", y:"#FFD447", Y:"#D98E1C",                        /* orange, yellow */
+  g:"#4CC17E", G:"#2A7F4F", h:"#A6EBC0",                        /* greens */
+  b:"#3E8EDE", B:"#22589B", c:"#A9DDF7", C:"#5FB3E0",           /* blues, ice */
+  p:"#9B7BE0", P:"#5F43AE", l:"#CDBDF6",                        /* purples */
+  k:"#E6ECF2", s:"#A9B6C4", K:"#66717E", d:"#323A44", n:"#8A5A32", N:"#553419"            /* steel, dark */
 };
-const tierOf = n => n >= TIERS.gold.at ? "gold" : n >= TIERS.silver.at ? "silver" : "bronze";
-
 const ICONS = {
-  /* a blade, for the thinnest possible margin */
   razor:[
-  "................","................","...OOOOOOOOOO...","..OLLLLLLLLLLO..",
-  "..OMMMMMMMMMMO..","..OMOOOOOOOOMO..","..OMODDDDDDOMO..","..OMOOOOOOOOMO..",
-  "..OMMMMMMMMMMO..","..ODDDDDDDDDDO..","...OOOOOOOOOO...","................",
-  "................","................","................","................"],
-  /* a hook, for coming up half a unit short */
+  "................","................","................","......OOOOOOOO..",
+  ".....OKKKKKKKKO.",".....OsssssssskO",".....OssssssskkO","....OOwwwwwwwwwO",
+  "...OnOOOOOOOOOO.","..OnNO..........",".OnNO...........","OnNO............",
+  "ONO.............","OO..............","................","................"
+],
   hook:[
-  "................","......OOOO......",".....OLLLLO.....","....OMMOOMMO....",
-  "....OMO..OMO....","....OMMOOMMO....",".....OMMMMO.....","......OMDO......",
-  "......OMDO......","......OMDO......","......OMDO......","......OMDO......",
-  ".....OMDO.......","....OMDO....OO..","....OMDO...OMMO.",".....OMMMMMMMO.."],
-  /* a pillow, for clearing the line with room */
+  "......OOOO......",".....OkkksO.....",".....Ok..KO.....",".....OsKKKO.....",
+  "......OksO......","......OksO......","......OksO......","......OksO......",
+  "..OO..OksO......",".OkO..OksO......",".OkkO.OksO......",".OksO.OksO......",
+  ".OksOOOksO......","..OkssskKO......","...OKKKKO.......","....OOOO........"],
   cushion:[
-  "................","................","..OOOOOOOOOOOO..",".OLLLLLLLLLLLLO.",
-  "OMMMMMMMMMMMMMMO","OMMMLLMMMMLLMMMO","OMMMMMMMMMMMMMMO","OMMMMMMMMMMMMMMO",
-  "OMMMMMMMMMMMMMMO","ODDDDDDDDDDDDDDO",".ODDDDDDDDDDDDO.","..OOOOOOOOOOOO..",
-  "................","................","................","................"],
-  /* a spine, for carrying the card */
+  "................","................","OO............OO","OlOOOOOOOOOOOOPO",
+  ".OllllllllllppO.",".OlllpppppppPPO.",".OlpppppppppPPO.",".OppppppOOppPPO.",
+  ".OppppppppppPPO.",".OpppppppPPPPPO.",".OPPPPPPPPPPPPO.","OPOOOOOOOOOOOOPO",
+  "OO............OO","................","................","................"
+],
   backbone:[
-  "......OOOO......",".....OLLLLO.....","....OMMMMMMO....",".....ODDDDO.....",
-  "....OOMMMMOO....","...OLOMMMMOLO...","...OMOMMMMOMO...","....OOMMMMOO....",
-  ".....ODDDDO.....","....OOMMMMOO....","...OLOMMMMOLO...","...OMOMMMMOMO...",
-  "....OOMMMMOO....",".....ODDDDO.....","......OOOO......","................"],
-  /* an ice cube, for being the one who cooled the card off */
+  "......OOOO......","..OOOOuuuuOOOO..",".OuuuuuuuuuuuUO.","..OOOOuuUUOOOO..",
+  "......OUUO......","......OOOO......","..OOOOuuuuOOOO..",".OuuuuuuuuuuuUO.",
+  "..OOOOuuUUOOOO..","......OUUO......","......OOOO......","..OOOOuuuuOOOO..",
+  ".OuuuuuuuuuuuUO.","..OOOOuuUUOOOO..","......OUUO......","......OOOO......"],
   cooler:[
-  "................","...OOOOOOOOOO...","..OLLLLLLLLLLO..","..OMLLMMMMMMMO..",
-  "..OMLLMMMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..",
-  "..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","..ODDDDDDDDDDO..","...OOOOOOOOOO...",
-  "................","................","................","................"],
-  /* a star, for a clean sweep */
+  "................",".....OOOOOOOOOO.","....OwwwwwwwwOO.","...OwwwwwwwwOCO.",
+  "..OOOOOOOOOOCCO.","..OwwccccccOCCO.","..OwcccccccOCCO.","..OccccccccOCCO.",
+  "..OccccccccOCCO.","..OccccccccOCCO.","..OccccccccOCCO.","..OccccccccOCO..",
+  "..OCCCCCCCCOO...","..OOOOOOOOOO....","................","................"],
   perfect:[
-  "................",".......OO.......","......OLLO......","......OMMO......",
-  "..OOOOOMMOOOOO..",".OLLLLMMMMLLLLO.","..OMMMMMMMMMMO..","...OMMMMMMMMO...",
-  "....OMMMMMMO....","...OMMMOOMMMO...","..OMMMO..OMMMO..",".OMMDO....ODMMO.",
-  ".ODDO......ODDO.","..OO........OO..","................","................"],
-  /* an alarm clock, for posting with minutes to spare */
+  ".......O........","......OyO.......","......OyO.......",".....OyyyO......",
+  ".....OwyyO......","OOOOOOwyyOOOOOO.","OwwyyyyyyyyyyYO.",".OwyyyyyyyyyYO..",
+  "..OyyyyyyyyYO...","...OyyyyyyYO....","...OyyyyyyyyO...","..OyyyyOOyyyYO..",
+  "..OyyyO..OyyYO..",".OyyO....OyYYO..",".OOO......OOOO..","................"],
   buzzer:[
-  "................",".OOO........OOO.","OLLLO......OLLLO","OMMMOOOOOOOOMMMO",
-  ".OOOMMMMMMMMOOO.","..OMMMLLMMMMMO..","..OMMMMLMMMMMO..","..OMMLLLMLLMMO..",
-  "..OMMMMMMMMMMO..","..OMMMMMMMMMMO..","...ODDDDDDDDO...","....OOOOOOOO....",
-  "....OM....MO....","...ODO....ODO...","...OO......OO...","................"],
-  /* a bird, for filing days early */
+  "................",".OOO..OOOO..OOO.","OrerO.OrrO.OrerO","OrrOOOOOOOOOOrrO",
+  ".OOOrrrrrrrrOOO.","..OrrwwwwwwrrO..","..OrwwwOwwwwrO..",".OrwwwwOwwwwwrO.",
+  ".OrwwwwOwwwwwrO.",".OrwwwwwOwwwwrO.","..OrwwwwwOwwrO..","..ORrwwwwwwrRO..",
+  "...ORRrrrrRRO...","....OOOOOOOO....","...OO......OO...","................"],
   earlybird:[
-  "................","................",".....OOOO.......","....OLLLLO......",
-  "...OMMOMMMO.....","...OMMMMMMOOO...","..OMMMMMMMMMMO..",".OMMMLLMMMMMMMO.",
-  ".OMMLLLMMMMMMO..",".OMMMMMMMMMMO...","..ODDDDDDDDO....","...OO..OO.......",
-  "...OM..OM.......","...OD..OD.......","...OO..OO.......","................"],
-  /* a flame */
+  "................","................",".......OOOO.....","......ObbbbO....",
+  ".....ObbbOwbO...",".....ObbbbbbOooO","....ObbbbbbbOOO.",".OO.ObbbbbbbbO..",
+  "OBbOObBBbbwwwO..",".OBbbBBBBwwwwO..","..OBBBBBwwwwO...","...OOOOOOOOO....",
+  ".....oO.oO......","................","................","................"],
   heater:[
-  "................",".......OO.......","......OLLO......","......OMMO......",
-  ".....OMMMMO.....","....OMMMMMMO....","...OMMOMMMMO....","...OMMOOMMMMO...",
-  "..OMMMOOOMMMMO..","..OMMMMOMMMMMO..","..OMMMMMMMMMMO..","..OMMMMMMMMMMO..",
-  "...ODMMMMMMDO...","....ODDDDDDO....",".....OOOOOO.....","................"],
-  /* a snowflake */
+  ".......O........","......OrO.......","......OrrO......",".....OrrrO..O...",
+  "....OrrorO.OrO..","...OrrooorOOrrO.","...OrooooorrrrO.","..OrrooyoooorrO.",
+  "..OrooyyyooorO..",".OrrooyyyyoorrO.",".OrooyywyyoorrO.",".OrooyywwyyoorO.",
+  ".OrrooyyyyyoorO.","..OrrooooooorO..","...ORRrrrrrRO...","....OOOOOOOO...."],
   freeze:[
-  "................",".......OO.......","....O..OMO..O...","....OO.OMO.OO...",
-  ".....OOOMOOO....","......OMMMO.....","..OOOOMMMMOOOO..",".OLLMMMMMMMMLLO.",
-  "..OOOOMMMMOOOO..","......OMMMO.....",".....OOOMOOO....","....OO.OMO.OO...",
-  "....O..OMO..O...",".......OO.......","................","................"],
-  /* a ghost, for never getting a leg in */
+  ".......O........","......OwO.......","...O..OwO..O....","..OwO.OwO.OwO...",
+  "...OwOOwOOwO....","....OwOwOwO.....",".OOOOOwwwOOOOO..","OwwwwwwcwwwwwwO.",
+  ".OOOOOwwwOOOOO..","....OwOwOwO.....","...OwOOwOOwO....","..OwO.OwO.OwO...",
+  "...O..OwO..O....","......OwO.......",".......O........","................"],
   ghost:[
-  "................","................",".....OOOOOO.....","....OLLLLLLO....",
-  "...OMMMMMMMMO...","...OMOOMMOOMO...","...OMODMMODMO...","...OMOOMMOOMO...",
-  "...OMMMMMMMMO...","...OMMMMMMMMO...","...OMMMMMMMMO...","...ODMDMDMDMO...",
-  "...OO.OO.OO.O...","................","................","................"]
+  "................",".....OOOOOO.....","....OwwwwwwO....","...OwwwwwwwwO...",
+  "...OwOOwwOOwO...","...OwOOwwOOWO...","..OOwwwwwwwWOO..",".OwOwwwOOwwWOWO.",
+  ".OOwwwwwwwwWWOO.","...OwwwwwwwWO...","...OwwwwwwWWO...","...OwwwwwwwWO...",
+  "...OwOOwwOOWO...","...OO..OO..OO...","................","................"],
+  legweek:[
+  "................","................",".OO....OO....OO.","OwyO..OwyO..OwyO",
+  ".OyO..OyyO..OyO.",".OyyO.OyyO.OyyO.",".OyyyOyyyyOyyyO.",".OyyyyyyyyyyyYO.",
+  ".OyyyyyyyyyyyYO.",".OYYYYYYYYYYYYO.",".OOOOOOOOOOOOOO.",".OyrryybbyyrrYO.",
+  ".OYYYYYYYYYYYYO.",".OOOOOOOOOOOOOO.","................","................"],
+  brick:[
+  "................","................",".OOOOOOOOOOOOOO.",".OerrrrWerrrrrO.",
+  ".ORRRRRWRRRRRRO.",".OWWWWWWWWWWWWO.",".OrrWerrrrrWerO.",".ORRWRRRRRRWRRO.",
+  ".OWWWWWWWWWWWWO.",".OerrrrWerrrrrO.",".ORRRRRWRRRRRRO.",".OOOOOOOOOOOOOO.",
+  "................","................","................","................"],
+  slayer:[
+  ".OO..........OO.",".OuO........OuO.","..OuO......OuO..","..OuuOOOOOOuuO..",
+  "...OrrrrrrrrO...","..OrrrrrrrrrrO..","..OrOrOrrOrOrO..","..OrrOrrrrOrrO..",
+  "..OrOrOrrOrOrO..","..OrrrrrrrrrrO..","..ORrOOOOOOrRO..","...ORuRRRRuRO...",
+  "....ORRRRRRO....",".....OOOOOO.....","................","................"],
+  photo:[
+  ".OOO............",".OyOOOOOOOOOOOO.",".OkOwwddwwddwwO.",".OkOwwddwwddwwO.",
+  ".OkOddwwddwwddO.",".OkOddwwddwwddO.",".OkOwwddwwddwwO.",".OkOwwddwwddwwO.",
+  ".OkOOOOOOOOOOOO.",".OkO............",".OkO............",".OkO............",
+  ".OkO............",".OsO............",".OKO............",".OOO............"],
+  homer:[
+  "......OOO.......",".....ObbbO......",".....OcbbO......",".....OcbbO......",
+  ".....OcbbO......","..OO.OcbbOOOOO..",".ObbOOcbbObbObO.",".ObbbObbbbbbbbO.",
+  ".OcbbbbbbbbbbbO.",".OcbbbbbbbbbbBO.","..OcbbbbbbbbBO..","...OBBBBBBBBO...",
+  "...OwwwwwwwwO...","...OWWWWWWWWO...","...OOOOOOOOOO...","................"],
+  bounce:[
+  "..........OO....",".........OhgO...","........OhgggO..",".......OhgggGGO.",
+  ".......OOOhgOOO.","..OOOO...OhgO...","..OhgO...OhgO...","..OhgO...OhgO...",
+  "..OhgO...OhgO...","..OhgO...OhgO...","..OhgGO.OhgGO...","...OhgggggGO....",
+  "....OGGGGGO.....",".....OOOOO......","................","................"
+],
+  specialist:[
+  "................",".....OOOOO......","...OOrrrrrOO....","..OrrrrrrrrrO...",
+  ".OrrrwwwwwrrRO..",".OrrwwwwwwwRRO..","OrrwwwrrrwwwRRO.","OrrwwrrrrrwwRRO.",
+  "OrrwwrrwrrwwRRO.","OrrwwrrrrRwwRRO.","OrrwwwrRRwwWRRO.",".OrRwwwwwWWRRO..",
+  ".ORRRWWWWWRRRO..","..ORRRRRRRRRO...","...OOORRROOO....",".....OOOOO......"],
+  rideordie:[
+  "................","..OOOO....OOOO..",".OeerrO..OrrrrO.","OewrrrrOOrrrrrRO",
+  "OewrrrrrrrrrrrRO","OerrrrrrrrrrrrRO","OrrrrrrrrrrrrRRO",".OrrrrrrrrrrRRO.",
+  "..OrrrrrrrrRRO..","...OrrrrrrRRO...","....OrrrrRRO....",".....OrrRRO.....",
+  "......ORRO......",".......OO.......","................","................"],
+  fade:[
+  ".....OOOOOO.....",".....OcbbBO.....",".....OcbbBO.....",".....OcbbBO.....",
+  ".....OcbbBO.....","...OOOcbbBOOO...","...OcbbbbbbBO...","....OcbbbbBO....",
+  ".....OcbbBO.....","......OcBO......",".......OO.......","................",
+  "................","................","................","................"]
 };
-function badgeSVG(key, count, px){
-  const rows = ICONS[key];
-  if(!rows) return "";
-  const t = TIERS[tierOf(count)];
-  return gridSVG(rows, {O:t.O, D:t.D, M:t.M, L:t.L}, px, "sprite badgeicon");
+
+const TIERS = {
+  bronze: {at:1, name:"Bronze", shape:"coin",   F:"#3A2410", E:"#7A4A1E", N:"#9C5F2A", M:"#B87333", H:"#E0A96D", G:"#F6D3A8", T:"#E0A96D"},
+  silver: {at:3, name:"Silver", shape:"shield", F:"#262C33", E:"#6F7883", N:"#9AA3AE", M:"#BFC7D1", H:"#EDF1F5", G:"#FFFFFF", T:"#EDF1F5"},
+  gold:   {at:5, name:"Gold",   shape:"rosette",F:"#4A3405", E:"#B07A08", N:"#D99A14", M:"#F0B429", H:"#FFE08A", G:"#FFF6D6", T:"#FFE08A"}
+};
+const LOCKED = {shape:"coin", F:"#30425A", E:"#24344A", N:"#14202D", M:"#17232F", H:"#101A25", G:"#17232F", icon:"#33475F", fill:"#22344A"};
+const tierOf = n => n >= TIERS.gold.at ? "gold" : n >= TIERS.silver.at ? "silver" : "bronze";
+const nextTier = n => n < TIERS.silver.at ? "silver" : n < TIERS.gold.at ? "gold" : null;
+
+const BF = 30, BC = 14.5;
+const FRAME_SHAPES = {
+  coin:   (x, y) => (x + .5 - 15) ** 2 + (y + .5 - 15) ** 2 <= 13.4 ** 2,
+  shield: (x, y) => {
+    if(y < 1 || y > 28 || x < 2 || x > 27) return false;
+    if(y === 1 && (x < 4 || x > 25)) return false;
+    if(y === 2 && (x < 3 || x > 26)) return false;
+    if(y <= 15) return true;
+    const t = (y - 15) / 13.5;
+    return Math.abs(x + .5 - 15) <= 13 * (1 - Math.pow(t, 1.7)) + .2;
+  },
+  rosette:(x, y) => {
+    const dx = x + .5 - 15, dy = y + .5 - 12.6, a = Math.atan2(dy, dx);
+    return Math.hypot(dx, dy) <= 10.5 + 2.3 * Math.pow(.5 + .5 * Math.cos(12 * a), 2);
+  }
+};
+/* the two ribbon tails that hang below the gold rosette */
+function ribbonAt(x, y){
+  if(y < 17 || y > 29) return null;
+  const k = Math.floor((y - 17) / 4), L0 = 7 - k, R0 = 18 + k;     /* tails lean outward */
+  const notch = x0 => (y >= 28 && x === x0 + 2) || (y === 29 && (x === x0 + 1 || x === x0 + 3));
+  if(x >= L0 && x <= L0 + 4 && !notch(L0)) return "L";
+  if(x >= R0 && x <= R0 + 4 && !notch(R0)) return "R";
+  return null;
+}
+const ICON_CENTER = {coin:[15, 15], shield:[15, 13.5], rosette:[15, 12.6]};
+const iconBox = {};
+function boxOf(key){
+  if(iconBox[key]) return iconBox[key];
+  const rows = ICONS[key]; let x0 = 99, y0 = 99, x1 = -1, y1 = -1;
+  rows.forEach((r, y) => [...r].forEach((c, x) => { if(c !== "."){ x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); y1 = Math.max(y1, y); } }));
+  return iconBox[key] = {x0, y0, x1, y1};
+}
+const badgeCache = {};
+function badgeGrid(key, tier){
+  const ck = key + "|" + tier;
+  if(badgeCache[ck]) return badgeCache[ck];
+  const T = tier === "locked" ? LOCKED : TIERS[tier], shapeName = T.shape, shape = FRAME_SHAPES[shapeName];
+  const ins = (x, y) => x >= 0 && y >= 0 && x < BF && y < BF && shape(x, y);
+  const rib = (x, y) => shapeName === "rosette" && x >= 0 && y >= 0 && x < BF && y < BF && !ins(x, y) ? ribbonAt(x, y) : null;
+  const solid = (x, y) => ins(x, y) || !!rib(x, y);
+  const g = [];
+  for(let y = 0; y < BF; y++){ g.push([]); for(let x = 0; x < BF; x++){
+    let c = null;
+    if(ins(x, y)){
+      const edge = !ins(x-1,y) || !ins(x+1,y) || !ins(x,y-1) || !ins(x,y+1);
+      const rim  = !edge && (!ins(x-2,y) || !ins(x+2,y) || !ins(x,y-2) || !ins(x,y+2));
+      const deep = !edge && !rim && (!ins(x-3,y) || !ins(x+3,y) || !ins(x,y-3) || !ins(x,y+3));
+      const lean = (BC - x) + (BC - y);           /* positive toward the top left */
+      if(edge) c = T.F;
+      else if(rim) c = lean > 3 ? T.H : lean < -3 ? T.E : T.M;
+      else if(deep && lean < -6) c = T.N;
+      else c = T.M;
+    } else if(rib(x, y)){
+      const side = rib(x, y), r = (x2, y2) => !!rib(x2, y2) || ins(x2, y2);
+      const edge = !r(x-1,y) || !r(x+1,y) || !r(x,y+1);
+      const k = Math.floor((y - 17) / 4), x0 = side === "L" ? 7 - k : 18 + k;
+      c = edge ? "#4A1410" : x === x0 + 1 ? "#F07A70" : x === x0 + 3 ? "#A32D25" : "#D4433A";
+    } else if(solid(x-1, y-1)) c = "#080F17";   /* hard drop shadow, like the rest of the app */
+    g[y].push(c);
+  }}
+  /* a small glint on the upper left of the metal */
+  if(tier !== "locked"){
+    const gl = shapeName === "shield" ? [[5,4],[4,5],[4,6]] : shapeName === "rosette" ? [[9,5],[8,6],[7,7]] : [[8,5],[6,6],[5,8]];
+    gl.forEach(([x, y]) => { if(g[y][x] === T.M || g[y][x] === T.H) g[y][x] = T.G; });
+  }
+  /* the symbol, centred on the frame, with a one pixel emboss shadow under it */
+  const b = boxOf(key), [cx, cy] = ICON_CENTER[shapeName];
+  const ox = Math.round(cx - (b.x0 + b.x1 + 1) / 2), oy = Math.round(cy - (b.y0 + b.y1 + 1) / 2);
+  const rows = ICONS[key], at = (x, y) => { const r = rows[y - oy]; return r ? r[x - ox] : undefined; };
+  for(let y = 0; y < BF; y++) for(let x = 0; x < BF; x++){
+    const ch = at(x, y);
+    if(ch && ch !== "."){ g[y][x] = tier === "locked" ? (ch === "O" ? LOCKED.icon : LOCKED.fill) : BPAL[ch]; continue; }
+    const up = at(x - 1, y - 1);
+    if(up && up !== "." && ins(x, y) && tier !== "locked") g[y][x] = T.E;
+  }
+  return badgeCache[ck] = g;
+}
+function badgeSVG(key, count, px, locked){
+  if(!ICONS[key]) return "";
+  const g = badgeGrid(key, locked ? "locked" : tierOf(count));
+  let out = "";
+  for(let y = 0; y < BF; y++){ let x = 0;
+    while(x < BF){ const c = g[y][x]; if(!c){ x++; continue; }
+      let run = 1; while(x + run < BF && g[y][x + run] === c) run++;
+      out += '<rect x="' + x + '" y="' + y + '" width="' + run + '" height="1" fill="' + c + '"/>'; x += run; } }
+  const scale = Math.max(1, Math.round(px / BF)); px = scale * BF;
+  return '<svg class="sprite badgeicon" width="' + px + '" height="' + px + '" viewBox="0 0 ' + BF + ' ' + BF
+    + '" shape-rendering="crispEdges" aria-hidden="true">' + out + '</svg>';
+}
+/* one medal with its name, tier, and how far it is from the next tier */
+function medalHTML(k, n, compact){
+  if(!n) return '<div class="medal locked"><span class="mart">' + badgeSVG(k, 0, 60, true) + '</span>'
+    + '<span class="mname">' + esc(BADGES[k].name) + '</span><span class="mcount">Not yet</span></div>';
+  const t = tierOf(n), nx = nextTier(n);
+  return '<div class="medal ' + t + '"><span class="mart">' + badgeSVG(k, n, 60)
+    + (n > 1 ? '<b class="mx">x' + n + '</b>' : '') + '</span>'
+    + '<span class="mname">' + esc(BADGES[k].name) + '</span>'
+    + (compact ? '' : '<span class="mcount">' + TIERS[t].name + '</span>')
+    + (nx ? '<span class="mbar ' + nx + '"><i style="width:' + Math.round(n / TIERS[nx].at * 100) + '%"></i></span>'
+          + (compact ? '' : '<span class="mnext">' + (TIERS[nx].at - n) + ' to ' + TIERS[nx].name.toLowerCase() + '</span>') : '')
+    + '</div>';
 }
 
 
@@ -1447,6 +1617,9 @@ function analyze(){
   const rec = {}; members.forEach(m => rec[m.id] = {id:m.id, name:m.name, H:0, M:0, V:0, skip:0,
     badges:{}, cur:0, best:0, hitPct:[], missPct:[], hitAbs:[], missAbs:[], hitSw:[], missSw:[], qual:[]});
   const moments = [];
+  /* running season counts behind Homer, Ride or die and Specialist */
+  const teamN = {}, playerN = {}, posHits = {};
+  members.forEach(m => { teamN[m.id] = {}; playerN[m.id] = {}; posHits[m.id] = {}; });
   const give = (id, key, w, detail) => {
     rec[id].badges[key] = (rec[id].badges[key]||0) + 1;
     moments.push({w:w, who:rec[id].name, label:BADGES[key].name, detail:detail});
@@ -1461,12 +1634,14 @@ function analyze(){
        every leg posted that week has a grade. Otherwise 3 hits and 1 miss with two
        games still to play would hand out a Cooler early. */
     const cardDone = Object.keys(picks).every(id => !!picks[id].result);
+    const weekSw = [];   /* every graded leg's margin in swings, for Leg of the week and Brick */
 
     members.forEach(m => {
       const r = rec[m.id], p = picks[m.id];
       if(!p){ r.skip++; r.cur = 0; give(m.id,"ghost",w,"No leg in before the lock"); return; }
       const leg = p.player + " " + p.side + " " + p.line + " " + p.stat;
       const mg = margin(p);
+      const prevCur = r.cur;
 
       /* how far off the line it landed, in raw units and as a share of the line */
       const lineAbs = Math.abs(num(p.line) || 0);
@@ -1499,7 +1674,36 @@ function analyze(){
 
       if(p.result === "H" && (r.cur === 3 || r.cur === 5 || r.cur === 10)) give(m.id,"heater",w,r.cur+" hits in a row");
       if(p.result === "M" && (r.cur === -3 || r.cur === -5)) give(m.id,"freeze",w,(-r.cur)+" misses in a row");
+
+      /* habits across the season, counted from every leg posted */
+      const team = String(p.team || "").toUpperCase();
+      if(team){ const n = teamN[m.id][team] = (teamN[m.id][team] || 0) + 1;
+        if(n === 3) give(m.id,"homer",w,"Third " + team + " leg of the season, " + p.player); }
+      const pk = normName(p.player);
+      if(pk){ const n = playerN[m.id][pk] = (playerN[m.id][pk] || 0) + 1;
+        if(n === 3) give(m.id,"rideordie",w,"Went back to " + p.player + " a third time"); }
+
+      if(p.result === "H"){
+        const pos = playerPos(p.player);
+        if(pos){ const n = posHits[m.id][pos] = (posHits[m.id][pos] || 0) + 1;
+          if(n === 3) give(m.id,"specialist",w,"Third hit on a " + pos + ", " + leg); }
+        if(prevCur <= -2) give(m.id,"bounce",w,"Hit " + leg + " after " + (-prevCur) + " straight misses");
+        if(flavorOf(p) === "demon") give(m.id,"slayer",w,"Cashed a demon, " + leg + ", " + marginText(p));
+        if(p.side === "Less") give(m.id,"fade",w,"Took the under and hit, " + leg);
+        if(swing !== null && mg !== null && mg > EPS && swing < 0.1) give(m.id,"photo",w,leg + ", " + marginText(p) + ", " + sw1(swing) + " of a swing");
+      }
+      if(swing !== null && (p.result === "H" || p.result === "M"))
+        weekSw.push({id:m.id, sw:p.result === "H" ? swing : -swing, leg:leg, p:p});
     });
+
+    /* biggest beat and biggest miss of the week, once every leg is graded */
+    if(cardDone && weekSw.length){
+      const hi = Math.max(...weekSw.map(x => x.sw)), lo = Math.min(...weekSw.map(x => x.sw));
+      if(hi > 0) weekSw.filter(x => Math.abs(x.sw - hi) < 1e-9).forEach(x =>
+        give(x.id,"legweek",w,"Best leg of the week, " + x.leg + ", " + marginText(x.p) + ", " + sw1(hi) + " swings"));
+      if(lo < 0) weekSw.filter(x => Math.abs(x.sw - lo) < 1e-9).forEach(x =>
+        give(x.id,"brick",w,"Worst miss of the week, " + x.leg + ", " + marginText(x.p) + ", " + sw1(-lo) + " swings"));
+    }
 
     if(cardDone && misses.length === 1 && hits.length >= 3) give(misses[0],"cooler",w,"The only leg to miss on a "+hits.length+" hit card");
     if(cardDone && hits.length === 1 && misses.length >= 3) give(hits[0],"backbone",w,"Carried a card that went 1 for "+(hits.length+misses.length));
@@ -1518,6 +1722,7 @@ async function boot(){
   state.roster = roster;
   state.season = season || {weeks:{}, moments:[]};
   if(!state.season.moments) state.season.moments = [];
+  try{ await applyCorrections(); }catch(e){}
   state.me = me && me.id ? me.id : null;
   state.view = currentWeek();
   if(isLocked(state.view)) await loadLive(false);
@@ -1550,6 +1755,19 @@ async function quietRefresh(){
   }
   if(changed && !holdRenders()) render();   /* the card recolors itself as numbers and grades land */
 }
+/* Finals typed in by hand that turned out wrong. Each one only changes the leg if it
+   still holds the wrong number, so it runs once and then never touches anything. */
+const CORRECTIONS = [
+  {week:5, player:"Brock Purdy", stat:"Fantasy Score", from:16.36, to:17.36}   /* PrizePicks had 17.36 */
+];
+async function applyCorrections(){
+  const hits = s => CORRECTIONS.filter(c => { const ps = (s.weeks[c.week] || {}).picks || {};
+    return Object.keys(ps).some(id => ps[id].player === c.player && ps[id].stat === c.stat && num(ps[id].actual) === c.from); });
+  if(!state.season || !hits(state.season).length) return;
+  await updateSeason(s => hits(s).forEach(c => { const ps = s.weeks[c.week].picks;
+    Object.keys(ps).forEach(id => { const p = ps[id];
+      if(p.player === c.player && p.stat === c.stat && num(p.actual) === c.from){ p.actual = c.to; p.result = grade(p, c.to); } }); }));
+}
 async function updateSeason(mutate){
   /* seed from what is already loaded, so a dropped connection cannot blank the season */
   state.season = await casUpdate(SEASON_KEY, () => state.season || {weeks:{}, moments:[]}, mutate);
@@ -1558,7 +1776,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25f";
+const BUILD = "2026-10-25g";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -1668,7 +1886,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25f</span></p>';
+  + '<br><span class="build">build 2026-10-25g</span></p>';
 }
 
 function signInCard(){
@@ -1971,11 +2189,10 @@ function viewProfile(){
     })()
   + '</div>'
 
-  + (badges.length ? '<div class="card"><h3>Trophies</h3><div class="medals">'
-      + badges.map(k => '<div class="medal ' + tierOf(r.badges[k]) + '">' + badgeSVG(k, r.badges[k], 48)
-        + '<span class="mname">' + esc(BADGES[k].name) + '</span>'
-        + '<span class="mcount">' + TIERS[tierOf(r.badges[k])].name + (r.badges[k]>1?" x"+r.badges[k]:"") + '</span></div>').join("")
-      + '</div></div>' : "")
+  + '<div class="card"><h3>Trophies</h3>'
+    + '<p class="hint">' + badges.length + ' of ' + Object.keys(BADGES).length + ' earned. Bronze the first time, silver at 3, gold at 5.</p>'
+    + '<div class="medals">' + badges.map(k => medalHTML(k, r.badges[k])).join("")
+    + Object.keys(BADGES).filter(k => !r.badges[k]).map(k => medalHTML(k, 0)).join("") + '</div></div>'
 
   + '<div class="card"><h3>Every leg</h3>'
   + (function(){ const q = qualityRows(id).counted;
@@ -2140,23 +2357,21 @@ function viewSeason(){
   + members.map(m=>{
       const b = a.rec[m.id].badges;
       const keys = Object.keys(b).sort((x,y) => b[y]-b[x]);
-      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div style="flex:1"><h4>'+esc(m.name.toUpperCase())+'</h4>'
+      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div style="flex:1;min-width:0"><h4>'+esc(m.name.toUpperCase())+'</h4>'
+      + '<span class="casecount">' + keys.length + ' of ' + Object.keys(BADGES).length + '</span>'
       + (keys.length
-          ? '<div class="medals">' + keys.map(k =>
-              '<div class="medal ' + tierOf(b[k]) + '">' + badgeSVG(k, b[k], 48)
-              + '<span class="mname">' + esc(BADGES[k].name) + '</span>'
-              + '<span class="mcount">' + TIERS[tierOf(b[k])].name + (b[k]>1 ? " x"+b[k] : "") + '</span></div>').join("")
-            + '</div>'
+          ? '<div class="medals">' + keys.map(k => medalHTML(k, b[k], true)).join("") + '</div>'
           : '<span class="hint">Nothing yet.</span>')
       + '</div></div>';
     }).join("")
-  + '<p class="hint" style="margin-top:14px">Each one is struck in bronze the first time you earn it, '
-  + 'silver at three and gold at five.</p>'
+  + '<p class="hint" style="margin-top:14px">Each one is a bronze coin the first time you earn it, '
+  + 'a silver shield at three and a gold rosette at five. The ones still out there sit as empty slots on your profile.</p>'
   + '<div class="tierdemo">' + ["bronze","silver","gold"].map(t =>
-      '<div class="medal"><div>' + badgeSVG("perfect", TIERS[t].at, 48) + '</div>'
-      + '<span class="mcount">' + TIERS[t].name + " at " + TIERS[t].at + '</span></div>').join("") + '</div>'
+      '<div class="medal ' + t + '"><span class="mart">' + badgeSVG("perfect", TIERS[t].at, 60) + '</span>'
+      + '<span class="mname">' + TIERS[t].name + '</span><span class="mcount">' + "At " + TIERS[t].at + '</span></div>').join("")
+      + '<div class="medal locked"><span class="mart">' + badgeSVG("perfect", 0, 60, true) + '</span><span class="mname">Empty</span><span class="mcount">Not yet</span></div></div>'
   + '<p class="legend">'+Object.keys(BADGES).map(k=>
-      '<span class="legrow">' + badgeSVG(k, 1, 24) + '<b>'+BADGES[k].name+'</b>, '+BADGES[k].desc + '</span>').join("")+'</p></div>';
+      '<span class="legrow">' + badgeSVG(k, 1, 30) + '<span><b>'+BADGES[k].name+'</b>, '+BADGES[k].desc + '</span></span>').join("")+'</p></div>';
 
   const feed = '<div class="card"><h3>Moments</h3>'
   + (state.me
