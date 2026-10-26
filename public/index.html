@@ -102,9 +102,18 @@
   ul.legs{list-style:none;margin:8px 0 0;padding:0}
   ul.legs li{display:flex;gap:10px;padding:12px 0;border-top:2px solid #16222F}
   ul.legs li:first-child{border-top:0}
+  .spritebox.face{width:auto}
+  .lookrows{margin-top:12px}
+  .lookrow{display:grid;grid-template-columns:84px 44px minmax(0,1fr) 44px;align-items:center;gap:6px;padding:5px 0;border-top:2px solid #16222F}
+  .lookrow:first-child{border-top:0}
+  .lookrow span{font-family:var(--pix);font-size:8px;color:var(--dim);line-height:1.5}
+  .lookrow b{text-align:center;font-size:14px;color:var(--chalk);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lookrow .lk{height:40px;background:var(--panel2);color:var(--chalk);border:3px solid var(--edge);box-shadow:3px 3px 0 var(--edge);
+    font-family:var(--pix);font-size:12px;padding:0}
+  .lookrow .lk:active{transform:translate(3px,3px);box-shadow:none}
   .spritebox{width:60px;flex:none;background:#22496E;border:2px solid var(--edge);padding:3px;display:flex;align-items:center;justify-content:center;background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.10) 0 5px,rgba(255,255,255,0) 5px 10px)}
   .leg{flex:1;min-width:0}
-  .rowname{font-family:var(--big);font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;text-transform:uppercase;text-shadow:2px 2px 0 var(--edge);margin-bottom:5px}
+  .rowname{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-family:var(--big);font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;text-transform:uppercase;text-shadow:2px 2px 0 var(--edge);margin-bottom:5px}
   .rowname span{color:var(--dim)}
   .leg .player{font-weight:700;word-wrap:break-word}
   .leg .prop{font-size:16px}
@@ -134,8 +143,8 @@
     padding:12px;margin-bottom:16px;font-size:16px;color:#FFD98A;line-height:1.7}
   .banner b{display:block;font-family:var(--pix);font-size:8px;color:var(--amber);margin-bottom:6px}
   .banner .linkbtn{margin-top:8px;display:block}
-  .rowname svg{vertical-align:-6px;margin-right:4px}
-  td svg{vertical-align:-6px;margin-right:5px}
+  .rowname svg{flex:none}
+  td svg{vertical-align:-10px;margin-right:5px}
   .rcard{border:4px solid #fff;background:#151F2D;box-shadow:7px 7px 0 rgba(0,0,0,.65);overflow:hidden}
   .rcard.hit{border-color:#3E9E6B}
   .rcard.miss{border-color:#9B4038}
@@ -328,7 +337,8 @@
   th:first-child,td:first-child{text-align:left}
   td:first-child{color:var(--amber)}
 
-  .case{padding:12px 0;border-top:2px solid #16222F;display:flex;gap:10px;align-items:flex-start}
+  .case{padding:12px 0;border-top:2px solid #16222F}
+  .casehead{display:flex;gap:12px;align-items:center}
   .case:first-of-type{border-top:0}
   .case h4{font-family:var(--big);font-weight:700;font-size:16px;letter-spacing:1px;text-transform:uppercase;color:#fff;text-shadow:2px 2px 0 var(--edge);margin-bottom:6px}
   .feed{list-style:none;margin:10px 0 0;padding:0}
@@ -344,7 +354,7 @@
   .center{text-align:center;padding:40px 0;color:var(--dim);font-family:var(--pix);font-size:8px}
   .footnote{color:var(--dim);font-size:16px;margin-top:22px;line-height:1.8}
   @media (max-width:400px){ .clock{font-size:24px} .bigcount{font-size:32px} .poolname{font-size:16px} }
-  @media (max-width:420px){ .spritebox{width:42px} .whoami{grid-template-columns:1fr} }
+  @media (max-width:420px){ .spritebox{width:42px} .spritebox.face{width:auto} .whoami{grid-template-columns:1fr} }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -624,15 +634,6 @@ function outlineGrid(rows, ch){
   return out.map(r=>r.join(""));
 }
 
-/* ---- member portraits, 24x24 -------------------------------------------------
-   Redrawn with the outline-and-shade approach those old handheld sprites use:
-   a dark keyline around the whole figure, a shadow tone down one side of the face
-   and across the bottom of the jersey, and eyes built from a white, a pupil and a
-   highlight rather than a solid block. */
-const OUTL = "#1B2130", EYE = "#10151F", WHITE = "#F6F8FA", GLINT = "#FFFFFF",
-      MOUTH = "#7E3B33", HAIRC = "#33261A", HAIRL = "#5A4430", SHADE_D = "#1A2430";
-const SKINS = ["#F4D2AC","#E0AE74","#B8834F","#8E5C33","#5F3C21"];
-
 /* darken any color so shading follows whatever palette is in play */
 function shade(hex, f){
   const n = parseInt(hex.slice(1), 16);
@@ -640,152 +641,212 @@ function shade(hex, f){
   return "#" + [r,g,b].map(v => Math.max(0, Math.min(255, v)).toString(16).padStart(2,"0")).join("");
 }
 
-/* Head with ears, a jaw that narrows to the chin, a nose shadow and a neck shaded
-   under the chin; a jersey with a V collar, shoulder seams and sleeve stripes.
-   Faces and hats lay over it, and keep the same order as before so everyone's
-   saved look still means the same thing. */
-const BUST24 = [
-"........................",  //0
-"........OOOOOOOO........",  //1
-"......OOSSSSSSSSOO......",  //2
-".....OSSSSSSSSSSSKO.....",  //3
-".....OSSSSSSSSSSSKO.....",  //4
-".....OSSSSSSSSSSSKO.....",  //5
-".....OSSSSSSSSSSSKO.....",  //6
-"....OKSSSSSSSSSSSKKO....",  //7  ears
-"....OKSSSSSSSSSSSKKO....",  //8
-".....OSSSSSSSSSSSKO.....",  //9
-".....OSSSSSSSSSSSKO.....",  //10
-"......OSSSSSSSSSKO......",  //11
-".......OSSSSSSSKO.......",  //12
-"........OOOOOOOO........",  //13
-".........OSSSKKO........",  //14 neck, shaded under the chin
-"....OOOOOTSSSKTOOOOO....",  //15 collar opens into a V
-"...OJJJJJJTSKTJJJJJJO...",  //16
-"..OJJJJJJJJTTJJJJJJJJO..",  //17
-"..OJJJVJJJJJJJJJJVJJJO..",  //18 shoulder seams
-"..OTTTVJJJJJJJJJJVTTTO..",  //19 sleeve stripes
-"..OJJJVJJJJJJJJJJVJJJO..",  //20
-"..OVVVVVVVVVVVVVVVVVVO..",  //21
-"..OOOOOOOOOOOOOOOOOOOO..",  //22
-"........................"]; //23
-const E24 = "........................";
-const pad24 = r => { const o = r.slice(); while(o.length < 24) o.push(E24); return o; };
-/* every face shares the nose shading and lines up with the ears */
-const FACES24 = [
-  /* level */ pad24([E24,E24,E24,E24,E24,E24,
-    ".......BBB....BBB.......",
-    ".......WGW....WGW.......",
-    ".......WEW....WEW.......",
-    "............K...........",
-    "...........KK...........",
-    "..........MMMM.........."]),
-  /* squint */ pad24([E24,E24,E24,E24,E24,E24,E24,
-    ".......BBB....BBB.......",
-    ".......EEE....EEE.......",
-    "............K...........",
-    "...........KK...........",
-    "...........MMMM........."]),
-  /* shades */ pad24([E24,E24,E24,E24,E24,E24,
-    "......DDDDDDDDDDDD......",
-    "......DGDDDDDDGDDD......",
-    ".......DDD....DDD.......",
-    "............K...........",
-    "...........KK...........",
-    "..........MMMM.........."]),
-  /* grin */ pad24([E24,E24,E24,E24,E24,E24,
-    ".......BBB....BBB.......",
-    ".......WGW....WGW.......",
-    ".......WEW....WEW.......",
-    "............K...........",
-    "...........KK...........",
-    ".........MWWWWWM........",
-    "..........MMMMM........."])
+/* ---- member portraits, 32x32 ------------------------------------------------
+   Built in layers so every option mixes with every other: hair that hangs behind
+   the head, the head and jersey, the face, facial hair, the front of the hair,
+   glasses, then headwear. Outlines are not drawn by hand. The edge of every shape
+   is darkened from its own color, and hair or a hat meeting skin gets a softer
+   line, the colored keyline those Gen 5 sprites use. */
+const BASE32 = [
+"................................",  //0
+"................................",  //1
+"................................",  //2
+"............SSSSSSSS............",  //3
+"..........SSSSSSSSSSSS..........",  //4
+".........SSAAASSSSSSSss.........",  //5
+".........SAAASSSSSSSSss.........",  //6
+".........SASSSSSSSSSSss.........",  //7
+".........SSSSSSSSSSSSss.........",  //8
+".........SSSSSSSSSSSSss.........",  //9
+".........SSSSSSSSSSSSss.........",  //10
+"........SSSSSSSSSSSSSsss........",  //11
+".......SsSSSSSSSSSSSSssns.......",  //12
+".......SsSSSSSSSSSSSsssns.......",  //13
+".......SSSSSSSSSSSSSsssss.......",  //14
+"........SSSSSSSSSSSSssss........",  //15
+".........SSSSSSSSSSSSss.........",  //16
+"..........SSSSSSSSSSss..........",  //17
+"...........SSSSSSSSss...........",  //18
+"............SSSSSSss............",  //19
+".............SSSSss.............",  //20
+".............nnnnnn.............",  //21
+".............SSSSss.............",  //22
+".......JJJJTTSSSSssTTJJJJ.......",  //23
+"....JXXXXXJJTTSSssTTJJJJjjjj....",  //24
+"...JXXXXJJJJJTTssTTJJJJJJjjjj...",  //25
+"..JJJJJjJJJJJJTTTTJJJJJJjjjjjj..",  //26
+"..JJJJJjJJJJJJJJJJJJJJJJjjjjjj..",  //27
+"..TTTTTjJJJJJJJJJJJJJJJJjttttt..",  //28
+"..JJJJJjJJJJJJJJJJJJJJJJjjjjjj..",  //29
+"..TTTTTjJJJJJJJJJJJJJJJJjttttt..",  //30
+"..JJJJJjjjjjjjjjjjjjjjjjjjjjjj..",  //31
 ];
-const HATS24 = [
-  /* helmet */ pad24([E24,
-    "........OOOOOOOO........",
-    "......OOLHHTTHHHOO......",
-    ".....OLHHHHTTHHHHQO.....",
-    ".....OHHHHHTTHHHHQO.....",
-    ".....OHHHHHHHHHHHQO.....",
-    ".....OHH.........QO.....",
-    "....OHHH.........QQO....",
-    "....OHHH.........QQO....",
-    ".....OHH.........QO.....",
-    ".....OHHFFFFFFFFFQO.....",
-    "......OHF..FF..FQO......",
-    ".......OFFFFFFFFO......."]),
-  /* ball cap, brim to the right */ pad24([E24,
-    "........OOOOOOOO........",
-    "......OOLHHHHHHHOO......",
-    ".....OLLHHHTTHHHHQO.....",
-    ".....OHHHHHTTHHHHQO.....",
-    ".....OQQQQQQQQQQQQOOOO..",
-    ".....OSSSSSSSSSSSHHHHHO.",
-    "......................O."]),
-  /* beanie with a cuff and a pom */ pad24([
-    "..........OOOO..........",
-    ".........OTTTTO.........",
-    "......OOOOTTTTOOOO......",
-    ".....OLHHHHHHHHHHQO.....",
-    ".....OHLHHHHHHHHHQO.....",
-    ".....OTTTTTTTTTTTTO.....",
-    ".....OTOTOTOTOTOTTO....."]),
-  /* short hair with a fade at the sides */ pad24([E24,
-    "........OOOOOOOO........",
-    "......OOBLLBBBBBOO......",
-    ".....OBBBLBBBBBBBBO.....",
-    ".....OBBBBBBBBBBBBO.....",
-    ".....OBB.B.....BBBO.....",
-    ".....OB..........BO.....",
-    "....OKB..........BKO...."]),
-  /* big hair */ pad24([
-    ".......OOOOOOOOOO.......",
-    ".....OOBBLBBBBLBBOO.....",
-    "....OBBLBBBBBLBBBBBO....",
-    "...OBBBBBBLBBBBBBLBBO...",
-    "...OBLBBBBBBBBBBBBBBO...",
-    "...OBBBB.BB..BBBBBBBO...",
-    "...OBBB..........BBBO...",
-    "...OBBO..........OBBO...",
-    "....OO............OO...."]),
-  /* bald, with a shine */ pad24([E24,E24,
-    "........AA..............",
-    ".......AA..............."])
+/* parts are lists of [row, first column, pixels]; "." leaves what is under it, "_" clears it */
+const EXPR32 = [
+  /* easy */ [[10,11,"KKK"],[10,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPG"],[12,18,"GPW"],[13,11,"wPP"],[13,18,"PPw"],
+              [14,16,"s"],[15,15,"ns"],[16,13,"m....m"],[17,14,"mmmm"],[18,15,"ss"]],
+  /* grin */ [[10,11,"KKK"],[10,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPG"],[12,18,"GPW"],[13,11,"wPP"],[13,18,"PPw"],
+              [14,16,"s"],[15,15,"ns"],[16,13,"mmmmmm"],[17,13,"mYYYYm"],[18,14,"mmmm"]],
+  /* locked in */ [[10,11,"KK"],[10,19,"KK"],[11,12,"KK"],[11,18,"KK"],[12,11,"eee"],[12,18,"eee"],[13,11,"WPP"],[13,18,"PPW"],
+              [14,16,"s"],[15,15,"ns"],[17,14,"mmmm"],[18,15,"ss"]],
+  /* smirk */ [[10,11,"KKK"],[9,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPG"],[12,18,"GPW"],[13,11,"wPP"],[13,18,"PPw"],
+              [14,16,"s"],[15,15,"ns"],[16,18,"m"],[17,14,"mmmm"],[18,15,"ss"]],
+  /* hyped */ [[9,11,"KKK"],[9,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPG"],[12,18,"GPW"],[13,11,"WPP"],[13,18,"PPW"],
+              [14,16,"s"],[15,15,"ns"],[16,14,"mmmm"],[17,13,"mddddm"],[18,14,"mMMm"],[19,15,"mm"]]
 ];
-
-const HATNAMES = ["Helmet","Ball cap","Beanie","Short hair","Big hair","Bald"];
-const FACENAMES = ["Level","Squint","Shades","Grin"];
-const LOOKMAX = {hat:6, face:4, pal:8, skin:5};
-
+const EXPRNAMES = ["Easy","Grin","Locked in","Smirk","Hyped"];
+/* hair: front layer, plus an optional back layer drawn behind the head */
+const HAIR32 = [
+  /* bald */ {front:[[4,12,"AA"],[5,11,"A"]]},
+  /* buzz */ {front:[[3,12,"hHhHhHhH"],[4,10,"hHhHhHhHhHhh"],[5,9,"HhHhHhHhHhHhhh"],[6,9,"h"],[6,22,"h"],[7,9,"h"],[7,22,"h"]]},
+  /* short */ {front:[[1,12,"HHHHHHHH"],[2,10,"HHIIIHHHHHHh"],[3,9,"HHIIHHHHHHHHhh"],[4,8,"HHHHHHHHHHHHHHhh"],
+               [5,8,"HHHHHHHHHHHHHHhh"],[6,8,"HHH.HH.HHH.HHHhh"],[7,8,"HH...........Hhh"],[8,8,"H"],[8,22,"hh"],[9,9,"h"],[9,22,"h"],[10,9,"h"],[10,22,"h"]]},
+  /* side part */ {front:[[1,11,"HHHHHHHHH"],[2,9,"HHHIIIIIHHHhH"],[3,8,"HHHIIIIHHHHHhhH"],[4,8,"HHHHHHHHHHHHHhhh"],
+               [5,8,"HHHHHHHHHHHHHHhh"],[6,8,"HHHHHHHHH....Hhh"],[7,8,"HHHHHH.......Hhh"],[8,8,"HH"],[8,21,"hhh"],[9,9,"h"],[9,22,"h"],[10,9,"h"],[10,22,"h"]]},
+  /* curls on top, faded sides */ {front:[[0,12,"HhH.HhH"],[1,10,"HhIHhHHhHhH"],[2,9,"HIHhHIHhHHhHh"],[3,9,"hHhHhHhHhHhHhh"],
+               [4,9,"HhHhHhHhHhHhHh"],[5,9,"hHhHhHhHhHhHhh"],[6,9,"h.h.h.h.h.h.hh"],[7,9,"h"],[7,22,"h"]]},
+  /* afro */ {back:[[0,10,"HHIHhHIHHHhh"],[1,7,"IHHhIHHHIHhHhHhHhh"],[2,6,"IHHHIHHhIHHHIHhHhHhH"],[3,5,"IHHHIHHHIHHhIHhHhHhHhH"],[4,5,"hHHHHHHhHHHHHHhhHhHhHh"],[5,4,"HHHHhHHHHHHhHHHhHhhhHhHh"],[6,4,"hHHHH..............HhhhH"],[7,4,"HHHhH..............hHhHh"],[8,4,"HHHHH..............HhHhH"],[9,5,"HhHH..............hHhH"],[10,5,"HHHH..............hhHh"],[11,6,"HHH..............hHh"]],
+           front:[[3,9,"HHhHHIHHhHHHhh"],[4,9,"HhHHHHhHHHHHhh"],[5,9,"HHHHhHHHHHhHhh"],[6,9,"Hh.HH.Hh.HH.hh"],[7,9,"h"],[7,22,"h"]]},
+  /* locs */ {hang:true, back:[[6,7,"hh"],[6,23,"hh"],[7,6,"hHh"],[7,23,"hHh"],[8,6,"hHh"],[8,23,"hHh"],[9,6,"HhH"],[9,23,"HhH"],[10,6,"hHh"],[10,23,"hHh"],
+               [11,5,"HhH"],[11,24,"HhH"],[12,5,"hHh"],[12,24,"hHh"],[13,5,"HhH"],[13,24,"HhH"],[14,5,"hHh"],[14,24,"hHh"],[15,5,"HhH"],[15,24,"HhH"],
+               [16,5,"hHh"],[16,24,"hHh"],[17,6,"Hh"],[17,24,"hH"],[18,6,"hH"],[18,24,"Hh"],[19,7,"H"],[19,24,"h"]],
+           front:[[1,11,"HhHhHhHhHh"],[2,9,"HhIhHhIhHhHhH"],[3,8,"hHhHhHhHhHhHhHh"],[4,8,"HhHhHhHhHhHhHhHh"],[5,8,"hHhHhHhHhHhHhHhh"],
+               [6,8,"Hh.Hh.Hh.Hh.Hhhh"],[7,8,"Hh..h......h.hhh"],[8,8,"H"],[8,22,"hh"],[9,8,"h"],[9,23,"h"]]},
+  /* cornrows */ {front:[[2,11,"hHhHhHhHhH"],[3,9,"HhHhHhHhHhHhHh"],[4,9,"HhHhHhHhHhHhHh"],[5,9,"HhHhHhHhHhHhHh"],[6,9,"Hh.h.h.h.h.hHh"],[7,9,"h"],[7,22,"h"]]},
+  /* long */ {hang:true, back:[[6,7,"HH"],[6,23,"hh"],[7,6,"HHH"],[7,23,"hhh"],[8,6,"HHH"],[8,23,"hhh"],[9,6,"HHH"],[9,23,"hhh"],[10,6,"HHH"],[10,23,"hhh"],
+               [11,6,"HH"],[11,24,"hh"],[12,5,"HH"],[12,25,"hh"],[13,5,"HH"],[13,25,"hh"],[14,5,"HHH"],[14,24,"hhh"],[15,5,"HHH"],[15,24,"hhh"],[16,5,"HHHH"],[16,23,"hhhh"],
+               [17,5,"HHHH"],[17,23,"hhhh"],[18,5,"HHHHH"],[18,22,"hhhhh"],[19,6,"HHHH"],[19,22,"hhhh"],[20,6,"HHH"],[20,23,"hhh"],[21,7,"HH"],[21,23,"hh"]],
+           front:[[1,11,"HHHHHHHHHH"],[2,9,"HHHIIIIHHHHhH"],[3,8,"HHIIIHHHHHHHHhh"],[4,8,"HHHHHHHHHHHHHHhh"],[5,8,"HHHHHHHHHHHHHHhh"],
+               [6,8,"HHHHHH....HHHhhh"],[7,8,"HHHH.........hhh"],[8,8,"HHH"],[8,21,"hhh"],[9,8,"HH"],[9,22,"hh"],[10,8,"H"],[10,23,"h"]]}
+];
+const HAIRNAMES = ["Bald","Buzz","Short","Side part","Curls","Afro","Locs","Cornrows","Long"];
+const HAIRC32 = [["#1E1A18","#0F0C0B","#3A332E"],["#3B2A1E","#24180F","#5A4430"],["#6B4A2E","#4A311C","#8E6A45"],["#8A3D22","#5E2613","#B25A35"],
+               ["#D9B060","#A9822F","#F0D58E"],["#E9DFC0","#BFAF86","#FFF8E4"],["#9A9A9A","#6E6E6E","#C8C8C8"]];
+const HAIRCNAMES = ["Black","Dark brown","Brown","Auburn","Blonde","Platinum","Gray"];
+const BEARD32 = [
+  /* none */ [],
+  /* stubble */ [[16,10,"b.b"],[16,19,"b.b"],[17,10,"b.b.......b."],[18,11,"b.b.....b."],[19,12,"b.b.b.b."],[20,13,".b.b.b"]],
+  /* mustache */ [[16,13,"BBBBBB"],[17,13,"b....b"]],
+  /* goatee */ [[16,13,"BBBBBB"],[17,13,"b....b"],[18,14,"BBBB"],[19,13,"BBBBBB"],[20,14,"bBBb"]],
+  /* chin strap */ [[11,9,"B"],[11,22,"b"],[12,9,"B"],[12,22,"b"],[13,9,"BB"],[13,21,"bb"],[14,9,"BB"],[14,21,"bb"],[15,9,"BBB"],[15,20,"bbb"],[16,9,"BBB"],[16,20,"bbb"],
+                  [17,10,"BBB"],[17,19,"bbb"],[18,11,"BBBBBBBbbb"],[19,12,"BBBBbbbb"],[20,13,"BBbbbb"]],
+  /* full beard */ [[11,9,"B"],[11,22,"b"],[12,9,"B"],[12,22,"b"],[13,9,"BB"],[13,21,"bb"],[14,9,"BBB"],[14,20,"bbb"],[15,9,"BBBB"],[15,19,"bbbb"],
+                  [16,9,"BBBBBBBBBBBbbb"],[17,10,"BBBB....Bbbb"],[18,10,"BBBBBBBBBBbb"],[19,11,"BBBBBBBbbb"],[20,12,"BBBBBbbb"],[21,13,"BBbbbb"],[22,14,"bbbb"]]
+];
+const BEARDNAMES = ["None","Stubble","Mustache","Goatee","Chin strap","Full beard"];
+const GLASS32 = [
+  [],
+  /* frames */ [[11,10,"ggggg"],[11,17,"ggggg"],[12,10,"g...g"],[12,17,"g...g"],[13,10,"g...g"],[13,17,"g...g"],[14,10,"ggggg"],[14,17,"ggggg"],[12,15,"gg"],[12,8,"g"],[12,23,"g"],[11,8,"gg"],[11,22,"gg"]],
+  /* shades */ [[11,8,"ggggggggggggggg"],[12,9,"gLLLLLggLLLLLg"],[13,10,"LlLLL..LlLLL"],[14,11,"LLL....LLL"]]
+];
+const GLASSNAMES = ["None","Glasses","Shades"];
+/* headwear: clip hides hair above that row, then the hat draws */
+const HAT32 = [
+  {clip:0, px:[]},
+  /* helmet */ {clip:99, px:[[1,10,"CCCCVVCCCC"],[2,8,"CDDCCCVVCCCCcc"],[3,7,"CDDCCCCVVCCCCccc"],
+        [4,6,"CDCCCCCCVVCCCCCccc"],[5,6,"CCCCCCCCVVCCCCCccc"],[6,6,"CCCCCCCCCCCCCCCccc"],[7,6,"CCcccccccccccccccc"],[8,6,"CC"],[8,22,"cc"],[9,6,"CC"],[9,23,"cc"],
+        [10,6,"CC"],[10,23,"cc"],[11,6,"CCC"],[11,23,"ccc"],[12,6,"CCC"],[12,23,"ccc"],[13,6,"CCC"],[13,23,"ccc"],[14,6,"CC"],[14,24,"cc"],[15,7,"CFFFFFFFFFFFFFFFFc"],
+        [16,8,""],[16,9,"F...F....F...F"],[17,9,"FFFFFFFFFFFFFF"],[18,10,"f..........f"]]},
+  /* ball cap */ {clip:6, px:[[2,11,"CCCCCCCCCC"],[3,9,"CCDDCCVVCCCCcc"],[4,8,"CDDCCCVVCCCCCccc"],[5,8,"CCCCCCCCCCCCCccc"],[6,8,"cccccccccccccccc"],
+        [7,5,""],[7,7,"CCCCCCCCCCCCCCCCCC"],[8,7,"cccccccccccccccccc"]]},
+  /* backwards cap */ {clip:6, px:[[1,13,"cccccc"],[2,11,"CCCCCCCCCC"],[3,9,"CDDCCCCCCCCCcc"],[4,8,"CDDCCCCCCCCCCccc"],[5,8,"CCCCCVVVVVVCCccc"],
+        [6,8,"cccccc....cccccc"],[7,8,"cc"],[7,22,"cc"]]},
+  /* beanie */ {clip:7, px:[[0,14,"VVVV"],[1,13,"VVVVVV"],[2,11,"CCCCCCCCCC"],[3,9,"CDDCCCCCCCCCcc"],[4,8,"CDDCCCCCCCCCCccc"],[5,8,"CCCCCCCCCCCCCccc"],
+        [6,8,"VVVVVVVVVVVVVVtt"],[7,8,"VtVtVtVtVtVtVtVt"],[8,8,"tttttttttttttttt"]]},
+  /* skull cap */ {clip:8, px:[[2,11,"CCCCCCCCCC"],[3,9,"CDDCCCCCCCCCcc"],[4,8,"CDDCCCCCCCCCCccc"],[5,8,"CDCCCCCCCCCCCccc"],[6,8,"CCCCCCCCCCCCCccc"],
+        [7,8,"CCCCCCCCCCCCCCcc"],[8,9,"c"],[8,22,"c"]]},
+  /* durag */ {clip:8, px:[[2,11,"CCCCCCCCCC"],[3,9,"CDDCCCCCCCCCcc"],[4,8,"CDDCCCCCCCCCCccc"],[5,8,"CCCCCCCCCCCCCccc"],[6,8,"CCCCCCCCCCCCCccc"],
+        [7,8,"VVVVVVVVVVVVVVtt"],[8,22,"Cc"],[9,23,"Cc"],[10,23,"cC"],[11,24,"Cc"],[12,25,"c"]]},
+  /* headband */ {clip:0, px:[[7,8,"VVVVVVVVVVVVVVVV"],[8,8,"tttttttttttttttt"]]}
+];
+const HATNAMES = ["None","Helmet","Ball cap","Backwards cap","Beanie","Skull cap","Durag","Headband"];
+const SKINS32 = ["#FBE3CB","#F2CDA6","#E3B484","#CC955F","#B47B48","#94603A","#744628","#55331E"];
+const SKINNAMES = ["Fair","Light","Light tan","Tan","Medium","Brown","Dark brown","Deep"];
+const CLASSICNAMES = ["Blue","Red","Green","Gold","Purple","Teal","Pink","Slate"];
+const JERSEYS = PALETTES.map((p, i) => ({j:p.j, t:p.t, name:CLASSICNAMES[i]}))
+  .concat(TEAMS.map(t => ({j:t.j, t:t.t, name:t.name.split(" ").pop()})));
+/* what the look editor steps through, in order */
+const LOOKPARTS = [
+  {k:"skin",    label:"Skin",        names:SKINNAMES},
+  {k:"hair",    label:"Hair",        names:HAIRNAMES},
+  {k:"hairc",   label:"Hair color",  names:HAIRCNAMES},
+  {k:"beard",   label:"Facial hair", names:BEARDNAMES},
+  {k:"expr",    label:"Face",        names:EXPRNAMES},
+  {k:"glasses", label:"Glasses",     names:GLASSNAMES},
+  {k:"hat",     label:"Headwear",    names:HATNAMES},
+  {k:"jersey",  label:"Jersey",      names:JERSEYS.map(j => j.name)}
+];
+/* Looks saved before the redraw had four settings. This keeps each one the way
+   it looked: the helmet, cap and beanie keep short hair under them, big hair
+   becomes the afro, shades move to glasses, and the old five skin tones land
+   on the nearest of the new eight. */
+function convertOldLook(o){
+  const hat = [[1,2],[2,2],[4,2],[0,2],[0,5],[0,0]][((o.hat|0) % 6 + 6) % 6];
+  const face = [[0,0],[2,0],[0,2],[1,0]][((o.face|0) % 4 + 4) % 4];
+  return {v:2, skin:[1,2,4,5,7][((o.skin|0) % 5 + 5) % 5], hair:hat[1], hairc:1, beard:0,
+          expr:face[0], glasses:face[1], hat:hat[0], jersey:((o.pal|0) % 8 + 8) % 8};
+}
 /* weighted so most people start with visible eyes; shades is 1 in 8, not 1 in 4 */
 const FACE_WEIGHTS = [0,1,3,0,1,3,0,2];
 function defaultLook(name){
-  return {hat: hashIdx(name+"|h",6), face: FACE_WEIGHTS[hashIdx(name+"|f",8)],
-          pal: hashIdx(name,8), skin: 2};
+  return convertOldLook({hat: hashIdx(name+"|h",6), face: FACE_WEIGHTS[hashIdx(name+"|f",8)], pal: hashIdx(name,8), skin: 2});
 }
 function lookOf(m){
-  const d = defaultLook(m.name||""), l = m.look||{};
-  return {hat:Number.isInteger(l.hat)?l.hat:d.hat, face:Number.isInteger(l.face)?l.face:d.face,
-          pal:Number.isInteger(l.pal)?l.pal:d.pal, skin:Number.isInteger(l.skin)?l.skin:d.skin};
+  const l = m.look || null;
+  if(!l || l.v !== 2) return l ? convertOldLook(Object.assign({hat:0, face:0, pal:0, skin:2}, defaultLookRaw(m.name || ""), l)) : defaultLook(m.name || "");
+  const out = {v:2};
+  LOOKPARTS.forEach(p => { const n = p.names.length, v = l[p.k]; out[p.k] = Number.isInteger(v) ? ((v % n) + n) % n : 0; });
+  return out;
 }
+function defaultLookRaw(name){ return {hat: hashIdx(name+"|h",6), face: FACE_WEIGHTS[hashIdx(name+"|f",8)], pal: hashIdx(name,8), skin: 2}; }
+const PCAT = ch => "SsAn".indexOf(ch) >= 0 ? "skin" : "HhIBbK".indexOf(ch) >= 0 ? "hair" : "CcDVFf".indexOf(ch) >= 0 ? "hat" : "other";
+const portraitCache = {};
 function avatarSVG(look, px){
-  const g = BUST24.map(r => r.split(""));
-  const lay = rows => rows.forEach((r,y) => r.split("").forEach((c,x) => { if(c !== ".") g[y][x] = c; }));
-  lay(FACES24[look.face % 4]);
-  lay(HATS24[look.hat % 6]);
-  const pal = PALETTES[look.pal % 8], hairish = look.hat >= 3;
-  const skin = SKINS[look.skin % 5];
-  return gridSVG(g.map(r => r.join("")), {
-    O: OUTL, S: skin, K: shade(skin, .8), A: shade(skin, 1.16),
-    J: pal.j, V: shade(pal.j, .76), T: pal.t,
-    H: pal.h, L: hairish ? HAIRL : shade(pal.h, 1.3), Q: shade(pal.h, .68),
-    F: "#9AA4AF", W: WHITE, E: EYE, G: GLINT, D: SHADE_D, B: HAIRC, M: MOUTH
-  }, px, "sprite");
+  const key = LOOKPARTS.map(p => look[p.k]).join(".") + "@" + px;
+  if(portraitCache[key]) return portraitCache[key];
+  const g = BASE32.map(r => r.split(""));
+  const put = (y, x, c) => { if(y < 0 || y > 31 || x < 0 || x > 31 || c === ".") return; g[y][x] = c === "_" ? "." : c; };
+  const lay = parts => parts.forEach(([y, x, s]) => s.split("").forEach((c, i) => put(y, x + i, c)));
+  const hair = HAIR32[look.hair], hat = HAT32[look.hat];
+  const clip = parts => hat.clip ? parts.filter(([y]) => y >= hat.clip) : parts;
+  if(hair.back && (!hat.clip || hair.hang))
+    clip(hair.back).forEach(([y, x, s]) => s.split("").forEach((c, i) => { if(c !== "." && g[y] && g[y][x + i] === ".") g[y][x + i] = c; }));
+  lay(EXPR32[look.expr]);
+  lay(BEARD32[look.beard]);
+  lay(clip(hair.front || []));
+  lay(GLASS32[look.glasses]);
+  lay(hat.px);
+  const sk = SKINS32[look.skin], hc = HAIRC32[look.hairc], jr = JERSEYS[look.jersey];
+  const col = {S:sk, s:shade(sk,.84), A:shade(sk,1.07), n:shade(sk,.7),
+    J:jr.j, j:shade(jr.j,.74), X:shade(jr.j,1.22), T:jr.t, t:shade(jr.t,.78),
+    W:"#F4F1EC", w:"#D6CFC4", P:"#2A1D15", G:"#FFFFFF", e:"#1A1210", K:hc[1],
+    m:"#6E2E26", M:"#B5574A", d:"#3A1410", Y:"#F7F4EE",
+    H:hc[0], h:hc[1], I:hc[2], B:hc[0], b:hc[1],
+    C:jr.j, c:shade(jr.j,.7), D:shade(jr.j,1.3), V:jr.t, F:"#A9B2BC", f:"#6E7884",
+    g:"#15171B", L:"#1E2530", l:"#7F9BB8"};
+  /* below the bottom edge counts as more jersey, so the crop gets no keyline */
+  const at = (y, x) => (y < 0 || x < 0 || x > 31) ? "." : (y > 31 ? "#" : g[y][x]);
+  let out = "";
+  for(let y = 0; y < 32; y++){
+    const row = g[y].map((ch, x) => {
+      if(ch === ".") return null;
+      const nb = [at(y-1,x), at(y+1,x), at(y,x-1), at(y,x+1)];
+      if(nb.indexOf(".") >= 0) return shade(col[ch], .42);
+      const c = PCAT(ch);
+      if((c === "hair" || c === "hat") && nb.some(n => n !== "#" && PCAT(n) === "skin")) return shade(col[ch], .6);
+      return col[ch];
+    });
+    let x = 0;
+    while(x < 32){ const c = row[x]; if(!c){ x++; continue; } let r = 1; while(x + r < 32 && row[x + r] === c) r++;
+      out += '<rect x="' + x + '" y="' + y + '" width="' + r + '" height="1" fill="' + c + '"/>'; x += r; }
+  }
+  const size = Math.max(1, Math.round(px / 32)) * 32;
+  return portraitCache[key] = '<svg class="sprite" width="' + size + '" height="' + size + '" viewBox="0 0 32 32" shape-rendering="crispEdges" aria-hidden="true">' + out + '</svg>';
 }
 const avatarFor = (m,px) => avatarSVG(lookOf(m), px);
-const lookDesc = l => HATNAMES[l.hat % 6] + ", " + FACENAMES[l.face % 4];
+const lookDesc = l => [HAIRNAMES[l.hair] + (l.hair ? " " + HAIRCNAMES[l.hairc].toLowerCase() : ""),
+  l.beard ? BEARDNAMES[l.beard].toLowerCase() : "", l.hat ? HATNAMES[l.hat].toLowerCase() : "",
+  l.glasses ? GLASSNAMES[l.glasses].toLowerCase() : "", JERSEYS[l.jersey].name + " jersey"].filter(Boolean).join(", ");
 
 const POSTAG={qb:"QB",rb:"RB",wr:"WR",te:"TE",k:"K",def:"DEF",stand:"?"};
 /* The player's real position wins. The stat name only decides it for someone not on
@@ -2068,7 +2129,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-25k";
+const BUILD = "2026-10-26a";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -2178,7 +2239,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-25k</span></p>';
+  + '<br><span class="build">build 2026-10-26a</span></p>';
 }
 
 function signInCard(){
@@ -2204,7 +2265,7 @@ function signInCard(){
   return '<div class="card"><h3>Which one are you?</h3>'
   + '<p class="hint">Each person gets their own slot and code, so nobody can post a leg for you.</p>'
   + '<div class="whoami">'+state.roster.members.map(m=>
-      '<button data-claim="'+m.id+'">'+avatarFor(m,48)+'<span>'+esc(m.name)
+      '<button data-claim="'+m.id+'">'+avatarFor(m,64)+'<span>'+esc(m.name)
       +'<small>'+(m.pinHash?"sign in":"unclaimed")+'</small></span></button>').join("")
   + '</div></div>';
 }
@@ -2344,7 +2405,7 @@ function lineupCard(w, locked){
       else if(L && L.state === "in") body += '<div class="livel">in progress, no line yet</div>';
     }
     return '<li><div class="spritebox">'+art+'</div><div class="leg">'
-      + '<div class="rowname">'+avatarFor(m,24)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
+      + '<div class="rowname">'+avatarFor(m,32)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
   }).join("");
 
   return '<div class="card"><h3>Week '+(w+1)+' lineup</h3>'
@@ -2440,7 +2501,7 @@ function viewProfile(){
   const badges = Object.keys(r.badges).sort(byStanding(r));
 
   return topbar("profile")
-  + '<div class="card"><div class="phead">' + avatarFor(m, 72)
+  + '<div class="card"><div class="phead">' + avatarFor(m, 96)
     + '<div><h3 style="margin:0">' + esc(m.name.toUpperCase()) + '</h3>'
     + '<p class="hint">' + (m.admin ? "Commissioner. " : "") + c.total + ' leg' + (c.total===1?'':'s') + ' posted.</p></div></div>'
   + '<div class="scroller"><table><tr><th>Hit</th><th>Miss</th><th>Rate</th><th>Qual</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
@@ -2597,7 +2658,7 @@ function viewSeason(){
 
   const cell = (id,kind,text) => text === "-" ? "-"
     : '<button class="drillcell" data-drill="' + id + ':' + kind + '">' + text + '</button>';
-  const face = r => avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},24);
+  const face = r => avatarFor(state.roster.members.find(m=>m.id===r.id)||{name:r.name},32);
   const nameCell = r => '<button class="namecell" data-profile="' + r.id + '">' + face(r) + esc(r.name) + '</button>';
   const byRate = a.table.slice().sort((x,y) =>
     ((hitRate(y)===null?-1:hitRate(y)) - (hitRate(x)===null?-1:hitRate(x)))
@@ -2650,12 +2711,12 @@ function viewSeason(){
   + members.map(m=>{
       const b = a.rec[m.id].badges;
       const keys = Object.keys(b).sort(byStanding(a.rec[m.id]));
-      return '<div class="case"><div class="spritebox">'+avatarFor(m,48)+'</div><div style="flex:1;min-width:0"><h4>'+esc(m.name.toUpperCase())+'</h4>'
-      + '<span class="casecount">' + keys.length + ' of ' + Object.keys(BADGES).length + '</span>'
+      return '<div class="case"><div class="casehead"><div class="spritebox face">'+avatarFor(m,64)+'</div><div><h4>'+esc(m.name.toUpperCase())+'</h4>'
+      + '<span class="casecount">' + keys.length + ' of ' + Object.keys(BADGES).length + ' earned</span></div></div>'
       + (keys.length
           ? '<div class="medals">' + medalsHTML(a.rec[m.id], m.id, true) + '</div>'
           : '<span class="hint">Nothing yet.</span>')
-      + '</div></div>';
+      + '</div>';
     }).join("")
   + '<p class="hint" style="margin-top:14px">Most badges are a bronze coin the first time you earn one, '
   + 'a silver shield at three and a gold rosette at five. ' + Object.keys(LEVELS).map(k => BADGES[k].name).join(", ").replace(/, ([^,]*)$/, " and $1")
@@ -2777,7 +2838,7 @@ function viewCard(){
     }
     const art = p ? sprite(p.player, p.stat, 72, false, p.team) : sprite(m.name, null, 72, true);
     return '<div class="rcard' + cls + '">'
-      + '<div class="rtop">' + avatarFor(m, 24) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
+      + '<div class="rtop">' + avatarFor(m, 32) + '<span>' + esc(m.name.toUpperCase()) + '</span></div>'
       + '<div class="rport" style="background-color:' + tint + '"><span class="rpos">' + tag + (p && p.team && locked ? ' <em>' + esc(p.team) + '</em>' : '') + '</span>' + art + '</div>'
       + '<div class="rname">' + esc(name.toUpperCase()) + (p ? flavorTag(p) : "") + '</div>'
       + '<div class="rprop">' + (prop || "&nbsp;") + '</div>'
@@ -2892,16 +2953,16 @@ function viewSettings(){
   + (state.err?'<p class="err">'+esc(state.err)+'</p>':"") + '</div>'
   + (state.me ? '<div class="card"><h3>Your look</h3>'
       + '<p class="hint">Only you can change yours. It rides along next to your picks all season.</p>'
-      + '<div class="preview"><div class="spritebox" id="lookbox">'+avatarSVG(currentLook(),72)+'</div>'
+      + '<div class="preview"><div class="spritebox face" id="lookbox">'+avatarSVG(currentLook(),96)+'</div>'
       + '<div class="cap"><b>'+esc(memberName(state.me).toUpperCase())+'</b>'
       + '<span id="lookdesc">'+esc(lookDesc(currentLook()))+'</span></div></div>'
-      + '<div class="row-btns" style="margin-top:10px">'
-      + '<button class="btn ghost" data-look="hat">Headgear</button>'
-      + '<button class="btn ghost" data-look="face">Face</button>'
-      + '<button class="btn ghost" data-look="pal">Colors</button>'
-      + '<button class="btn ghost" data-look="skin">Skin</button></div>'
-      + '<button class="btn" id="savelook">Save my look</button>'
-      + (state.lookMsg?'<p class="ok">'+esc(state.lookMsg)+'</p>':"")
+      + '<div class="lookrows">' + LOOKPARTS.map(pt => '<div class="lookrow"><span>' + pt.label + '</span>'
+          + '<button class="lk" data-look="' + pt.k + '" data-d="-1" aria-label="Previous ' + pt.label.toLowerCase() + '">&lt;</button>'
+          + '<b id="lv_' + pt.k + '">' + esc(pt.names[currentLook()[pt.k]]) + '</b>'
+          + '<button class="lk" data-look="' + pt.k + '" data-d="1" aria-label="Next ' + pt.label.toLowerCase() + '">&gt;</button></div>').join("") + '</div>'
+      + '<div class="row-btns"><button class="btn ghost" id="shufflelook">Shuffle</button>'
+      + '<button class="btn" id="savelook">Save my look</button></div>'
+      + (state.lookMsg?'<p class="ok" id="lookok">'+esc(state.lookMsg)+'</p>':"")
       + '</div>' : "")
   + (isAdmin() ? '<div class="card"><h3>Player teams</h3>'
       + '<p class="hint">'+esc(rosterStamp())+'. Typing a player on the pick form fills the team in from this, and the Check teams button on the board verifies a week against live sources. '
@@ -2946,22 +3007,34 @@ function wireSettings(){
     }catch(e){ state.rosterBad = "Could not clear those."; }
     render();
   };
+  /* the preview and labels update in place, so stepping through options never redraws the page */
+  const showLook = () => {
+    const l = currentLook(), box = document.getElementById("lookbox"), d = document.getElementById("lookdesc");
+    if(box) box.innerHTML = avatarSVG(l, 96);
+    if(d) d.textContent = lookDesc(l);
+    LOOKPARTS.forEach(pt => { const el = document.getElementById("lv_" + pt.k); if(el) el.textContent = pt.names[l[pt.k]]; });
+    const ok = document.getElementById("lookok"); if(ok) ok.remove();
+    state.lookMsg = null;
+  };
   document.querySelectorAll("[data-look]").forEach(b => {
     b.onclick = () => {
-      const k = b.dataset.look;
-      const l = currentLook();
-      l[k] = (l[k] + 1) % LOOKMAX[k];
-      const box = document.getElementById("lookbox"), d = document.getElementById("lookdesc");
-      if(box) box.innerHTML = avatarSVG(l, 72);
-      if(d) d.textContent = lookDesc(l);
-      state.lookMsg = null;
+      const pt = LOOKPARTS.find(x => x.k === b.dataset.look), l = currentLook(), n = pt.names.length;
+      l[pt.k] = (l[pt.k] + Number(b.dataset.d || 1) + n) % n;
+      showLook();
     };
   });
+  const sh = document.getElementById("shufflelook");
+  if(sh) sh.onclick = () => {
+    const l = currentLook();
+    LOOKPARTS.forEach(pt => { if(pt.k !== "skin") l[pt.k] = Math.floor(Math.random() * pt.names.length); });
+    showLook();
+  };
   const sl = document.getElementById("savelook");
   if(sl) sl.onclick = async () => {
     const l = currentLook(), id = state.me;
     try{
-      await updateRoster(r => { const m = r.members.find(x => x.id === id); if(m) m.look = {hat:l.hat, face:l.face, pal:l.pal, skin:l.skin}; });
+      const keep = {v:2}; LOOKPARTS.forEach(pt => keep[pt.k] = l[pt.k]);
+      await updateRoster(r => { const m = r.members.find(x => x.id === id); if(m) m.look = keep; });
       state.lookMsg = "Saved.";
     }catch(e){ state.lookMsg = null; state.err = "Could not save your look."; }
     render();
