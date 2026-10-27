@@ -225,6 +225,7 @@ export async function handleResearch(request, env, opts = {}) {
   if (!item) return json({ error: "that player is not on the research list" }, 404);
   /* a refresh tapped twice, or by two people at once, runs once */
   if (item.brief && Date.now() - item.brief.updated < 90 * 1000) return json({ item, note: "just refreshed" });
+  try { await saveItem(env, week, id, { researching: Date.now() }); } catch (e) {}   // so the Friday pass doesn't start the same player
   try { return json({ item: await researchItem(env, week, id, opts) }); }
   catch (e) { return json({ error: e && e.message ? e.message : String(e) }, 502); }
 }
@@ -247,9 +248,14 @@ export async function researchTick(env, opts = {}) {
   const { value } = await readRow(env, researchKey(week));
   const items = Object.values((value && value.items) || {});
   const today = etParts(now).date;
-  const stale = items.filter(it => !it.brief || etParts(new Date(it.brief.updated)).date !== today || etParts(new Date(it.brief.updated)).hour < 7)
+  /* skip an item another run started in the last 4 minutes: the cron fires every 2
+     minutes and one brief can take longer than that, so without this two runs could
+     research the same player and pay for it twice */
+  const busy = it => it.researching && now.getTime() - it.researching < 4 * 60 * 1000;
+  const stale = items.filter(it => !busy(it) && (!it.brief || etParts(new Date(it.brief.updated)).date !== today || etParts(new Date(it.brief.updated)).hour < 7))
     .sort((a, b) => ((a.brief && a.brief.updated) || 0) - ((b.brief && b.brief.updated) || 0));
   if (!stale.length) return { week, done: true };
+  await saveItem(env, week, stale[0].id, { researching: now.getTime() });
   const it = await researchItem(env, week, stale[0].id, opts);
   return { week, researched: stale[0].id, left: stale.length - 1, ok: !!it };
 }
