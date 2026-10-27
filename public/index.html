@@ -963,7 +963,7 @@ function convertOldLook(o){
   const hat = [[1,2],[2,2],[4,2],[0,2],[0,5],[0,0]][((o.hat|0) % 6 + 6) % 6];
   const face = [[0,0],[2,0],[0,2],[1,0]][((o.face|0) % 4 + 4) % 4];
   return {v:2, skin:[1,2,4,5,7][((o.skin|0) % 5 + 5) % 5], hair:hat[1], hairc:1, beard:0,
-          expr:face[0], glasses:face[1], hat:hat[0], jersey:((o.pal|0) % 8 + 8) % 8};
+          expr:face[0], glasses:face[1], hat:hat[0], extra:0, jersey:((o.pal|0) % 8 + 8) % 8};
 }
 /* weighted so most people start with visible eyes; shades is 1 in 8, not 1 in 4 */
 const FACE_WEIGHTS = [0,1,3,0,1,3,0,2];
@@ -1338,6 +1338,8 @@ function currentLook(){
     const me = state.roster.members.find(m => m.id === state.me);
     state.look = lookOf(me || {name:""});
   }
+  /* every setting the editor steps through needs a number, including ones added after a look was saved */
+  LOOKPARTS.forEach(p => { if(!Number.isInteger(state.look[p.k])) state.look[p.k] = 0; });
   return state.look;
 }
 function isAdmin(){
@@ -2428,7 +2430,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-27b</span></p>';
+  + '<br><span class="build">build 2026-10-27c</span></p>';
 }
 
 function signInCard(){
