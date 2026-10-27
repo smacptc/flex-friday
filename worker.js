@@ -5,6 +5,7 @@ import { handleKv } from "./src/kv.js";
 import { handleFinals } from "./src/finals.js";
 import { handleLive, refreshLive } from "./src/live.js";
 import { handleSlip } from "./src/slip.js";
+import { handleResearch, researchTick, inResearchWindow } from "./src/research.js";
 import { ICON_FILES, MANIFEST } from "./src/icons.js";
 
 function bytes(b64){
@@ -40,6 +41,7 @@ export default {
     if (url.pathname === "/api/finals") return handleFinals(request, env);
     if (url.pathname === "/api/live") return handleLive(request, env);
     if (url.pathname === "/api/slip") return handleSlip(request, env);
+    if (url.pathname === "/api/research") return handleResearch(request, env);
 
     if (url.pathname === "/manifest.webmanifest")
       return new Response(MANIFEST, {
@@ -60,6 +62,11 @@ export default {
      syntax refused the day-of-week form and the free plan caps the number of
      triggers. Outside a window this returns immediately, touching nothing. */
   async scheduled(event, env, ctx) {
+    /* Friday 7 to 11 AM Eastern: refresh one research brief per run before the lock */
+    if (inResearchWindow()) ctx.waitUntil(researchTick(env).then(
+      d => console.log("research week " + (d.week + 1) + ": " + (d.done ? "all fresh" : "refreshed " + d.researched + ", " + d.left + " left")),
+      e => console.error("research run failed: " + (e && e.message ? e.message : e))
+    ));
     if (!inGameWindow()) return;
     ctx.waitUntil(refreshLive(env).then(
       d => console.log("live feed week " + (d.week + 1) + ": fetched " + (d.fetched || 0) + ", reused " + (d.reused || 0)
