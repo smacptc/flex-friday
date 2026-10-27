@@ -719,9 +719,21 @@ const EXPR32 = [
   /* smirk */ [[10,11,"KKK"],[9,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPG"],[12,18,"GPW"],[13,11,"wPP"],[13,18,"PPw"],
               [14,16,"s"],[15,15,"ns"],[16,18,"m"],[17,14,"mmmm"],[18,15,"ss"]],
   /* hyped */ [[9,11,"KKK"],[9,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPG"],[12,18,"GPW"],[13,11,"WPP"],[13,18,"PPW"],
-              [14,16,"s"],[15,15,"ns"],[16,14,"mmmm"],[17,13,"mddddm"],[18,14,"mMMm"],[19,15,"mm"]]
+              [14,16,"s"],[15,15,"ns"],[16,14,"mmmm"],[17,13,"mddddm"],[18,14,"mMMm"],[19,15,"mm"]],
+  /* wink */ [[10,11,"KKK"],[10,18,"KKK"],[11,11,"eee"],[12,11,"WPG"],[13,11,"wPP"],[12,18,"eee"],[13,18,"e.e"],
+              [14,16,"s"],[15,15,"ns"],[16,13,"m...mm"],[17,14,"mmmm"],[18,15,"ss"]],
+  /* shocked */ [[9,11,"KKK"],[9,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPW"],[12,18,"WPW"],[13,11,"wPw"],[13,18,"wPw"],
+              [14,16,"s"],[15,15,"ns"],[16,15,"mm"],[17,14,"mddm"],[18,14,"mddm"],[19,15,"mm"]],
+  /* mean mug */ [[10,11,"K"],[11,12,"KK"],[11,18,"KK"],[10,20,"K"],[12,11,"eee"],[12,18,"eee"],[13,11,"WPP"],[13,18,"PPW"],
+              [14,16,"s"],[15,15,"ns"],[17,14,"mmmm"],[18,13,"m"],[18,18,"m"]],
+  /* tongue out */ [[10,11,"KKK"],[10,18,"KKK"],[11,11,"eee"],[11,18,"eee"],[12,11,"WPP"],[12,18,"WPP"],[13,11,"wwP"],[13,18,"wwP"],
+              [14,16,"s"],[15,15,"ns"],[16,13,"mmmmmm"],[17,14,"mZZm"],[18,15,"Zz"],[19,15,"zz"]],
+  /* crying laughing */ [[10,11,"KKK"],[10,18,"KKK"],[12,12,"e"],[12,19,"e"],[13,11,"e.e"],[13,18,"e.e"],[13,10,"v"],[13,21,"v"],[14,10,"v"],[14,21,"v"],[15,10,"v"],[15,21,"v"],[16,10,"G"],[16,21,"G"],
+              [14,16,"s"],[15,15,"ns"],[16,13,"mmmmmm"],[17,13,"mYYYYm"],[18,13,"mddddm"],[19,14,"mmmm"]],
+  /* sweating */ [[11,11,"KK"],[10,13,"K"],[10,18,"K"],[11,19,"KK"],[12,11,"WPG"],[12,18,"GPW"],[13,11,"wPP"],[13,18,"PPw"],[9,22,"v"],[10,21,"vv"],[11,21,"vG"],[12,22,"v"],
+              [14,16,"s"],[15,15,"ns"],[16,13,"mmmmmm"],[17,13,"mYmYYm"],[18,13,"mmmmmm"]]
 ];
-const EXPRNAMES = ["Easy","Grin","Locked in","Smirk","Hyped"];
+const EXPRNAMES = ["Easy","Grin","Locked in","Smirk","Hyped","Wink","Shocked","Mean mug","Tongue out","Crying laughing","Sweating"];
 /* hair: front layer, plus an optional back layer drawn behind the head */
 const HAIR32 = [
   /* bald */ {front:[[4,12,"AA"],[5,11,"A"]]},
@@ -767,13 +779,49 @@ const GLASS32 = [
   /* shades */ [[11,8,"ggggggggggggggg"],[12,9,"gLLLLLggLLLLLg"],[13,10,"LlLLL..LlLLL"],[14,11,"LLL....LLL"]]
 ];
 const GLASSNAMES = ["None","Glasses","Shades"];
+const EXTRA32 = [
+  {px:[]},
+  /* eye black */ {px:[[14,11,"ggg"],[14,18,"ggg"]]},
+  /* face paint: the skin itself turns team colors, left half and right half */ {paint:true, px:[]},
+  /* nose bandage */ {px:[[13,14,"WWWW"],[14,14,"WwwW"]]},
+  /* gold chain */ {top:true, px:[[23,11,"oO"],[23,19,"Oo"],[24,12,"O"],[24,19,"O"],[25,13,"oO"],[25,17,"Oo"],[26,14,"OOO"],[27,14,"OEO"],[28,15,"O"]]},
+  /* bubble gum */ {top:true, px:[[14,14,"ZZZZ"],[15,13,"ZZGZZZ"],[16,12,"ZZGZZZZz"],[17,12,"ZZZZZZZz"],[18,12,"ZZZZZZzz"],[19,13,"ZzZZzz"],[20,14,"zzzz"]]},
+  /* victory cigar, lit, with a little smoke */ {top:true, px:[[16,18,"RRRROQRE"],[17,17,"qqqqqoqqE"],[14,26,"w"],[13,27,"w"],[12,26,"w"],[11,27,"w"]]},
+  /* mouthguard hanging out */ {top:true, px:[[16,13,"NNNNNN"],[17,13,"NkkkkN"],[18,14,"NNNk"],[19,16,"Nk"],[20,16,"Nk"],[21,17,"k"]]}
+];
+const EXTRANAMES = ["None","Eye black","Face paint","Nose bandage","Gold chain","Bubble gum","Victory cigar","Mouthguard"];
+/* Draw a part as whole 32-wide rows starting at row y0. "." leaves what is under it. */
+function rows32(y0, rows){
+  const out = [];
+  rows.forEach((r, i) => { const a = r.search(/[^.]/); if(a < 0) return; const z = r.length - r.split("").reverse().join("").search(/[^.]/); out.push([y0 + i, a, r.slice(a, z)]); });
+  return out;
+}
 /* headwear: clip hides hair above that row, then the hat draws */
 const HAT32 = [
   {clip:0, px:[]},
-  /* helmet */ {clip:99, px:[[1,10,"CCCCVVCCCC"],[2,8,"CDDCCCVVCCCCcc"],[3,7,"CDDCCCCVVCCCCccc"],
-        [4,6,"CDCCCCCCVVCCCCCccc"],[5,6,"CCCCCCCCVVCCCCCccc"],[6,6,"CCCCCCCCCCCCCCCccc"],[7,6,"CCcccccccccccccccc"],[8,6,"CC"],[8,22,"cc"],[9,6,"CC"],[9,23,"cc"],
-        [10,6,"CC"],[10,23,"cc"],[11,6,"CCC"],[11,23,"ccc"],[12,6,"CCC"],[12,23,"ccc"],[13,6,"CCC"],[13,23,"ccc"],[14,6,"CC"],[14,24,"cc"],[15,7,"CFFFFFFFFFFFFFFFFc"],
-        [16,8,""],[16,9,"F...F....F...F"],[17,9,"FFFFFFFFFFFFFF"],[18,10,"f..........f"]]},
+  /* helmet: the shell wraps the head down to the jaw, the face shows through the
+     opening, and a two-bar mask sits in front of the mouth with a chin cup below */
+  {clip:99, px:rows32(1, [
+    "...........CCCCVVCCcc...........",
+    ".........CCDDCCVVCCCCcc.........",
+    "........CCDDDCCVVCCCCCcc........",
+    ".......CCDDCCCCVVCCCCCCcc.......",
+    ".......CCDCCCCCVVCCCCCCcc.......",
+    ".......CCCCCCCCVVCCCCCCcc.......",
+    ".......CCCCCCCCVVCCCCCCcc.......",
+    ".......CCCCCCCCVVCCCCCCcc.......",
+    ".......CCCccccccccccccCcc.......",
+    ".......CCC............Ccc.......",
+    ".......CCC............Ccc.......",
+    ".......CeC............Cec.......",
+    ".......CCC............Ccc.......",
+    ".......CCC............Ccc.......",
+    "........CFFFFFFFFFFFFFffc.......",
+    ".........CCF........fcc.........",
+    "..........CF........fc..........",
+    "...........F........f...........",
+    "...........FFFFFFFFff...........",
+    ".............cCCCcc............."])},
   /* ball cap */ {clip:6, px:[[2,11,"CCCCCCCCCC"],[3,9,"CCDDCCVVCCCCcc"],[4,8,"CDDCCCVVCCCCCccc"],[5,8,"CCCCCCCCCCCCCccc"],[6,8,"cccccccccccccccc"],
         [7,5,""],[7,7,"CCCCCCCCCCCCCCCCCC"],[8,7,"cccccccccccccccccc"]]},
   /* backwards cap */ {clip:6, px:[[1,13,"cccccc"],[2,11,"CCCCCCCCCC"],[3,9,"CDDCCCCCCCCCcc"],[4,8,"CDDCCCCCCCCCCccc"],[5,8,"CCCCCVVVVVVCCccc"],
@@ -784,9 +832,112 @@ const HAT32 = [
         [7,8,"CCCCCCCCCCCCCCcc"],[8,9,"c"],[8,22,"c"]]},
   /* durag */ {clip:8, px:[[2,11,"CCCCCCCCCC"],[3,9,"CDDCCCCCCCCCcc"],[4,8,"CDDCCCCCCCCCCccc"],[5,8,"CCCCCCCCCCCCCccc"],[6,8,"CCCCCCCCCCCCCccc"],
         [7,8,"VVVVVVVVVVVVVVtt"],[8,22,"Cc"],[9,23,"Cc"],[10,23,"cC"],[11,24,"Cc"],[12,25,"c"]]},
-  /* headband */ {clip:0, px:[[7,8,"VVVVVVVVVVVVVVVV"],[8,8,"tttttttttttttttt"]]}
+  /* headband */ {clip:0, px:[[7,8,"VVVVVVVVVVVVVVVV"],[8,8,"tttttttttttttttt"]]},
+  /* visor helmet: same shell, tinted eye shield */
+  {clip:99, px:rows32(1, [
+    "...........CCCCVVCCcc...........",
+    ".........CCDDCCVVCCCCcc.........",
+    "........CCDDDCCVVCCCCCcc........",
+    ".......CCDDCCCCVVCCCCCCcc.......",
+    ".......CCDCCCCCVVCCCCCCcc.......",
+    ".......CCCCCCCCVVCCCCCCcc.......",
+    ".......CCCCCCCCVVCCCCCCcc.......",
+    ".......CCCCCCCCVVCCCCCCcc.......",
+    ".......CCCccccccccccccCcc.......",
+    ".......CCCLLLLLLLLLLLLCcc.......",
+    ".......CCCLllLLLLLLLLLCcc.......",
+    ".......CeCLlLLLLLLLLLLCec.......",
+    ".......CCCLLLLLLLLLLLLCcc.......",
+    ".......CCC............Ccc.......",
+    "........CFFFFFFFFFFFFFffc.......",
+    ".........CCF........fcc.........",
+    "..........CF........fc..........",
+    "...........F........f...........",
+    "...........FFFFFFFFff...........",
+    ".............cCCCcc............."])},
+  /* leatherhead: the 1920s look, no mask */
+  {clip:99, px:rows32(2, [
+    "............QQRQQQqq............",
+    "..........QQRRQwQQQQqq..........",
+    ".........QRRQQQwQQQQQqq.........",
+    "........QQRQQQQwQQQQQQqq........",
+    "........QQQQQQQwQQQQQQqq........",
+    "........QwwwwwwwwwwwwwwqQ.......",
+    "........QQQQQQQQQQQQQQqq........",
+    "........qqqqqqqqqqqqqqqq........",
+    ".......QQq............qQq.......",
+    ".......QQq............qQq.......",
+    ".......QwQ............QwQ.......",
+    ".......QwQ............QwQ.......",
+    ".......QQq............qQq.......",
+    "........QQ............Qq........",
+    ".........q............q.........",
+    "..........q..........q..........",
+    "...........qq......qq...........",
+    ".............qqqqqq............."])},
+  /* cheesehead */
+  {clip:6, px:rows32(0, [
+    "......................OO........",
+    "....................OOOOo.......",
+    "..................OOOOOOo.......",
+    "................OoOOOOOOo.......",
+    "..............OOOOOOOoOOo.......",
+    "............OOOOOooOOOOOo.......",
+    "..........OOOOOOOooOOOOOo.......",
+    "........OOOooOOOOOOOOOOOo.......",
+    "......OOOOooOOOOOOOOOooOo.......",
+    "......ooooooooooooooooooo......."])},
+  /* cowboy hat */
+  {clip:6, px:rows32(0, [
+    "................................",
+    "............QQQQqQQQ............",
+    "...........QRRQQqQQQq...........",
+    "..........QRRQQQqQQQQq..........",
+    "..........QQQQQQQQQQQq..........",
+    "..........gggggggggggg..........",
+    "...QQ.....QQQQQQQQQQQq.....qq...",
+    "...QRQQQQQQQQQQQQQQQQQQQQQQqq...",
+    "....QQQQqqqqqqqqqqqqqqqqqqqq....",
+    "......qqqq............qqqq......"])},
+  /* crown */
+  {clip:4, px:rows32(0, [
+    "...........O...OO...O...........",
+    "..........OOO.OOOO.OOO..........",
+    "..........OEOOOllOOOEOo.........",
+    "..........OOOOOOOOOOOOo.........",
+    "..........ooooooooooooo........."])},
+  /* propeller cap */
+  {clip:7, px:rows32(0, [
+    "........EEEEEE.OO.UUUUUU........",
+    "......EEEEEEEEOOOOUUUUUUUU......",
+    "........EEEEEE.gg.UUUUUU........",
+    "...........CCCCVVCCcc...........",
+    ".........CCDDCCVVCCCCcc.........",
+    "........CDDCCCCVVCCCCCcc........",
+    "........CCCCCCCVVCCCCCcc........",
+    "........tttttttttttttttt........",
+    "........VVVVVVVVVVVVVVVV........"])},
+  /* coach headset over a ball cap */
+  {clip:6, px:rows32(2, [
+    "...........CCCCCCCCCC...........",
+    ".........CCDDCCVVCCCCcc.........",
+    "........gggggggggggggggg........",
+    ".......gCCCCCCCCCCCCCcccg.......",
+    ".......gccccccccccccccccg.......",
+    "......gCCCCCCCCCCCCCCCCCCg......",
+    "......gccccccccccccccccccg......",
+    "......g..................g......",
+    "......ff................ff......",
+    ".....fFFf..............fFFf.....",
+    ".....fVVf..............fVVf.....",
+    ".....fVVf..............fVVf.....",
+    ".....fFFf..............fFFf.....",
+    "......ff................ff......",
+    "......................ll........",
+    "..................wgll..........",
+    "..................gg............"])}
 ];
-const HATNAMES = ["None","Helmet","Ball cap","Backwards cap","Beanie","Skull cap","Durag","Headband"];
+const HATNAMES = ["None","Helmet","Ball cap","Backwards cap","Beanie","Skull cap","Durag","Headband","Visor helmet","Leatherhead","Cheesehead","Cowboy hat","Crown","Propeller cap","Coach headset"];
 const SKINS32 = ["#FBE3CB","#F2CDA6","#E3B484","#CC955F","#B47B48","#94603A","#744628","#55331E"];
 const SKINNAMES = ["Fair","Light","Light tan","Tan","Medium","Brown","Dark brown","Deep"];
 const CLASSICNAMES = ["Blue","Red","Green","Gold","Purple","Teal","Pink","Slate"];
@@ -801,6 +952,7 @@ const LOOKPARTS = [
   {k:"expr",    label:"Face",        names:EXPRNAMES},
   {k:"glasses", label:"Glasses",     names:GLASSNAMES},
   {k:"hat",     label:"Headwear",    names:HATNAMES},
+  {k:"extra",   label:"Extras",      names:EXTRANAMES},
   {k:"jersey",  label:"Jersey",      names:JERSEYS.map(j => j.name)}
 ];
 /* Looks saved before the redraw had four settings. This keeps each one the way
@@ -826,7 +978,7 @@ function lookOf(m){
   return out;
 }
 function defaultLookRaw(name){ return {hat: hashIdx(name+"|h",6), face: FACE_WEIGHTS[hashIdx(name+"|f",8)], pal: hashIdx(name,8), skin: 2}; }
-const PCAT = ch => "SsAn".indexOf(ch) >= 0 ? "skin" : "HhIBbK".indexOf(ch) >= 0 ? "hair" : "CcDVFf".indexOf(ch) >= 0 ? "hat" : "other";
+const PCAT = ch => "SsAn".indexOf(ch) >= 0 ? "skin" : "HhIBbK".indexOf(ch) >= 0 ? "hair" : "CcDVFfOoQqR".indexOf(ch) >= 0 ? "hat" : "other";
 const portraitCache = {};
 function avatarSVG(look, px){
   const key = LOOKPARTS.map(p => look[p.k]).join(".") + "@" + px;
@@ -841,8 +993,15 @@ function avatarSVG(look, px){
   lay(EXPR32[look.expr]);
   lay(BEARD32[look.beard]);
   lay(clip(hair.front || []));
+  const extra = EXTRA32[look.extra | 0] || EXTRA32[0];
+  if(extra.paint){
+    const L = {S:"C", A:"D", s:"c", n:"c"}, R = {S:"V", A:"V", s:"t", n:"t"};
+    for(let y = 3; y <= 20; y++) for(let x = 0; x < 32; x++){ const m = x < 16 ? L : R; if(m[g[y][x]]) g[y][x] = m[g[y][x]]; }
+  }
+  if(!extra.top) lay(extra.px);
   lay(GLASS32[look.glasses]);
   lay(hat.px);
+  if(extra.top) lay(extra.px);
   const sk = SKINS32[look.skin], hc = HAIRC32[look.hairc], jr = JERSEYS[look.jersey];
   const col = {S:sk, s:shade(sk,.84), A:shade(sk,1.07), n:shade(sk,.7),
     J:jr.j, j:shade(jr.j,.74), X:shade(jr.j,1.22), T:jr.t, t:shade(jr.t,.78),
@@ -850,7 +1009,9 @@ function avatarSVG(look, px){
     m:"#6E2E26", M:"#B5574A", d:"#3A1410", Y:"#F7F4EE",
     H:hc[0], h:hc[1], I:hc[2], B:hc[0], b:hc[1],
     C:jr.j, c:shade(jr.j,.7), D:shade(jr.j,1.3), V:jr.t, F:"#A9B2BC", f:"#6E7884",
-    g:"#15171B", L:"#1E2530", l:"#7F9BB8"};
+    g:"#15171B", L:"#1E2530", l:"#7F9BB8",
+    O:"#F2C230", o:"#C9971A", Q:"#7A4A2A", q:"#55331C", R:"#9A6640", E:"#D63A3A", Z:"#F28DB2", z:"#C95F8C",
+    U:"#3D7FD9", v:"#7CC8F2", N:"#7BE04E", k:"#45A834"};
   /* below the bottom edge counts as more jersey, so the crop gets no keyline */
   const at = (y, x) => (y < 0 || x < 0 || x > 31) ? "." : (y > 31 ? "#" : g[y][x]);
   let out = "";
@@ -872,7 +1033,7 @@ function avatarSVG(look, px){
 }
 const avatarFor = (m,px) => avatarSVG(lookOf(m), px);
 const lookDesc = l => [HAIRNAMES[l.hair] + (l.hair ? " " + HAIRCNAMES[l.hairc].toLowerCase() : ""),
-  l.beard ? BEARDNAMES[l.beard].toLowerCase() : "", l.hat ? HATNAMES[l.hat].toLowerCase() : "",
+  l.beard ? BEARDNAMES[l.beard].toLowerCase() : "", l.hat ? HATNAMES[l.hat].toLowerCase() : "", l.extra ? EXTRANAMES[l.extra].toLowerCase() : "",
   l.glasses ? GLASSNAMES[l.glasses].toLowerCase() : "", JERSEYS[l.jersey].name + " jersey"].filter(Boolean).join(", ");
 
 const POSTAG={qb:"QB",rb:"RB",wr:"WR",te:"TE",k:"K",def:"DEF",stand:"?"};
@@ -2267,7 +2428,7 @@ function viewMain(){
   + buildPanel(w)
   + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
   + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-27a</span></p>';
+  + '<br><span class="build">build 2026-10-27b</span></p>';
 }
 
 function signInCard(){
