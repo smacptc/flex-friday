@@ -203,7 +203,7 @@ const UA_CHAIN = [
 const PATH = "/apis/site/v2/sports/football/nfl";
 let WORKING = null;          /* set once a combination answers, reused for the rest of the run */
 
-async function getJson(path, fetchFn, trace) {
+export async function getJson(path, fetchFn, trace) {
   const order = WORKING ? [WORKING, ...UA_CHAIN.filter(c => c !== WORKING)] : UA_CHAIN;
   let last = "";
   for (const combo of order) {

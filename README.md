@@ -9,6 +9,7 @@ a single Worker that serves the site and the two API routes together.
     src/finals.js        box score lookups (optional, needs an API key)
     src/icons.js         home screen icons, stored as base64 text
     src/live.js          live box scores during games, pulled from ESPN on a cron
+    src/research.js      the Research screen: recent games, public line, matchup and a lean
     wrangler.jsonc       config, one line needs your database id
     schema.sql           one table, run once
 
@@ -85,3 +86,16 @@ feed is down rather than showing stale numbers as if they were current.
 
 Cron triggers deploy with `npx wrangler deploy`, nothing else to set up. To check
 it is working, open /api/live during a game.
+
+## Research
+
+The Research button on the main screen holds a shared watch list for the week.
+Add a player and stat and the Worker fills in his last six games for that stat
+from ESPN box scores (saved once per finished game, so later lookups are quick).
+With `ANTHROPIC_API_KEY` set it also searches the web for the public sportsbook
+line, the matchup, injuries, weather and news, and gives a lean. PrizePicks does
+not publish its lines, so the line shown is a sportsbook's and can differ a little.
+
+Every player on the list gets a fresh brief on Friday between 7 and 11 AM Eastern,
+one per cron run, and anyone can tap Refresh. Each brief is one web-search call,
+a few cents.
