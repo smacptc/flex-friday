@@ -1350,6 +1350,33 @@ function isAdmin(){
   const me = ms.find(m => m.id === state.me);
   return !!(me && me.admin);
 }
+/* Slur filter for anything people type that gets saved and shown to the pool.
+   The word lists are base64 so nobody has to read them scrolling through this file.
+   SLUR_SUB matches anywhere, even inside other letters or with spaces and symbols in between.
+   SLUR_WORD only matches a whole word, so short ones do not trip on normal names. */
+const SLUR_SUB  = atob("bmlnZyxuaWdsZXQsZmFnZ290LGZhZ290LHRyYW5ueSx0cmFubmllLHdldGJhY2ssYmVhbmVyLHJhZ2hlYWQsdG93ZWxoZWFkLHBvcmNobW9ua2V5LGp1bmdsZWJ1bm55LHppcHBlcmhlYWQsY2hpbmdjaG9uZyxnb2xsaXdvZyxreWtlLHNoZW1hbGU=").split(",");
+const SLUR_WORD = new Set(atob("bmlnLG5pZ3MsbmlnYSxuaWdhcyxuaWdheixuaWdhaCxuZWdybyxuZWdyb2VzLGZhZyxmYWdzLGZhZ3osa2lrZSxraWtlcyxjaGluayxjaGlua3Msc3BpYyxzcGljcyxzcGljayxzcGlrLGNvb24sY29vbnMsZ29vayxnb29rcyxkeWtlLGR5a2VzLHBha2kscGFraXMsaG9tbyxob21vcyxqYXAsamFwcyx3b3Asd29wcyxkYWdvLGRhZ29zLGd5cG8saW5qdW4sc3F1YXcsdGFyZCx0YXJkcyxzcGF6LHNwYXp6LG1vbmcsbW9uZ29sb2lkLGhhbGZicmVlZCxyZWRza2luLHJlZHNraW5zLHNhbWJvLGppZ2Fib28samlnZ2Fib28scGlja2FuaW5ueSxrYWZmaXIsa2FmaXIsZGFya2llLGRhcmt5LHRhcmJhYnksaGVlYixoeW1pZSxncmluZ28sY3JhY2tlcix3aGlnZ2VyLHdpZ2dlcixsZXNibyxyZXRhcmQscmV0YXJkcyxyZXRhcmRlZCxyZXRhcnRlZCxyZXRhcmRv").split(","));
+function slurForms(text){
+  let t = String(text || "").normalize("NFKD").replace(/[\u0300-\u036f\u200b-\u200f\u2060\ufeff]/g, "").toLowerCase();
+  const leet = (s, one) => s.replace(/[0134578@$!|+]/g, c => ({"0":"o","1":one,"3":"e","4":"a","5":"s","7":"t","8":"b","@":"a","$":"s","!":"i","|":"l","+":"t"})[c]);
+  /* runs of three or more of a letter count as two, so stretched-out spellings still match */
+  const squash = s => s.replace(/([a-z])\1{2,}/g, "$1$1");
+  return [leet(t, "i"), leet(t, "l")].map(squash);
+}
+function hasSlur(...texts){
+  for(const text of texts){
+    for(const f of slurForms(text)){
+      const joined = f.replace(/[^a-z]/g, "");
+      /* also with every doubled letter squeezed to one, for spellings stretched any amount */
+      const single = joined.replace(/(.)\1+/g, "$1");
+      if(SLUR_SUB.some(w => joined.includes(w) || (w.length >= 5 && single.includes(w.replace(/(.)\1+/g, "$1"))))) return true;
+      const words = f.split(/[^a-z]+/).filter(Boolean);
+      if(words.some(w => SLUR_WORD.has(w) || SLUR_WORD.has(w.replace(/(.)\1+/g, "$1")))) return true;
+    }
+  }
+  return false;
+}
+const SLUR_MSG = "That has a slur in it. Change it and try again.";
 /* same rule as isAdmin, against whichever roster is passed in */
 function isAdminIn(r){
   if(!state.me || !r || !r.members) return false;
@@ -2332,7 +2359,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-11-06a";
+const BUILD = "2026-11-06b";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -2403,6 +2430,7 @@ function wireSetup(){
     const names = [0,1,2,3,4,5].map(i=>document.getElementById("n"+i).value.trim()).filter(Boolean);
     const err = document.getElementById("setuperr");
     if(names.length < 2){ err.textContent = "Add at least two names to start."; err.hidden = false; return; }
+    if(hasSlur(document.getElementById("pn").value, ...names)){ err.textContent = SLUR_MSG; err.hidden = false; return; }
     const roster = { pool: document.getElementById("pn").value.trim() || "Flex Friday",
       members: names.map((n,i)=>({id:"m"+i+"_"+Math.random().toString(36).slice(2,7), name:n, pinHash:null, admin:i===0})) };
     try{
@@ -3120,7 +3148,7 @@ function viewSeason(){
       ? '<label for="mtext">Add one for Week '+(state.view+1)+'</label>'
         + '<input id="mtext" type="text" maxlength="180" placeholder="Fell asleep, posted at 4:59">'
         + '<button class="btn" id="addmoment">Add it</button>'
-        + (state.msg?'<p class="ok">'+esc(state.msg)+'</p>':"")
+        + (state.msg?'<p class="'+(state.msg===SLUR_MSG?'err':'ok')+'">'+esc(state.msg)+'</p>':"")
       : '<p class="hint">Sign in on the board to add your own.</p>')
   + (a.moments.length
       ? '<ul class="feed">'+a.moments.slice(0,60).map(mo =>
@@ -3155,6 +3183,7 @@ function wireSeason(){
   if(add) add.onclick = async () => {
     const t = document.getElementById("mtext").value.trim();
     if(!t) return;
+    if(hasSlur(t)){ state.msg = SLUR_MSG; render(); return; }
     try{
       await updateSeason(s=>{ s.moments.push({id:"mo"+Date.now()+Math.random().toString(36).slice(2,5),
         week:state.view, text:t, by:memberName(state.me), ts:Date.now()}); });
@@ -3377,6 +3406,7 @@ function viewSettings(){
 function wireSettings(){
   const sr = document.getElementById("saveroster");
   if(sr) sr.onclick = async () => {
+    if(hasSlur(document.getElementById("rpaste").value)){ state.rosterMsg = null; state.rosterBad = SLUR_MSG; render(); return; }
     const res = parseRosterPaste(document.getElementById("rpaste").value);
     const n = Object.keys(res.map).length;
     if(!n){ state.rosterMsg = null; state.rosterBad = "Nothing usable in that. Each line needs a name and a team."; render(); return; }
@@ -3457,6 +3487,7 @@ function wireSettings(){
       const el = document.getElementById("mn"+i), v = el ? el.value.trim() : "";
       if(v && canRename(m.id)) names[m.id] = v;
     });
+    if(hasSlur(pool, ...Object.values(names))){ state.err = SLUR_MSG; state.msg = null; render(); return; }
     try{
       await updateRoster(r=>{
         r.pool = pool||r.pool;
@@ -3828,6 +3859,7 @@ function wireMain(){
     if(!/^-?\d+(\.\d+)?$/.test(line)){ state.err = "The line should be a number, like 74.5."; state.msg = null; render(); return; }
     if(isLocked(w)){ state.err = "Week "+(w+1)+" locked while you were typing."; render(); return; }
     const note = q("note").value.trim(), side = state.side;
+    if(hasSlur(player, stat, note, q("team") ? q("team").value : "")){ state.err = SLUR_MSG; state.msg = null; render(); return; }
     try{
       let clash = null;
       await updateSeason(s=>{
