@@ -87,6 +87,7 @@
   .btn.ghost{background:var(--panel2);color:var(--chalk)}
   .btn.wide{width:100%}
   .btn:disabled{background:#4A5768;color:#94A3B4;cursor:default;box-shadow:4px 4px 0 var(--edge)}
+  input:disabled{opacity:.55;cursor:not-allowed}
   .row-btns{display:flex;gap:10px;flex-wrap:wrap}
 
   .whoami{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
@@ -1349,6 +1350,18 @@ function isAdmin(){
   const me = ms.find(m => m.id === state.me);
   return !!(me && me.admin);
 }
+/* same rule as isAdmin, against whichever roster is passed in */
+function isAdminIn(r){
+  if(!state.me || !r || !r.members) return false;
+  const ms = r.members;
+  if(!ms.some(m => m.admin)) return !!(ms[0] && ms[0].id === state.me);
+  const me = ms.find(m => m.id === state.me);
+  return !!(me && me.admin);
+}
+/* the commissioner can rename anyone; everyone else only themselves */
+function canRename(id){
+  return isAdmin() || (!!state.me && id === state.me);
+}
 function commishName(){
   const ms = state.roster.members, a = ms.filter(m => m.admin);
   if(!a.length) return ms[0] ? ms[0].name : "the commissioner";
@@ -2319,7 +2332,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-10-26a";
+const BUILD = "2026-11-06a";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -3320,7 +3333,9 @@ function viewSettings(){
   + '<div class="card"><h3>Pool</h3>'
   + '<label for="pn">Pool name</label><input id="pn" type="text" value="'+esc(state.roster.pool)+'" maxlength="40">'
   + '<label>Names, in lineup order</label>'
-  + state.roster.members.map((m,i)=>'<input id="mn'+i+'" type="text" value="'+esc(m.name)+'" maxlength="18" style="margin-bottom:8px">').join("")
+  + (isAdmin() ? "" : '<p class="hint">You can change your own name. Only the commissioner can change anyone else\'s.</p>')
+  + state.roster.members.map((m,i)=>'<input id="mn'+i+'" type="text" value="'+esc(m.name)+'" maxlength="18" style="margin-bottom:8px"'
+      + (canRename(m.id) ? '' : ' disabled aria-disabled="true"') + '>').join("")
   + '<button class="btn" id="save">Save changes</button>'
   + (state.msg?'<p class="ok">'+esc(state.msg)+'</p>':"")
   + (state.err?'<p class="err">'+esc(state.err)+'</p>':"") + '</div>'
@@ -3436,9 +3451,19 @@ function wireSettings(){
   document.getElementById("back").onclick = () => { state.screen="main"; state.msg=null; state.err=null; state.look=null; state.lookMsg=null; render(); };
   document.getElementById("save").onclick = async () => {
     const pool = document.getElementById("pn").value.trim();
-    const names = state.roster.members.map((m,i)=>document.getElementById("mn"+i).value.trim() || m.name);
+    /* keyed by member id, and only for names this person is allowed to change */
+    const names = {};
+    state.roster.members.forEach((m,i)=>{
+      const el = document.getElementById("mn"+i), v = el ? el.value.trim() : "";
+      if(v && canRename(m.id)) names[m.id] = v;
+    });
     try{
-      await updateRoster(r=>{ r.pool = pool||r.pool; r.members.forEach((m,i)=>{ if(names[i]) m.name = names[i]; }); });
+      await updateRoster(r=>{
+        r.pool = pool||r.pool;
+        /* checked again against the fresh roster, in case admin changed since the page drew */
+        const admin = isAdminIn(r);
+        r.members.forEach(m=>{ if(names[m.id] && (admin || m.id === state.me)) m.name = names[m.id]; });
+      });
       state.msg = "Saved."; state.err = null;
     }catch(e){ state.err = "That did not save. Try again."; state.msg = null; }
     render();
