@@ -385,39 +385,22 @@
   @media (max-width:420px){ .spritebox{width:42px} .spritebox.face{width:auto} .whoami{grid-template-columns:1fr} }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-  /* ---- Thanksgiving Thursday: only while that round is on screen -----------
-     Colors and the dinner table scene come from Sean's Morning Brief: ink edge,
-     cream ring, cocoa and orange tiles, cream item cards. */
-  body.tg{--night:#482E23;--panel:#5A3A2C;--panel2:#84563A;--edge:#0E0E0E;--dim:#E9D3B4;--amber:#F2C448}
-  body.tg .field{background:#84563A}
-  body.tg .field::after{background:rgba(40,22,12,.58)}
-  body.tg .turf{background-image:repeating-linear-gradient(90deg,rgba(247,238,223,.05) 0 64px,rgba(0,0,0,.08) 64px 128px)}
-  body.tg .board{background:#E28C2C;background-image:repeating-linear-gradient(90deg,transparent 0 34px,rgba(247,238,223,.18) 34px 36px)}
-  body.tg .card{border-color:#F7EEDF}
-  body.tg .rule{background:#482E23;border-left-color:#E28C2C}
-  body.tg .spritebox{background-color:#84563A}
-  body.tg .fill i.on{background:#F7EEDF}
-  body.tg .preview{background:#482E23}
-  body.tg input[type=text],body.tg input[type=password],body.tg textarea{background:#2E1D15}
-  .tgtile{background:#5A3A2C;border:5px solid #0E0E0E;border-radius:30px;
-    box-shadow:inset 0 0 0 7px #F7EEDF,0 7px 0 rgba(0,0,0,.45);padding:20px 17px 19px;margin:0 0 22px;display:grid;gap:12px}
-  .tgscene{border:3px solid #0E0E0E;border-radius:18px;overflow:hidden;background:#8A4A32}
-  .tgscene img{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
-  .tgtile h3{font-family:var(--big);font-weight:700;font-size:20px;color:#F2C448;letter-spacing:1px;
-    text-transform:uppercase;text-shadow:3px 3px 0 #0E0E0E;margin:0}
-  .tgtile .lede{margin:0;color:#F7EEDF;font-size:16px}
-  .tggames{display:grid;gap:10px}
-  .tgitem{background:#F7EEDF;color:#1A1A1A;border:3px solid #0E0E0E;border-radius:14px;box-shadow:4px 4px 0 #482E23;
-    padding:10px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
-  .tgkick{font-family:var(--pix);font-size:8px;color:#6E6253;width:100%}
-  .tgteam{display:inline-flex;align-items:center;gap:6px;border:3px solid #0E0E0E;border-radius:10px;padding:3px 8px;
-    font-size:14px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.55)}
-  .tgteam small{font-size:12px;color:#FFE7B8}
-  .tgteam.taken{box-shadow:inset 0 0 0 2px #F2C448}
-  .tgat{font-family:var(--pix);font-size:8px;color:#6E6253}
-  .dwk.tg,.fl .tg{color:#E28C2C}
-  .otherround{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-  .otherround .linkbtn{flex:none}
+  /* ---- Thanksgiving Thursday: art at the top and banners down the sides ----
+     Decoration only. Everything else keeps the normal look. */
+  .tgart{background:var(--panel);border:4px solid #fff;box-shadow:8px 8px 0 rgba(0,0,0,.65);margin:0 0 20px}
+  .tgart img{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;border-bottom:4px solid var(--edge)}
+  .tgart h3{font-family:var(--big);font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;text-transform:uppercase;
+    text-shadow:3px 3px 0 var(--edge);margin:0;padding:10px 14px 0}
+  .tgart p{margin:0;padding:2px 14px 12px;color:var(--dim);font-size:16px}
+  .tgside{display:none;position:fixed;top:0;bottom:0;width:12px;z-index:-1;background-color:#3B2414;
+    background-repeat:repeat-y;background-size:12px auto;image-rendering:pixelated}
+  .tgside.l{left:0;border-right:2px solid var(--edge)} .tgside.r{right:0;border-left:2px solid var(--edge)}
+  body.tg .tgside{display:block}
+  /* the field and the scoreboard turn fall colors; cards and layout stay as they are */
+  body.tg .field{background:#C8561E}
+  body.tg .field::after{background:rgba(40,10,4,.38)}
+  body.tg .board{background:#A8321E}
+  @media (min-width:760px){ .tgside{width:36px;background-size:36px auto} }
 </style>
 
 <div class="field" aria-hidden="true"><div class="turf" id="turf"></div></div>
@@ -1921,7 +1904,7 @@ function badgeSheetHTML(k, who, pk){
     + '<p class="sheetdesc">' + esc(B.desc) + '.' + (r ? '<span class="sheetladder">' + ladder + '.</span>' : '') + '</p>'
     + (list.length ? '<h4 class="sub">' + (one ? {rideordie:'Every pick of him', oldreliable:'Every hit on him', foolme:'Every miss on him'}[k] : 'What it came from') + '</h4><ul class="drill">' + list.map(e => {
         const p = e.p, cls = p && p.result === "H" ? "h" : p && p.result === "M" ? "m" : "v";
-        return '<li><div class="dwk' + (isTG(e.w) ? ' tg' : '') + '">' + roundTag(e.w) + '</div><div class="dbody">'
+        return '<li><div class="dwk">' + roundTag(e.w) + '</div><div class="dbody">'
           + (p ? '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : '') + '</div>'
                + '<div class="dprop">' + propText(p) + '</div>'
                + (p.result && marginText(p) ? '<div class="dnum ' + cls + '">' + esc(marginText(p)) + '</div>' : '') : '')
@@ -2459,10 +2442,11 @@ function render(){
   else if(state.screen === "profile"){ html = viewProfile(); wire = wireProfile; }
   else { html = viewMain(); wire = wireMain; }
   app.innerHTML = banner() + html;
-  /* the holiday look only while Thanksgiving is the round on screen */
+  /* side banners only while Thanksgiving is the round on screen */
+  tgSides();
   const tgOn = isTG(state.view) && ["main", "card", "research"].includes(state.screen);
   document.body.classList.toggle("tg", tgOn);
-  const tc = document.querySelector('meta[name="theme-color"]'); if(tc) tc.setAttribute("content", tgOn ? "#241509" : "#131E2C");
+  const tc = document.querySelector('meta[name="theme-color"]'); if(tc) tc.setAttribute("content", tgOn ? "#7A2E12" : "#131E2C");
   /* one missing element must never stop the rest of the screen from working */
   try{ wire(); }catch(e){
     console.error("wiring failed on " + state.screen + ":", e);
@@ -2534,7 +2518,6 @@ function viewMain(){
       : n+" of "+size+" legs in, locks "+esc(deadlineText(w)))+'</div>'
   + (locked ? "" : '<div class="fill">'+Array.from({length:blocks},(_,i)=>'<i class="'+(i<on?"on":"")+'"></i>').join("")+'</div>')
   + '</div>'
-  + otherRoundCard(w)
   + (state.me ? yourLegCard(w, locked) : signInCard())
   + lineupCard(w, locked)
   + buildPanel(w)
@@ -2605,23 +2588,31 @@ function tgChip(w, k){
 }
 function tgBanner(w){
   if(!isTG(w)) return "";
-  const games = TG_GAMES.map(g => '<div class="tgitem"><span class="tgkick">' + esc(g.kick) + ' &middot; ' + esc(g.tv) + '</span>'
-    + tgChip(w, g.away) + '<span class="tgat">AT</span>' + tgChip(w, g.home) + '</div>').join("");
-  return '<div class="tgtile">'
-    + '<div class="tgscene"><img src="' + TG_SCENE + '" alt="Thanksgiving dinner table with the game on TV" width="108" height="51"></div>'
+  return '<div class="tgart"><img src="' + TG_SCENE + '" alt="Thanksgiving dinner table with the game on TV" width="108" height="51">'
     + '<h3>Thanksgiving Thursday</h3>'
-    + '<p class="lede">A special round that counts like any other week. Three games, six teams, one leg from each. Locks Thursday at noon ET.</p>'
-    + '<div class="tggames">' + games + '</div></div>';
+    + '<p>Counts like any other week. Bears, Lions, Eagles, Cowboys, Chiefs and Bills only, one leg from each team.</p></div>';
 }
-/* while one round is on screen, a pointer to the other one that is still open */
-function otherRoundCard(w){
-  const other = isTG(w) ? 11 : w === 11 ? TG : null;
-  if(other === null || isLocked(other)) return "";
-  return '<div class="card otherround"><p class="hint" style="margin:0">' + esc(roundName(other)) + ' is open too, locks '
-    + esc(deadlineText(other)) + '.</p><button class="linkbtn" id="toother" data-w="' + other + '">Go to '
-    + esc(roundName(other)) + '</button></div>';
+/* the side banners: a strip of pixel fall leaves, drawn once and tiled down each edge */
+const TG_LEAVES = [
+  "........","...O....","..OOO...",".OOOOO..","OOOvOOO.",".OOvOO..","..OvO...","...s....",
+  "........","....R...","...RRR..","..RRRRR.",".RRRvRRR","..RRvRR.","...RvR..","....s...",
+  "........","...G....","..GGG...",".GGGGG..","GGGvGGG.",".GGvGG..","..GvG...","...s....",
+  "........","....B...","...BBB..","..BBBBB.",".BBBvBBB","..BBvBB.","...BvB..","....s...",
+];
+function tgSides(){
+  if(document.getElementById("tgside-l")) return;
+  const C = {O:"#E8742C", R:"#C8402A", G:"#F2C448", B:"#9A5A2C", v:"#5A2A0E", s:"#5A2A0E"};
+  let r = "";
+  TG_LEAVES.forEach((row, y) => [...row].forEach((ch, x) => { if(C[ch]) r += '<rect x="' + (x + 2) + '" y="' + y + '" width="1" height="1" fill="' + C[ch] + '"/>'; }));
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="32" viewBox="0 0 12 32" shape-rendering="crispEdges">' + r + '</svg>';
+  const bg = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  ["l", "r"].forEach(side => {
+    const d = document.createElement("div");
+    d.id = "tgside-" + side; d.className = "tgside " + side; d.setAttribute("aria-hidden", "true");
+    d.style.backgroundImage = bg;
+    document.body.appendChild(d);
+  });
 }
-
 function propText(p){
   return '<span class="'+(p.side==="More"?"more":"less")+'">'+p.side+' '+esc(p.line)+'</span> '+esc(p.stat);
 }
@@ -2912,7 +2903,7 @@ function viewProfile(){
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
       const qr = qualityRows(id).counted.find(x => x.w === L.w);
-      return '<li><div class="dwk' + (isTG(L.w) ? ' tg' : '') + '">' + roundTag(L.w) + '</div><div class="dbody">'
+      return '<li><div class="dwk">' + roundTag(L.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + (p.result ? '<div class="dnum ' + cls + '">'
@@ -2974,7 +2965,7 @@ function qualityDrill(id){
       else if(r.raw === null) how = (p.result === "H" ? "hit" : "missed") + " with no final entered, counted as " + signed(r.lq, 2);
       else how = (p.result === "H" ? "beat the line by " : "missed by ") + num1(Math.abs(margin(p)))
         + ", " + sw1(r.raw) + " swings" + (r.capped ? ", capped at 2" : "");
-      return '<li><div class="dwk' + (isTG(r.w) ? ' tg' : '') + '">' + roundTag(r.w) + '</div><div class="dbody">'
+      return '<li><div class="dwk">' + roundTag(r.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + (p.actual != null ? ', final ' + esc(trim1(num(p.actual))) : '') + '</div>'
         + '<div class="dnum ' + cls + '">' + (r.lq === null ? 'no effect' : signed(r.pts, 1) + ' points') + '</div>'
@@ -2994,7 +2985,7 @@ function drillCard(){
   + '<p class="hint">' + (legs.length ? legs.length + ' of them, newest first.' : 'Nothing here yet.') + '</p>'
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
-      return '<li><div class="dwk' + (isTG(L.w) ? ' tg' : '') + '">' + roundTag(L.w) + '</div><div class="dbody">'
+      return '<li><div class="dwk">' + roundTag(L.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + '<div class="dnum ' + cls + '">'
@@ -3277,7 +3268,7 @@ function viewSeason(){
       : '<p class="hint">Sign in on the board to add your own.</p>')
   + (a.moments.length
       ? '<ul class="feed">'+a.moments.slice(0,60).map(mo =>
-          '<li><span class="fl">'+(isTG(mo.w) ? '<span class="tg">'+roundTag(mo.w)+'</span>' : roundTag(mo.w))+' &middot; '+esc(mo.who.toUpperCase())+' &middot; '+esc(mo.label)+'</span>'
+          '<li><span class="fl">'+roundTag(mo.w)+' &middot; '+esc(mo.who.toUpperCase())+' &middot; '+esc(mo.label)+'</span>'
           + '<div class="fd">'+esc(mo.detail)+'</div>'
           + (mo.manual && state.me ? '<button class="linkbtn" data-delmoment="'+mo.id+'">Remove</button>' : "")
           + '</li>').join("")+'</ul>'
@@ -3409,7 +3400,6 @@ function viewCard(){
   + '<button id="next"' + (nextRound(w)===undefined?" disabled":"") + ' aria-label="Next week">&#9654;</button></div></div>'
   + '<div class="bigcount">' + headline + (locked && hit+miss+voids>0 ? '<span style="font-size:16px"> / ' + r.members.length + '</span>' : "") + '</div>'
   + '<div class="clocklabel">' + esc(sub) + '</div></div>'
-  + otherRoundCard(w)
   + '<div class="cardgrid">' + tiles + '</div>'
   + '<div class="card"><h3>How it is going</h3><p class="hint">'
   + (locked
@@ -3445,7 +3435,6 @@ function wireCard(){
   const goCard = w => { if(w === undefined) return; state.view = w; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); };
   if(q("prev")) q("prev").onclick = () => goCard(prevRound(state.view));
   if(q("next")) q("next").onclick = () => goCard(nextRound(state.view));
-  if(q("toother")) q("toother").onclick = () => goCard(+q("toother").dataset.w);
   const sf = q("slipfile");
   if(sf){
     sf.dataset.wired = "1";
@@ -3778,7 +3767,6 @@ function wireMain(){
   const goMain = w => { if(w === undefined) return; state.view = w; state.msg=null; state.err=null; render(); };
   if(q("prev")) q("prev").onclick = () => goMain(prevRound(state.view));
   if(q("next")) q("next").onclick = () => goMain(nextRound(state.view));
-  if(q("toother")) q("toother").onclick = () => goMain(+q("toother").dataset.w);
 
   document.querySelectorAll("[data-claim]").forEach(b=>{ b.onclick = () => { state.claiming = b.dataset.claim; state.err=null; render(); }; });
   const clearPin = () => { state.pinBuf = ""; state.pinStage = null; state.pinFirst = null; };
