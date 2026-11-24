@@ -385,34 +385,37 @@
   @media (max-width:420px){ .spritebox{width:42px} .spritebox.face{width:auto} .whoami{grid-template-columns:1fr} }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
-  /* ---- Thanksgiving Thursday: only while that round is on screen ----------- */
-  body.tg{--night:#241509;--panel:#3A2414;--panel2:#4E321D;--edge:#120A04;--dim:#D9BE96;--amber:#F28C28}
-  body.tg .field{background:#7A4A1E}
-  body.tg .field::after{background:rgba(30,14,4,.55)}
-  body.tg .turf{background-image:repeating-linear-gradient(90deg,rgba(255,200,120,.06) 0 64px,rgba(0,0,0,.08) 64px 128px)}
-  body.tg .board{background:#A8481A;background-image:repeating-linear-gradient(90deg,transparent 0 34px,rgba(255,220,150,.16) 34px 36px)}
-  body.tg .card{border-color:#F6E3BF}
-  body.tg .rule{background:#2C1B0E}
-  body.tg .spritebox{background-color:#6B3A17}
-  body.tg .fill i.on{background:#FFD27A}
-  body.tg .preview{background:#2C1B0E}
-  body.tg input[type=text],body.tg input[type=password],body.tg textarea{background:#1C1008}
-  .tgban{display:flex;gap:12px;align-items:center;background:#5A2A0E;border:4px solid #F6E3BF;
-    box-shadow:8px 8px 0 rgba(0,0,0,.65);padding:12px;margin:0 0 20px;position:relative;overflow:hidden}
-  .tgban .tgart{flex:none}
-  .tgban h3{font-family:var(--big);font-weight:700;font-size:16px;color:#FFD27A;letter-spacing:1px;
-    text-transform:uppercase;text-shadow:3px 3px 0 #120A04;margin:0 0 4px}
-  .tgban p{margin:0;color:#F6E3BF;font-size:16px}
-  .tgban .leaf{position:absolute;opacity:.85}
-  .tggames{list-style:none;margin:10px 0 0;padding:0}
-  .tggames li{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:8px 0;border-top:2px solid rgba(0,0,0,.25)}
-  .tggames li:first-child{border-top:0}
-  .tgkick{font-family:var(--pix);font-size:8px;color:#F6E3BF;width:100%}
-  .tgteam{display:inline-flex;align-items:center;gap:6px;border:3px solid #120A04;padding:4px 8px;
-    font-size:14px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.6)}
+  /* ---- Thanksgiving Thursday: only while that round is on screen -----------
+     Colors and the dinner table scene come from Sean's Morning Brief: ink edge,
+     cream ring, cocoa and orange tiles, cream item cards. */
+  body.tg{--night:#482E23;--panel:#5A3A2C;--panel2:#84563A;--edge:#0E0E0E;--dim:#E9D3B4;--amber:#F2C448}
+  body.tg .field{background:#84563A}
+  body.tg .field::after{background:rgba(40,22,12,.58)}
+  body.tg .turf{background-image:repeating-linear-gradient(90deg,rgba(247,238,223,.05) 0 64px,rgba(0,0,0,.08) 64px 128px)}
+  body.tg .board{background:#E28C2C;background-image:repeating-linear-gradient(90deg,transparent 0 34px,rgba(247,238,223,.18) 34px 36px)}
+  body.tg .card{border-color:#F7EEDF}
+  body.tg .rule{background:#482E23;border-left-color:#E28C2C}
+  body.tg .spritebox{background-color:#84563A}
+  body.tg .fill i.on{background:#F7EEDF}
+  body.tg .preview{background:#482E23}
+  body.tg input[type=text],body.tg input[type=password],body.tg textarea{background:#2E1D15}
+  .tgtile{background:#5A3A2C;border:5px solid #0E0E0E;border-radius:30px;
+    box-shadow:inset 0 0 0 7px #F7EEDF,0 7px 0 rgba(0,0,0,.45);padding:20px 17px 19px;margin:0 0 22px;display:grid;gap:12px}
+  .tgscene{border:3px solid #0E0E0E;border-radius:18px;overflow:hidden;background:#8A4A32}
+  .tgscene img{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges}
+  .tgtile h3{font-family:var(--big);font-weight:700;font-size:20px;color:#F2C448;letter-spacing:1px;
+    text-transform:uppercase;text-shadow:3px 3px 0 #0E0E0E;margin:0}
+  .tgtile .lede{margin:0;color:#F7EEDF;font-size:16px}
+  .tggames{display:grid;gap:10px}
+  .tgitem{background:#F7EEDF;color:#1A1A1A;border:3px solid #0E0E0E;border-radius:14px;box-shadow:4px 4px 0 #482E23;
+    padding:10px 12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .tgkick{font-family:var(--pix);font-size:8px;color:#6E6253;width:100%}
+  .tgteam{display:inline-flex;align-items:center;gap:6px;border:3px solid #0E0E0E;border-radius:10px;padding:3px 8px;
+    font-size:14px;color:#fff;text-shadow:2px 2px 0 rgba(0,0,0,.55)}
   .tgteam small{font-size:12px;color:#FFE7B8}
-  .tgteam.taken{opacity:.55}
-  .tgat{font-family:var(--pix);font-size:8px;color:#F6E3BF}
+  .tgteam.taken{box-shadow:inset 0 0 0 2px #F2C448}
+  .tgat{font-family:var(--pix);font-size:8px;color:#6E6253}
+  .dwk.tg,.fl .tg{color:#E28C2C}
   .otherround{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .otherround .linkbtn{flex:none}
 </style>
@@ -1918,7 +1921,7 @@ function badgeSheetHTML(k, who, pk){
     + '<p class="sheetdesc">' + esc(B.desc) + '.' + (r ? '<span class="sheetladder">' + ladder + '.</span>' : '') + '</p>'
     + (list.length ? '<h4 class="sub">' + (one ? {rideordie:'Every pick of him', oldreliable:'Every hit on him', foolme:'Every miss on him'}[k] : 'What it came from') + '</h4><ul class="drill">' + list.map(e => {
         const p = e.p, cls = p && p.result === "H" ? "h" : p && p.result === "M" ? "m" : "v";
-        return '<li><div class="dwk">' + roundTag(e.w) + '</div><div class="dbody">'
+        return '<li><div class="dwk' + (isTG(e.w) ? ' tg' : '') + '">' + roundTag(e.w) + '</div><div class="dbody">'
           + (p ? '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : '') + '</div>'
                + '<div class="dprop">' + propText(p) + '</div>'
                + (p.result && marginText(p) ? '<div class="dnum ' + cls + '">' + esc(marginText(p)) + '</div>' : '') : '')
@@ -2573,27 +2576,10 @@ function signInCard(){
 }
 
 /* ---- Thanksgiving pieces ---------------------------------------------------- */
-const TURKEY = [
-  "....F.G.F.G.....",
-  "...GFRFGFRFG....",
-  "..FRGOFRFOGRF...",
-  ".GROFGOROGFORG..",
-  ".FOGRFBBBFRGOF..",
-  ".RFOGBBBBBGOFR..",
-  "..GRFBBWBBFRG...",
-  "...FOBBkBBOF....",
-  "....BBBYBBB.....",
-  "....BBBYrBB.....",
-  "...BBBBBrBBB....",
-  "...BBBBBBBBB....",
-  "....BBBBBBB.....",
-  ".....BBBBB......",
-  "......Y.Y.......",
-  ".....YY.YY......"
-];
-const TURKEY_COLORS = {F:"#C8501E", G:"#E8A23A", R:"#8E2F14", O:"#F2C45A", B:"#7A4A24", W:"#FFFFFF", k:"#120A04", Y:"#F2B33D", r:"#D93A2B"};
-const LEAF = ["...O....","..OOO...",".OOOOO..","OOOOOOO.",".OOOOO..","..ROO...","...R....","...R...."];
-function leafSVG(color, px){ return gridSVG(LEAF, {O:color, R:"#5A2A0E"}, px, "leaf-art"); }
+/* The Thanksgiving dinner scene from the Morning Brief (108x51 pixels), with the
+   game on the TV recolored to the Bears and Lions. A tiny PNG kept as base64 text,
+   same as the icons, so nothing binary has to survive a copy and paste. */
+const TG_SCENE = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGwAAAAzCAIAAAD93Hq4AAAFu0lEQVR42t2ZsWsdRxCHD9K7UmFUqDDCxSGMSWWuUOFCxRVxqmAeBIJLF0GFSaHKpDDhEfwHvOqqoDKFCK9IEUyKK4xxEcIrAhYimCtMEELwwAiUkeZ5PJqZ29u927v3pMeP425vdnbnu9m9vX3JOP+SlG3eji7u/6YqmYy2ieDph3+ii3OktgYuuXVrLbquQORp2DfEpQgCXl+/E12cowGxcYSGmjXG2esUsTSIT0cv69TCrJFgWXwdpCCOBLE6/vfxLztc7UqWA9E9YXWB6DM59geR2lqhTKzKsdBosiNKOmbiV5NtrnYlvplY7o7r1MKsNcSjn7euMcQsTRcsPp0MDBHwccWC6Dl4ywdfhM2Jep2IdBCfpmmaadwmRHMKiwLRMTk6ICY//BYHomM4AxeB0sxEE3eXTBQEOce4wxkg0vl49ACOgC/acD4udlHIkS4vSpxmZLyaw9kEhCj7hcgJ1kHUuK/RnMgHdcx1YhDEs6NCW7ZYJ7Z4O6/0OtETIuAjOSCuzhfLoEuc+Z97KEADxzzLSBriojxN4fi54upBXFvbgJFLgstGwRRJokJfiMgFIXKCAuKVcmbphnh2WNCxjw0I4X8IiOY60UTjD1GYiQmLg+hj9xD963Xi0Ls4AlwsiNgK5MjZ4V5P+4za/w3cT4TL6tlWfzu1pn+fneo0vU9a9Z1tzJTZmz96zcRQ/xpi2H8sA0AUE9b8v3c6yFiTo/bv6UdkWVDryejeBqmPf/u4f2yCghS3oqhv/6aS77O7QrTW6yjtGcSDNA06qm//ppKqLIYUD/I6+je1gHj6/jXqw98HdA6KflcEGb1d7n+YiECDQhRfeBRnrHZN/zcNIsZJctR1LT+bMpFb3kyInoir/ZFQ+TxDCUZL7/MKQSR2878mXIIgF6FcPsRynKP4DSrk1YQlOuWF5JRXJ2NRHT1jCeI7ebVnSuPbf5KSLuZB1iXd0AARJdNvUrwBJ1gNT7AEm+Ql/ETcwiZF9UbP5uB1JCAnSBwH7rPwnAQtwfpY1nUkCHqRbwy5KgxbJ1LPFhPWdJfP6HS39fwSRNDEhwRR1LFVebEIavNZgYISKhRM/d+/boj+CcgJCogDv7sTc0ksqAlppv6L7flJJdYxwKjdECaBDXFcPPXLVjpicq9VXRAxxULls9TgEaI4qcnjzRYJKDyQZx5ti0kGVf6U1UkAlRBnrwrNUYxffRdqNT7VsnyD0hAhflQXghwitQXtBkHk7MDP+eVv9mxLCA2mT9Lp5drAyMRZ8R0KANG5Ft1tHDiC4NFRpeMXHH2GcJ0H8C846l6Zw5MIIqnzTz9iV73dR3AouATZECdP709/3PY/8k6IT2PsLsUD4ZHqCPq8QzhHTfBzExZH7Nv5x2MuPn4JGYcowHFBlUQv3FpARM0e5lyLnjGC8/nJt8UOCi67EERpgty/4IjREbiTWY7CS5zHBEchk2O0TERqx7t7giOi5Bwxwln+kPKFp48/PpDpgfsXmSgSUEAUHBtRxh/O0zv3QAIflOA7h3MUmVInB0F3RfLPCWIf8J0jBjIX3EVLz7ez68XSAuJkfdMUBiA4ivnRE6sbmZ4HTYKg6vCtKTLADnOaWtwATuwlTqgwE7V0k5qmHuChEKGuZkdNw/HRi19BhMktNKZumyJWeG58sYzyzFFf6OKfyTyry0R4k4BEhzh9PsAFCB/xujpTeIuIRgiRQf9FuXvlC/YNXyxgcXDwO9nxu1Col6Zkj7zqVPdgr/xDnWdmmgtAdfZ1KQN9poY0R+o/4SOCOl4kSHy8IMKRC1iIEmjMByJ2i5o0oyU/5q0ge5D+JjGnOQ4Rn4o73gaIJDLiXMRMROVoRp1YfBpfUhM5UrcTZ0IJengcXKPMuahdvK79RJFZjkmd/Ipg9Mjy2U1pHUyXfRo9kvzjbdgKo7HsE4yeaIla0N5clGDa7Ql2jPf0/ev/AUqYt9DetdiiAAAAAElFTkSuQmCC";
 /* teams nobody else has claimed yet for that round */
 function tgOpenTeams(w, exceptId){
   const used = {}, picks = picksOf(w);
@@ -2619,15 +2605,13 @@ function tgChip(w, k){
 }
 function tgBanner(w){
   if(!isTG(w)) return "";
-  const games = TG_GAMES.map(g => '<li><span class="tgkick">' + esc(g.kick) + ', ' + esc(g.tv) + '</span>'
-    + tgChip(w, g.away) + '<span class="tgat">AT</span>' + tgChip(w, g.home) + '</li>').join("");
-  return '<div class="tgban">'
-    + '<span class="leaf" style="top:-6px;right:8px;transform:rotate(25deg)">' + leafSVG("#E8A23A", 24) + '</span>'
-    + '<span class="leaf" style="bottom:-4px;right:46px;transform:rotate(-35deg)">' + leafSVG("#C8501E", 16) + '</span>'
-    + '<div class="tgart">' + gridSVG(TURKEY, TURKEY_COLORS, 80, "sprite") + '</div>'
-    + '<div style="min-width:0"><h3>Thanksgiving Thursday</h3>'
-    + '<p>Three games, six teams, one leg from each. Locks Thursday at noon ET.</p>'
-    + '<ul class="tggames">' + games + '</ul></div></div>';
+  const games = TG_GAMES.map(g => '<div class="tgitem"><span class="tgkick">' + esc(g.kick) + ' &middot; ' + esc(g.tv) + '</span>'
+    + tgChip(w, g.away) + '<span class="tgat">AT</span>' + tgChip(w, g.home) + '</div>').join("");
+  return '<div class="tgtile">'
+    + '<div class="tgscene"><img src="' + TG_SCENE + '" alt="Thanksgiving dinner table with the game on TV" width="108" height="51"></div>'
+    + '<h3>Thanksgiving Thursday</h3>'
+    + '<p class="lede">A special round that counts like any other week. Three games, six teams, one leg from each. Locks Thursday at noon ET.</p>'
+    + '<div class="tggames">' + games + '</div></div>';
 }
 /* while one round is on screen, a pointer to the other one that is still open */
 function otherRoundCard(w){
@@ -2928,7 +2912,7 @@ function viewProfile(){
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
       const qr = qualityRows(id).counted.find(x => x.w === L.w);
-      return '<li><div class="dwk">' + roundTag(L.w) + '</div><div class="dbody">'
+      return '<li><div class="dwk' + (isTG(L.w) ? ' tg' : '') + '">' + roundTag(L.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + (p.result ? '<div class="dnum ' + cls + '">'
@@ -2990,7 +2974,7 @@ function qualityDrill(id){
       else if(r.raw === null) how = (p.result === "H" ? "hit" : "missed") + " with no final entered, counted as " + signed(r.lq, 2);
       else how = (p.result === "H" ? "beat the line by " : "missed by ") + num1(Math.abs(margin(p)))
         + ", " + sw1(r.raw) + " swings" + (r.capped ? ", capped at 2" : "");
-      return '<li><div class="dwk">' + roundTag(r.w) + '</div><div class="dbody">'
+      return '<li><div class="dwk' + (isTG(r.w) ? ' tg' : '') + '">' + roundTag(r.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + (p.actual != null ? ', final ' + esc(trim1(num(p.actual))) : '') + '</div>'
         + '<div class="dnum ' + cls + '">' + (r.lq === null ? 'no effect' : signed(r.pts, 1) + ' points') + '</div>'
@@ -3010,7 +2994,7 @@ function drillCard(){
   + '<p class="hint">' + (legs.length ? legs.length + ' of them, newest first.' : 'Nothing here yet.') + '</p>'
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
-      return '<li><div class="dwk">' + roundTag(L.w) + '</div><div class="dbody">'
+      return '<li><div class="dwk' + (isTG(L.w) ? ' tg' : '') + '">' + roundTag(L.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + '<div class="dnum ' + cls + '">'
@@ -3221,7 +3205,7 @@ function viewSeason(){
   const byQual = a.table.filter(r => qualityOf(r) !== null).sort((x,y) => qualityOf(y) - qualityOf(x));
 
   const table = '<div class="card"><h3>Records</h3>'
-  + '<p class="hint">Every graded leg since Week 1. Ties on hit rate are broken by pick quality.</p><div class="scroller">'
+  + '<p class="hint">Every graded leg since Week 1, the Thanksgiving round included. Ties on hit rate are broken by pick quality.</p><div class="scroller">'
   + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Qual</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
   + byRate.map(r=>'<tr><td>'+nameCell(r)+'</td><td>'+r.H+'</td><td>'+r.M
       +'</td><td>'+pct1(hitRate(r))+'</td><td>'+cell(r.id,"Q",q1(qualityOf(r)))+'</td><td>'+r.V+'</td><td>'+r.skip
@@ -3293,7 +3277,7 @@ function viewSeason(){
       : '<p class="hint">Sign in on the board to add your own.</p>')
   + (a.moments.length
       ? '<ul class="feed">'+a.moments.slice(0,60).map(mo =>
-          '<li><span class="fl">'+roundTag(mo.w)+' &middot; '+esc(mo.who.toUpperCase())+' &middot; '+esc(mo.label)+'</span>'
+          '<li><span class="fl">'+(isTG(mo.w) ? '<span class="tg">'+roundTag(mo.w)+'</span>' : roundTag(mo.w))+' &middot; '+esc(mo.who.toUpperCase())+' &middot; '+esc(mo.label)+'</span>'
           + '<div class="fd">'+esc(mo.detail)+'</div>'
           + (mo.manual && state.me ? '<button class="linkbtn" data-delmoment="'+mo.id+'">Remove</button>' : "")
           + '</li>').join("")+'</ul>'
