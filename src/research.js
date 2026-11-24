@@ -16,7 +16,7 @@
    POST /api/research {week, id}   research one watched item now, save it, return it
    researchTick(env)               the Friday morning pass, one item per cron run */
 
-import { normName, teamCanon, flattenPlayers, readStat, currentWeek, getJson } from "./live.js";
+import { normName, teamCanon, flattenPlayers, readStat, currentWeek, getJson, TG_WEEK, espnWeekOf } from "./live.js";
 
 const json = (obj, status = 200) =>
   new Response(JSON.stringify(obj), { status, headers: { "content-type": "application/json", "cache-control": "no-store" } });
@@ -190,9 +190,12 @@ export async function researchItem(env, week, id, opts = {}) {
   const trace = { fetched: 0, cached: 0, errors: [] };
   const brief = { updated: Date.now(), game: null, recent: [], recentNote: null, ai: null, aiError: null, via: null };
 
+  /* the list is saved under the app's round index; ESPN lookups use the NFL week,
+     which for the Thanksgiving round (index 18) is Week 12 */
+  const ew = espnWeekOf(week), asWeek = ew - 1;
   let game = null;
   if (item.team) {
-    try { game = gameFor(await boardFor(env, week + 1, fetchFn, trace), item.team); } catch (e) { trace.errors.push(e.message); }
+    try { game = gameFor(await boardFor(env, ew, fetchFn, trace), item.team); } catch (e) { trace.errors.push(e.message); }
   }
   if (game) {
     const opp = game.teams.find(t => teamCanon(t.abbr) !== teamCanon(item.team)) || {};
@@ -200,13 +203,13 @@ export async function researchItem(env, week, id, opts = {}) {
     brief.game = { opp: opp.abbr || "", home: !!me.home, date: game.date, venue: game.venue, indoor: game.indoor, weather: game.weather, temp: game.temp };
   }
   try {
-    const r = await recentGames(env, item, week, fetchFn, trace);
+    const r = await recentGames(env, item, asWeek, fetchFn, trace);
     brief.recent = r.games; brief.recentNote = r.note || null;
   } catch (e) { trace.errors.push(e.message); }
 
   if (!env.ANTHROPIC_API_KEY) brief.aiError = "No ANTHROPIC_API_KEY secret is set, so the line, matchup, injuries and lean are off. Recent games still work.";
   else {
-    try { brief.ai = cleanBrief(await askClaude(env, promptFor(item, week, game, brief.recent), fetchFn)); }
+    try { brief.ai = cleanBrief(await askClaude(env, promptFor(item, asWeek, game, brief.recent), fetchFn)); }
     catch (e) { brief.aiError = "Web research failed: " + (e && e.message ? e.message : e); }
   }
   brief.via = trace.fetched + " fetched, " + trace.cached + " reused" + (trace.errors.length ? "; " + trace.errors.slice(0, 2).join("; ") : "");
@@ -218,7 +221,7 @@ export async function handleResearch(request, env, opts = {}) {
   if (!env.DB || !env.DB.prepare) return json({ error: "No D1 binding named DB." }, 500);
   if (env.POOL_KEY && request.headers.get("x-pool-key") !== env.POOL_KEY) return json({ error: "wrong pool password" }, 401);
   let body; try { body = await request.json(); } catch (e) { return json({ error: "bad json" }, 400); }
-  const week = Number.isInteger(body.week) && body.week >= 0 && body.week < 18 ? body.week : currentWeek();
+  const week = Number.isInteger(body.week) && ((body.week >= 0 && body.week < 18) || body.week === TG_WEEK) ? body.week : currentWeek();
   const id = String(body.id || "").slice(0, 120);
   const { value } = await readRow(env, researchKey(week));
   const item = value && value.items && value.items[id];

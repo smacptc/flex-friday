@@ -384,6 +384,23 @@
   @media (max-width:400px){ .clock{font-size:24px} .bigcount{font-size:32px} .poolname{font-size:16px} }
   @media (max-width:420px){ .spritebox{width:42px} .spritebox.face{width:auto} .whoami{grid-template-columns:1fr} }
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+  /* ---- Thanksgiving Thursday: art at the top and banners down the sides ----
+     Decoration only. Everything else keeps the normal look. */
+  .tgart{background:var(--panel);border:4px solid #fff;box-shadow:8px 8px 0 rgba(0,0,0,.65);margin:0 0 20px}
+  .tgart img{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;border-bottom:4px solid var(--edge)}
+  .tgart h3{font-family:var(--big);font-weight:700;font-size:16px;color:#fff;letter-spacing:1px;text-transform:uppercase;
+    text-shadow:3px 3px 0 var(--edge);margin:0;padding:10px 14px 0}
+  .tgart p{margin:0;padding:2px 14px 12px;color:var(--dim);font-size:16px}
+  .tgside{display:none;position:fixed;top:0;bottom:0;width:12px;z-index:-1;background-color:#3B2414;
+    background-repeat:repeat-y;background-size:12px auto;image-rendering:pixelated}
+  .tgside.l{left:0;border-right:2px solid var(--edge)} .tgside.r{right:0;border-left:2px solid var(--edge)}
+  body.tg .tgside{display:block}
+  /* the field and the scoreboard turn fall colors; cards and layout stay as they are */
+  body.tg .field{background:#C8561E}
+  body.tg .field::after{background:rgba(40,10,4,.38)}
+  body.tg .board{background:#A8321E}
+  @media (min-width:760px){ .tgside{width:36px;background-size:36px auto} }
 </style>
 
 <div class="field" aria-hidden="true"><div class="turf" id="turf"></div></div>
@@ -1120,6 +1137,31 @@ const DEADLINES = [
   "2026-12-25T17:00:00-05:00","2027-01-01T17:00:00-05:00","2027-01-08T17:00:00-05:00"
 ].map(s => new Date(s).getTime());
 
+/* Thanksgiving Thursday 2026: one extra round, slotted between Week 11 and Week 12.
+   It is saved at index 18, after the 18 regular weeks, so every regular week keeps
+   its index and its saved picks. ORDER is the order the rounds are played in; walk
+   that, not the index, anywhere order matters (streaks, arrows, newest first).
+   Only the three Thursday games count, one player from each of the six teams.
+   Locks at noon Eastern, an hour before the first kickoff, so whoever enters the
+   lineup on PrizePicks has time to do it before the Bears and Lions take the field. */
+const TG = 18;
+const TG_TEAMS = ["CHI","DET","PHI","DAL","KC","BUF"];
+const TG_GAMES = [
+  {away:"CHI", home:"DET", kick:"1:00 PM ET", tv:"CBS"},
+  {away:"PHI", home:"DAL", kick:"4:30 PM ET", tv:"FOX"},
+  {away:"KC",  home:"BUF", kick:"8:20 PM ET", tv:"NBC"}
+];
+DEADLINES.push(new Date("2026-11-26T12:00:00-05:00").getTime());
+const ORDER = [0,1,2,3,4,5,6,7,8,9,10, TG, 11,12,13,14,15,16,17];
+const ORD = {}; ORDER.forEach((w, i) => { ORD[w] = i; });
+const isTG = w => w === TG;
+const roundName = w => isTG(w) ? "Thanksgiving" : "Week " + (w + 1);
+const roundTag = w => isTG(w) ? "TDAY" : "WK" + (w + 1);
+const prevRound = w => ORDER[ORD[w] - 1];        /* undefined before the first */
+const nextRound = w => ORDER[ORD[w] + 1];        /* undefined after the last */
+const espnWeek = w => isTG(w) ? 12 : w + 1;      /* the Thanksgiving games are NFL Week 12 */
+const lockRule = w => isTG(w) ? "Thursday at noon" : "Friday at 5";
+
 const STATS = ["Pass Yards","Pass TDs","Pass Attempts","Pass Completions","Interceptions Thrown",
   "Rush Yards","Rush Attempts","Rush+Rec Yards","Pass+Rush Yards","Receiving Yards","Receptions",
   "Longest Reception","Longest Rush","Fantasy Score","Kicking Points","Tackles+Assists","Sacks"];
@@ -1324,11 +1366,15 @@ const ROLLOVERS = [
   "2026-12-08T07:00:00-05:00","2026-12-15T07:00:00-05:00","2026-12-22T07:00:00-05:00",
   "2026-12-29T07:00:00-05:00","2027-01-05T07:00:00-05:00","2027-01-12T07:00:00-05:00"
 ].map(s => new Date(s).getTime());
+/* Thanksgiving is on screen from the Week 11 rollover until the Thursday night game
+   is over, then Week 12 takes over for its Friday lock. */
+ROLLOVERS.push(new Date("2026-11-27T02:00:00-05:00").getTime());
 
 const isLocked = w => Date.now() >= DEADLINES[w];
 const currentWeek = () => { const n = Date.now();
-  for(let i=0;i<ROLLOVERS.length;i++) if(ROLLOVERS[i] > n) return i;
-  return ROLLOVERS.length-1; };
+  if(n >= ROLLOVERS[10] && n < ROLLOVERS[TG]) return TG;
+  for(let i=0;i<18;i++) if(ROLLOVERS[i] > n) return i;
+  return 17; };
 const rolloverText = w => new Date(ROLLOVERS[w]).toLocaleString(undefined,
   {weekday:"short",month:"short",day:"numeric",hour:"numeric",minute:"2-digit"});
 const memberName = id => (state.roster.members.find(m=>m.id===id)||{}).name || "?";
@@ -1533,7 +1579,7 @@ const sw1 = v => v === null ? "-" : (Math.round(v*100)/100).toFixed(2);
 /* every graded leg for one member, newest first */
 function legsFor(id, kind){
   const out = [];
-  for(let w = DEADLINES.length - 1; w >= 0; w--){
+  for(const w of ORDER.slice().reverse()){
     if(!isLocked(w)) continue;
     const p = (picksOf(w) || {})[id];
     if(!p || !p.result) continue;
@@ -1789,7 +1835,7 @@ function badgeSVG(key, count, px, locked, team){
 /* one medal with its name, tier, and how far it is from the next tier */
 function medalTap(k, who, earned, pk){
   const tip = BADGES[k].name + ": " + (earned && earned.length
-    ? earned.map(e => "WK" + (e.w + 1) + " " + (e.p ? e.p.player + ", " : "") + (e.tier && LEVELS[k] ? TIERS[e.tier].name + ", " : "") + e.why).join("\n")
+    ? earned.map(e => roundTag(e.w) + " " + (e.p ? e.p.player + ", " : "") + (e.tier && LEVELS[k] ? TIERS[e.tier].name + ", " : "") + e.why).join("\n")
     : BADGES[k].desc + (who ? " (not earned yet)" : ""));
   return ' data-badge="' + k + '"' + (who ? ' data-who="' + esc(who) + '"' : '') + (pk ? ' data-on="' + esc(pk) + '"' : '')
     + ' role="button" tabindex="0" title="' + esc(tip) + '"';
@@ -1858,7 +1904,7 @@ function badgeSheetHTML(k, who, pk){
     + '<p class="sheetdesc">' + esc(B.desc) + '.' + (r ? '<span class="sheetladder">' + ladder + '.</span>' : '') + '</p>'
     + (list.length ? '<h4 class="sub">' + (one ? {rideordie:'Every pick of him', oldreliable:'Every hit on him', foolme:'Every miss on him'}[k] : 'What it came from') + '</h4><ul class="drill">' + list.map(e => {
         const p = e.p, cls = p && p.result === "H" ? "h" : p && p.result === "M" ? "m" : "v";
-        return '<li><div class="dwk">WK' + (e.w + 1) + '</div><div class="dbody">'
+        return '<li><div class="dwk">' + roundTag(e.w) + '</div><div class="dbody">'
           + (p ? '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : '') + '</div>'
                + '<div class="dprop">' + propText(p) + '</div>'
                + (p.result && marginText(p) ? '<div class="dnum ' + cls + '">' + esc(marginText(p)) + '</div>' : '') : '')
@@ -2198,7 +2244,7 @@ function analyze(){
     if(tier){ give(id, key, w, detail, p, why, tier); const L = r.earned[key]; L[L.length - 1].on = pk; }
   };
 
-  for(let w=0; w<DEADLINES.length; w++){
+  for(const w of ORDER){
     if(!isLocked(w)) continue;
     const picks = picksOf(w);
     if(!Object.keys(picks).length) continue;
@@ -2292,7 +2338,7 @@ function analyze(){
   }
 
   (state.season.moments||[]).forEach(mo => moments.push({w:mo.week, who:mo.by, label:"Noted", detail:mo.text, manual:true, id:mo.id}));
-  moments.sort((a,b) => b.w - a.w);
+  moments.sort((a,b) => (ORD[b.w] === undefined ? b.w : ORD[b.w]) - (ORD[a.w] === undefined ? a.w : ORD[a.w]));
   const table = members.map(m => rec[m.id]).sort((a,b) => b.H-a.H || a.M-b.M || b.best-a.best);
   return {rec:rec, table:table, moments:moments};
 }
@@ -2359,7 +2405,7 @@ async function updateRoster(mutate){
   state.roster = await casUpdate(ROSTER_KEY, () => state.roster, mutate);
 }
 
-const BUILD = "2026-11-06b";
+const BUILD = "2026-11-24-tg";
 /* Anything that breaks shows up on screen in words, with the build it came from.
    On a phone there is no console to look at, so an error nobody can see is the
    same as no error report at all. */
@@ -2396,6 +2442,11 @@ function render(){
   else if(state.screen === "profile"){ html = viewProfile(); wire = wireProfile; }
   else { html = viewMain(); wire = wireMain; }
   app.innerHTML = banner() + html;
+  /* side banners only while Thanksgiving is the round on screen */
+  tgSides();
+  const tgOn = isTG(state.view) && ["main", "card", "research"].includes(state.screen);
+  document.body.classList.toggle("tg", tgOn);
+  const tc = document.querySelector('meta[name="theme-color"]'); if(tc) tc.setAttribute("content", tgOn ? "#7A2E12" : "#131E2C");
   /* one missing element must never stop the rest of the screen from working */
   try{ wire(); }catch(e){
     console.error("wiring failed on " + state.screen + ":", e);
@@ -2453,14 +2504,15 @@ function topbar(current){
 function viewMain(){
   const w = state.view, locked = isLocked(w), r = state.roster;
   const picks = picksOf(w), n = Object.keys(picks).length, size = r.members.length;
-  const total = w === 0 ? 6*86400000 : DEADLINES[w]-DEADLINES[w-1];
+  const pw = isTG(w) ? 10 : w - 1;                 /* the clock fills from the last Friday lock */
+  const total = pw < 0 ? 6*86400000 : DEADLINES[w]-DEADLINES[pw];
   const pct = Math.max(0, Math.min(100, 100 - ((DEADLINES[w]-Date.now())/total*100)));
   const blocks = 16, on = Math.round(pct/100*blocks);
 
-  return topbar("main")
-  + '<div class="board"><div class="weekrow"><h2>WEEK '+(w+1)+'</h2>'
-  + '<div class="weeknav"><button id="prev"'+(w===0?" disabled":"")+' aria-label="Previous week">&#9664;</button>'
-  + '<button id="next"'+(w===17?" disabled":"")+' aria-label="Next week">&#9654;</button></div></div>'
+  return topbar("main") + tgBanner(w)
+  + '<div class="board"><div class="weekrow"><h2>'+roundName(w).toUpperCase()+'</h2>'
+  + '<div class="weeknav"><button id="prev"'+(prevRound(w)===undefined?" disabled":"")+' aria-label="Previous week">&#9664;</button>'
+  + '<button id="next"'+(nextRound(w)===undefined?" disabled":"")+' aria-label="Next week">&#9654;</button></div></div>'
   + '<div class="clock" id="clock">'+(locked ? (n+"/"+size+" IN") : esc(countdown(w)))+'</div>'
   + '<div class="clocklabel">'+(locked ? "Locked "+esc(deadlineText(w))
       : n+" of "+size+" legs in, locks "+esc(deadlineText(w)))+'</div>'
@@ -2469,9 +2521,13 @@ function viewMain(){
   + (state.me ? yourLegCard(w, locked) : signInCard())
   + lineupCard(w, locked)
   + buildPanel(w)
-  + '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
-  + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.'
-  + '<br><span class="build">build 2026-10-27c</span></p>';
+  + (isTG(w)
+      ? '<p class="footnote">Thanksgiving round: six legs, one player from each of the six teams playing Thursday, no repeats. '
+        + 'Locks Thursday at noon Eastern, an hour before the Bears and Lions kick off, so there is time to enter the lineup on PrizePicks. '
+        + 'Week 12 still runs on its own and locks Friday at 5:00 PM like always.'
+      : '<p class="footnote">Six legs, one player each, no repeats. Locks Friday at 5:00 PM Eastern. '
+        + 'PrizePicks takes entries until 11:59 PM ET, so the 5:00 lock is our rule, not theirs.')
+  + '<br><span class="build">build ' + BUILD + '</span></p>';
 }
 
 function signInCard(){
@@ -2502,6 +2558,61 @@ function signInCard(){
   + '</div></div>';
 }
 
+/* ---- Thanksgiving pieces ---------------------------------------------------- */
+/* The Thanksgiving dinner scene from the Morning Brief (108x51 pixels), with the
+   game on the TV recolored to the Bears and Lions. A tiny PNG kept as base64 text,
+   same as the icons, so nothing binary has to survive a copy and paste. */
+const TG_SCENE = "data:image/png;base64,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";
+/* teams nobody else has claimed yet for that round */
+function tgOpenTeams(w, exceptId){
+  const used = {}, picks = picksOf(w);
+  for(const id in picks){ if(id !== exceptId){ const k = teamKey(picks[id].team); if(k) used[k] = id; } }
+  return TG_TEAMS.filter(k => !used[k]);
+}
+function tgTeamWarn(w, teamText){
+  if(!isTG(w)) return "";
+  const k = teamKey(teamText) || teamText;
+  if(!k) return "";
+  if(!TG_TEAMS.includes(k)) return "Not playing on Thanksgiving. Bears, Lions, Eagles, Cowboys, Chiefs or Bills only.";
+  if(!tgOpenTeams(w, state.me).includes(k)){
+    const picks = picksOf(w), by = Object.keys(picks).find(id => id !== state.me && teamKey(picks[id].team) === k);
+    return (by ? memberName(by) : "Someone") + " already has the " + teamOf(k).name + ". Pick from a team nobody has yet.";
+  }
+  return "";
+}
+function tgChip(w, k){
+  const t = teamOf(k), picks = picksOf(w);
+  const by = Object.keys(picks).find(id => teamKey(picks[id].team) === k);
+  return '<span class="tgteam' + (by ? " taken" : "") + '" style="background:' + t.j + '">' + esc(t.name.split(" ").pop())
+    + ' <small>' + (by ? esc(memberName(by)) : "open") + '</small></span>';
+}
+function tgBanner(w){
+  if(!isTG(w)) return "";
+  return '<div class="tgart"><img src="' + TG_SCENE + '" alt="Thanksgiving dinner table with the game on TV" width="108" height="51">'
+    + '<h3>Thanksgiving Thursday</h3>'
+    + '<p>Counts like any other week. Bears, Lions, Eagles, Cowboys, Chiefs and Bills only, one leg from each team.</p></div>';
+}
+/* the side banners: a strip of pixel fall leaves, drawn once and tiled down each edge */
+const TG_LEAVES = [
+  "........","...O....","..OOO...",".OOOOO..","OOOvOOO.",".OOvOO..","..OvO...","...s....",
+  "........","....R...","...RRR..","..RRRRR.",".RRRvRRR","..RRvRR.","...RvR..","....s...",
+  "........","...G....","..GGG...",".GGGGG..","GGGvGGG.",".GGvGG..","..GvG...","...s....",
+  "........","....B...","...BBB..","..BBBBB.",".BBBvBBB","..BBvBB.","...BvB..","....s...",
+];
+function tgSides(){
+  if(document.getElementById("tgside-l")) return;
+  const C = {O:"#E8742C", R:"#C8402A", G:"#F2C448", B:"#9A5A2C", v:"#5A2A0E", s:"#5A2A0E"};
+  let r = "";
+  TG_LEAVES.forEach((row, y) => [...row].forEach((ch, x) => { if(C[ch]) r += '<rect x="' + (x + 2) + '" y="' + y + '" width="1" height="1" fill="' + C[ch] + '"/>'; }));
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="32" viewBox="0 0 12 32" shape-rendering="crispEdges">' + r + '</svg>';
+  const bg = 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '")';
+  ["l", "r"].forEach(side => {
+    const d = document.createElement("div");
+    d.id = "tgside-" + side; d.className = "tgside " + side; d.setAttribute("aria-hidden", "true");
+    d.style.backgroundImage = bg;
+    document.body.appendChild(d);
+  });
+}
 function propText(p){
   return '<span class="'+(p.side==="More"?"more":"less")+'">'+p.side+' '+esc(p.line)+'</span> '+esc(p.stat);
 }
@@ -2509,31 +2620,35 @@ function propText(p){
 function yourLegCard(w, locked){
   const p = myPick(w);
   if(locked){
-    return '<div class="card"><h3>Your leg, Week '+(w+1)+'</h3>'
+    return '<div class="card"><h3>Your leg, '+roundName(w)+'</h3>'
     + (p ? '<div style="display:flex;gap:12px;align-items:center;margin-top:8px">'
          + '<div class="spritebox">'+sprite(p.player,p.stat,48,false,p.team)+'</div><div>'
          + '<div class="player">'+esc(p.player)+flavorTag(p)+'</div><div class="prop">'+propText(p)+'</div></div></div>'
          + (p.note?'<p class="note hint">'+esc(p.note)+'</p>':"")
        : '<p class="miss" style="margin-top:8px">You did not get a leg in before the lock.</p>')
-    + '<p class="hint" style="margin-top:10px">Signed in as '+esc(memberName(state.me))+'. Week '+(w+1)+' is closed.</p></div>';
+    + '<p class="hint" style="margin-top:10px">Signed in as '+esc(memberName(state.me))+'. '+roundName(w)+' is closed.</p></div>';
   }
   state.side = p ? p.side : state.side;
   const taken = state.roster.members.filter(m=>m.id!==state.me && picksOf(w)[m.id])
     .map(m=>esc(picksOf(w)[m.id].player)).join(", ");
+  const tg = isTG(w), openTeams = tg ? tgOpenTeams(w, state.me) : [];
+  const teamList = tg ? TEAMS.filter(t => TG_TEAMS.includes(t.k)) : TEAMS;
   const pv = p ? {player:p.player, stat:p.stat, team:p.team} : {player:"", stat:"", team:""};
   return '<div class="card"><h3>'+(p?"Change your leg":"Post your leg")+'</h3>'
   + '<p class="hint">Signed in as '+esc(memberName(state.me))+'. Edit it any time before the lock.</p>'
   + (taken ? '<div class="rule">Already taken: '+taken+'</div>' : "")
+  + (tg ? '<div class="rule">Thanksgiving games only, one player from each team. Still open: '
+          + (openTeams.length ? openTeams.map(k => esc(teamOf(k).name)).join(", ") : "none, every team is claimed") + '</div>' : "")
   + '<div class="preview"><div class="spritebox" id="pvbox">'+sprite(pv.player,pv.stat||null,72,false,pv.team)+'</div>'
   + '<div class="cap"><b id="pvname">'+esc(pv.player||"YOUR GUY")+'</b><span id="pvpose">'
   + esc(pv.stat?POSENAME[poseFor(pv.stat)]:"Pick a player and a stat")+'</span></div></div>'
   + '<label for="player">Player</label>'
-  + '<input id="player" type="text" maxlength="40" value="'+esc(p?p.player:"")+'" placeholder="Bijan Robinson" autocomplete="off">'
+  + '<input id="player" type="text" maxlength="40" value="'+esc(p?p.player:"")+'" placeholder="'+(tg?"Jahmyr Gibbs":"Bijan Robinson")+'" autocomplete="off">'
   + '<p class="warn" id="dupwarn"></p>'
   + '<ul class="plist" id="plist" hidden></ul>'
   + '<label for="team">Team</label>'
-  + '<input id="team" type="text" maxlength="24" list="teams" value="'+esc(p&&p.team?((teamOf(p.team)||{}).name||p.team):"")+'" placeholder="Atlanta Falcons" autocomplete="off">'
-  + '<datalist id="teams">'+TEAMS.map(t=>'<option value="'+t.name+'">').join("")+'</datalist>'
+  + '<input id="team" type="text" maxlength="24" list="teams" value="'+esc(p&&p.team?((teamOf(p.team)||{}).name||p.team):"")+'" placeholder="'+(tg?"Detroit Lions":"Atlanta Falcons")+'" autocomplete="off">'
+  + '<datalist id="teams">'+teamList.map(t=>'<option value="'+t.name+'">').join("")+'</datalist>'
   + '<p class="hint" style="margin-top:5px">Fills in on its own for most players. Sets the jersey color, and you can always type over it.</p>'
   + '<div class="two"><div><label for="stat">Stat</label>'
   + '<input id="stat" type="text" maxlength="30" list="stats" value="'+esc(p?p.stat:"")+'" placeholder="Rush+Rec Yards" autocomplete="off">'
@@ -2640,10 +2755,11 @@ function lineupCard(w, locked){
       + '<div class="rowname">'+avatarFor(m,32)+' '+esc(m.name.toUpperCase())+(mine?' <span>you</span>':"")+'</div>'+body+'</div></li>';
   }).join("");
 
-  return '<div class="card"><h3>Week '+(w+1)+' lineup</h3>'
+  return '<div class="card"><h3>'+roundName(w)+' lineup</h3>'
   + '<p class="hint">'+(locked
       ? (graded||voids ? hits+" of "+graded+" hit"+(voids?", "+voids+" voided":"")
                        : "Type each player's final number and the grade sets itself.")
+      : isTG(w) ? "Everyone sees each leg the moment it is posted. One player from each Thanksgiving team, and you can change yours until noon Thursday."
       : "Everyone sees each leg the moment it is posted. One player per week, and you can change yours until the lock.")+'</p>'
   + '<ul class="legs">'+legs+'</ul>'
   + buildPanelSlot(w)
@@ -2698,7 +2814,7 @@ function countsFor(id){
   const teams = {}, players = {}, pos = {}, stats = {}, sides = {More:0, Less:0};
   const flavors = {demon:0, goblin:0, standard:0};
   let total = 0;
-  for(let w = 0; w < DEADLINES.length; w++){
+  for(const w of ORDER){
     const p = (picksOf(w) || {})[id];
     if(!p) continue;
     total++;
@@ -2757,7 +2873,7 @@ function viewProfile(){
       if(!f.demon && !f.goblin) return '<p class="hint">No demons or goblins so far, all standard lines.</p>';
       /* how the harder and easier lines actually went for him */
       const tally = kind => { let h = 0, m = 0;
-        for(let w = 0; w < DEADLINES.length; w++){ const p = (picksOf(w)||{})[state.profile];
+        for(const w of ORDER){ const p = (picksOf(w)||{})[state.profile];
           if(!p || flavorOf(p) !== kind) continue;
           if(p.result === "H") h++; else if(p.result === "M") m++; }
         return h + m ? h + " of " + (h + m) : "none graded yet"; };
@@ -2787,7 +2903,7 @@ function viewProfile(){
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
       const qr = qualityRows(id).counted.find(x => x.w === L.w);
-      return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
+      return '<li><div class="dwk">' + roundTag(L.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + (p.result ? '<div class="dnum ' + cls + '">'
@@ -2818,7 +2934,7 @@ function wireProfile(){
    100 score it is worth. The points add up to the score exactly. */
 function qualityRows(id){
   const rows = [];
-  for(let w = 0; w < DEADLINES.length; w++){
+  for(const w of ORDER){
     if(!isLocked(w)) continue;
     const p = (picksOf(w) || {})[id];
     if(!p || !p.result) continue;
@@ -2849,7 +2965,7 @@ function qualityDrill(id){
       else if(r.raw === null) how = (p.result === "H" ? "hit" : "missed") + " with no final entered, counted as " + signed(r.lq, 2);
       else how = (p.result === "H" ? "beat the line by " : "missed by ") + num1(Math.abs(margin(p)))
         + ", " + sw1(r.raw) + " swings" + (r.capped ? ", capped at 2" : "");
-      return '<li><div class="dwk">WK' + (r.w+1) + '</div><div class="dbody">'
+      return '<li><div class="dwk">' + roundTag(r.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + (p.actual != null ? ', final ' + esc(trim1(num(p.actual))) : '') + '</div>'
         + '<div class="dnum ' + cls + '">' + (r.lq === null ? 'no effect' : signed(r.pts, 1) + ' points') + '</div>'
@@ -2869,7 +2985,7 @@ function drillCard(){
   + '<p class="hint">' + (legs.length ? legs.length + ' of them, newest first.' : 'Nothing here yet.') + '</p>'
   + (legs.length ? '<ul class="drill">' + legs.map(L => {
       const p = L.p, cls = p.result === "H" ? "h" : p.result === "M" ? "m" : "v";
-      return '<li><div class="dwk">WK' + (L.w+1) + '</div><div class="dbody">'
+      return '<li><div class="dwk">' + roundTag(L.w) + '</div><div class="dbody">'
         + '<div class="dplayer">' + esc(p.player) + flavorTag(p) + (p.team ? ' <em>' + esc(p.team) + '</em>' : "") + '</div>'
         + '<div class="dprop">' + propText(p) + '</div>'
         + '<div class="dnum ' + cls + '">'
@@ -2971,7 +3087,7 @@ function viewResearch(){
   const w = state.view, items = rsItems().sort((a, b) => (b.addedAt || 0) - (a.addedAt || 0));
   const loading = !state.research || state.research.week !== w;
   const form = state.me ? '<div class="card"><h3>Research a player</h3>'
-    + '<p class="hint">Add who you are thinking about for Week ' + (w + 1) + '. Everyone sees the list, so you can spot a double-up early.</p>'
+    + '<p class="hint">Add who you are thinking about for ' + roundName(w) + '. Everyone sees the list, so you can spot a double-up early.</p>'
     + '<label for="rplayer">Player</label><input id="rplayer" type="text" maxlength="40" placeholder="Bijan Robinson" autocomplete="off">'
     + '<ul class="plist" id="rplist" hidden></ul>'
     + '<p class="warn" id="rdup"></p>'
@@ -2985,10 +3101,10 @@ function viewResearch(){
     + (state.err ? '<p class="err">' + esc(state.err) + '</p>' : "") + '</div>'
     : '<div class="card"><h3>Research</h3><p class="hint">Sign in on the main screen to add players. You can still read everyone\'s research here.</p></div>';
   return topbar("research")
-    + '<div class="weekrow" style="margin-top:4px"><h2 class="rsname" style="font-size:20px">WEEK ' + (w + 1) + '</h2></div>'
+    + '<div class="weekrow" style="margin-top:4px"><h2 class="rsname" style="font-size:20px">' + roundName(w).toUpperCase() + '</h2></div>'
     + form
     + '<div class="card"><h3>On the list</h3>'
-    + '<p class="hint">Every player here gets a fresh brief Friday morning before the 5:00 PM lock. Lines come from public sportsbooks because PrizePicks does not publish its own, so yours can differ a little.</p>'
+    + '<p class="hint">' + (isTG(w) ? 'The Friday morning refresh is for the regular week, so tap Refresh on anyone here for a fresh brief before the noon lock.' : 'Every player here gets a fresh brief Friday morning before the 5:00 PM lock.') + ' Lines come from public sportsbooks because PrizePicks does not publish its own, so yours can differ a little.</p>'
     + (loading ? '<p class="center">LOADING&hellip;</p>' : items.length ? items.map(it => rsItemHtml(it, w)).join("") : '<p class="hint" style="margin-top:10px">Nobody has added anyone yet this week.</p>')
     + '</div>';
 }
@@ -3080,7 +3196,7 @@ function viewSeason(){
   const byQual = a.table.filter(r => qualityOf(r) !== null).sort((x,y) => qualityOf(y) - qualityOf(x));
 
   const table = '<div class="card"><h3>Records</h3>'
-  + '<p class="hint">Every graded leg since Week 1. Ties on hit rate are broken by pick quality.</p><div class="scroller">'
+  + '<p class="hint">Every graded leg since Week 1, the Thanksgiving round included. Ties on hit rate are broken by pick quality.</p><div class="scroller">'
   + '<table><tr><th>Player</th><th>Hit</th><th>Miss</th><th>Rate</th><th>Qual</th><th>Void</th><th>None</th><th>Now</th><th>Best</th></tr>'
   + byRate.map(r=>'<tr><td>'+nameCell(r)+'</td><td>'+r.H+'</td><td>'+r.M
       +'</td><td>'+pct1(hitRate(r))+'</td><td>'+cell(r.id,"Q",q1(qualityOf(r)))+'</td><td>'+r.V+'</td><td>'+r.skip
@@ -3145,14 +3261,14 @@ function viewSeason(){
 
   const feed = '<div class="card"><h3>Moments</h3>'
   + (state.me
-      ? '<label for="mtext">Add one for Week '+(state.view+1)+'</label>'
+      ? '<label for="mtext">Add one for '+roundName(state.view)+'</label>'
         + '<input id="mtext" type="text" maxlength="180" placeholder="Fell asleep, posted at 4:59">'
         + '<button class="btn" id="addmoment">Add it</button>'
         + (state.msg?'<p class="'+(state.msg===SLUR_MSG?'err':'ok')+'">'+esc(state.msg)+'</p>':"")
       : '<p class="hint">Sign in on the board to add your own.</p>')
   + (a.moments.length
       ? '<ul class="feed">'+a.moments.slice(0,60).map(mo =>
-          '<li><span class="fl">WK'+(mo.w+1)+' &middot; '+esc(mo.who.toUpperCase())+' &middot; '+esc(mo.label)+'</span>'
+          '<li><span class="fl">'+roundTag(mo.w)+' &middot; '+esc(mo.who.toUpperCase())+' &middot; '+esc(mo.label)+'</span>'
           + '<div class="fd">'+esc(mo.detail)+'</div>'
           + (mo.manual && state.me ? '<button class="linkbtn" data-delmoment="'+mo.id+'">Remove</button>' : "")
           + '</li>').join("")+'</ul>'
@@ -3278,10 +3394,10 @@ function viewCard(){
                : hit + " of " + (hit + miss) + " hit" + (voids ? ", " + voids + " voided" : "")
                  + (none ? ", " + none + " never posted" : ""));
 
-  return topbar("card") + slipPanel()
-  + '<div class="board"><div class="weekrow"><h2>WEEK ' + (w+1) + ' CARD</h2>'
-  + '<div class="weeknav"><button id="prev"' + (w===0?" disabled":"") + ' aria-label="Previous week">&#9664;</button>'
-  + '<button id="next"' + (w===17?" disabled":"") + ' aria-label="Next week">&#9654;</button></div></div>'
+  return topbar("card") + tgBanner(w) + slipPanel()
+  + '<div class="board"><div class="weekrow"><h2>' + roundName(w).toUpperCase() + ' CARD</h2>'
+  + '<div class="weeknav"><button id="prev"' + (prevRound(w)===undefined?" disabled":"") + ' aria-label="Previous week">&#9664;</button>'
+  + '<button id="next"' + (nextRound(w)===undefined?" disabled":"") + ' aria-label="Next week">&#9654;</button></div></div>'
   + '<div class="bigcount">' + headline + (locked && hit+miss+voids>0 ? '<span style="font-size:16px"> / ' + r.members.length + '</span>' : "") + '</div>'
   + '<div class="clocklabel">' + esc(sub) + '</div></div>'
   + '<div class="cardgrid">' + tiles + '</div>'
@@ -3289,8 +3405,8 @@ function viewCard(){
   + (locked
       ? 'A six-pick Flex pays with four or more. Green means it hit, red means it missed, grey means it voided. '
         + (isAdmin() ? 'You grade these on the board screen.' : 'Waiting on ' + esc(commishName()) + ' to enter the finals.')
-      : 'Legs show as they are posted. Anyone can still change theirs until Friday at 5.')
-    + (locked ? ' Week ' + (w+1) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
+      : 'Legs show as they are posted. Anyone can still change theirs until ' + lockRule(w) + '.')
+    + (locked ? ' ' + roundName(w) + ' stays up until ' + esc(rolloverText(w)) + '.' : "")
   + '</p>' + liveNote(w)
   + '<div class="row-btns"><button class="btn ghost" id="refreshcard">Refresh</button>'
   /* The file input sits invisibly on top of the button, so your finger taps the
@@ -3316,8 +3432,9 @@ function liveNote(w){
 function wireCard(){
   const q = s => document.getElementById(s);
   q("back").onclick = () => { state.screen = "main"; render(); };
-  if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
-  if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); } };
+  const goCard = w => { if(w === undefined) return; state.view = w; state.drill=null; state.live=liveDoc(state.view); render(); wantLive(); };
+  if(q("prev")) q("prev").onclick = () => goCard(prevRound(state.view));
+  if(q("next")) q("next").onclick = () => goCard(nextRound(state.view));
   const sf = q("slipfile");
   if(sf){
     sf.dataset.wired = "1";
@@ -3533,14 +3650,15 @@ async function pullFinals(){
   state.fetching = true; state.fetchNote = "Searching box scores for " + legs.length + " players."; render();
 
   const gamesFrom = new Date(DEADLINES[w]).toDateString();
-  const gamesTo = new Date(DEADLINES[w] + 4*86400000).toDateString();
+  /* Thanksgiving legs were all played that Thursday */
+  const gamesTo = new Date(DEADLINES[w] + (isTG(w) ? 0 : 4*86400000)).toDateString();
   const list = legs.map((x,i) => i + ". " + x.p.player + " | stat: " + x.p.stat).join("\n");
 
   try{
     const headers = {"content-type":"application/json"};
     const pk = poolKey(); if(pk) headers["x-pool-key"] = pk;
     const res = await fetch("/api/finals", {method:"POST", headers:headers,
-      body: JSON.stringify({week: w+1, from: gamesFrom, to: gamesTo,
+      body: JSON.stringify({week: espnWeek(w), from: gamesFrom, to: gamesTo,
         legs: legs.map(x => ({player:x.p.player, stat:x.p.stat}))})});
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || ("server said " + res.status));
@@ -3586,7 +3704,7 @@ async function pullTeams(){
     const headers = {"content-type":"application/json"};
     const pk = (typeof poolKey === "function" && poolKey()) || ""; if(pk) headers["x-pool-key"] = pk;
     const res = await fetch("/api/finals", {method:"POST", headers:headers,
-      body: JSON.stringify({mode:"teams", week: w+1, legs: legs.map(x => ({player:x.p.player, stat:x.p.stat}))})});
+      body: JSON.stringify({mode:"teams", week: espnWeek(w), legs: legs.map(x => ({player:x.p.player, stat:x.p.stat}))})});
     if(res.ok){ const d = await res.json(); rows = d.rows || []; }
   }catch(e){ rows = null; }
 
@@ -3646,8 +3764,9 @@ function wireMain(){
   on("toseason", () => { state.screen="season"; state.msg=null; state.err=null; render(); });
   on("toresearch", () => { state.screen="research"; state.msg=null; state.err=null; render(); loadResearch(state.view); });
   on("tocard",   () => { state.screen="card"; state.msg=null; state.err=null; render(); });
-  if(q("prev")) q("prev").onclick = () => { if(state.view>0){ state.view--; state.msg=null; state.err=null; render(); } };
-  if(q("next")) q("next").onclick = () => { if(state.view<17){ state.view++; state.msg=null; state.err=null; render(); } };
+  const goMain = w => { if(w === undefined) return; state.view = w; state.msg=null; state.err=null; render(); };
+  if(q("prev")) q("prev").onclick = () => goMain(prevRound(state.view));
+  if(q("next")) q("next").onclick = () => goMain(nextRound(state.view));
 
   document.querySelectorAll("[data-claim]").forEach(b=>{ b.onclick = () => { state.claiming = b.dataset.claim; state.err=null; render(); }; });
   const clearPin = () => { state.pinBuf = ""; state.pinStage = null; state.pinFirst = null; };
@@ -3708,14 +3827,17 @@ function wireMain(){
     const list = q("plist"); if(list){ list.hidden = true; list.innerHTML = ""; }
     q("dupwarn").textContent = (() => {
       const o = takenBy(state.view, name, state.me);
-      return o ? memberName(o) + " already has " + picksOf(state.view)[o].player + ". Pick someone else." : "";
+      return o ? memberName(o) + " already has " + picksOf(state.view)[o].player + ". Pick someone else." : tgTeamWarn(state.view, t);
     })();
     refreshPreview();
   }
   function showMatches(){
     const list = q("plist"); if(!list) return;
     const typed = q("player").value.trim();
-    const hits = typed.length < 2 ? [] : matchPlayers(typed, 8);
+    /* on Thanksgiving, only suggest players from the six teams playing */
+    const hits = typed.length < 2 ? [] : isTG(state.view)
+      ? matchPlayers(typed, 500).filter(n => TG_TEAMS.includes(teamForPlayer(n))).slice(0, 8)
+      : matchPlayers(typed, 8);
     const exact = hits.length === 1 && normName(hits[0]) === normName(typed);
     if(!hits.length || exact){ list.hidden = true; list.innerHTML = ""; return; }
     list.innerHTML = hits.map(n => {
@@ -3729,17 +3851,20 @@ function wireMain(){
   if(q("player")) q("player").oninput = () => {
     showMatches();
     const other = takenBy(state.view, q("player").value, state.me);
-    q("dupwarn").textContent = other ? memberName(other)+" already has "+picksOf(state.view)[other].player+". Pick someone else." : "";
     const tf = q("team");
     if(tf && (!tf.value.trim() || tf.dataset.auto === "1")){
       const guess = teamForPlayer(q("player").value);
       if(guess){ tf.value = (teamOf(guess)||{}).name || guess; tf.dataset.auto = "1"; }
       else if(tf.dataset.auto === "1"){ tf.value = ""; }
     }
+    q("dupwarn").textContent = other ? memberName(other)+" already has "+picksOf(state.view)[other].player+". Pick someone else."
+      : (tf && tf.value.trim() ? tgTeamWarn(state.view, tf.value) : "");
     refreshPreview();
   };
   if(q("stat")){ q("stat").oninput = refreshPreview; q("stat").onchange = refreshPreview; }
-  if(q("team")){ q("team").oninput = () => { q("team").dataset.auto = ""; refreshPreview(); };
+  if(q("team")){ q("team").oninput = () => { q("team").dataset.auto = "";
+                   if(isTG(state.view) && !takenBy(state.view, q("player").value, state.me)) q("dupwarn").textContent = tgTeamWarn(state.view, q("team").value);
+                   refreshPreview(); };
                  q("team").onchange = refreshPreview; }
 
   if(q("refresh")) q("refresh").onclick = async () => {
@@ -3751,7 +3876,7 @@ function wireMain(){
 
   if(q("copy")) q("copy").onclick = async () => {
     const w = state.view, picks = picksOf(w);
-    let out = state.roster.pool + ", Week " + (w+1) + "\n";
+    let out = state.roster.pool + ", " + roundName(w) + "\n";
     state.roster.members.forEach((m,i)=>{
       const p = picks[m.id];
       out += (i+1)+". "+(p ? p.player+" "+p.side+" "+p.line+" "+p.stat+"  ("+m.name+")" : "(no leg from "+m.name+")")+"\n";
@@ -3769,7 +3894,7 @@ function wireMain(){
   });
   if(q("copyall")) q("copyall").onclick = async () => {
     const w = state.view, picks = picksOf(w);
-    let out = state.roster.pool + ", Week " + (w+1) + "\n";
+    let out = state.roster.pool + ", " + roundName(w) + "\n";
     state.roster.members.forEach((m,i) => {
       const p = picks[m.id];
       if(p) out += (i+1) + ". " + p.player + " " + p.side + " " + p.line + " " + p.stat + "\n";
@@ -3857,20 +3982,27 @@ function wireMain(){
     const team = teamKey(q("team") ? q("team").value : "") || teamForPlayer(player);
     if(!player || !stat || !line){ state.err = "Fill in player, stat and line."; state.msg = null; render(); return; }
     if(!/^-?\d+(\.\d+)?$/.test(line)){ state.err = "The line should be a number, like 74.5."; state.msg = null; render(); return; }
-    if(isLocked(w)){ state.err = "Week "+(w+1)+" locked while you were typing."; render(); return; }
+    if(isLocked(w)){ state.err = roundName(w)+" locked while you were typing."; render(); return; }
     const note = q("note").value.trim(), side = state.side;
     if(hasSlur(player, stat, note, q("team") ? q("team").value : "")){ state.err = SLUR_MSG; state.msg = null; render(); return; }
+    if(isTG(w) && !TG_TEAMS.includes(teamKey(team))){
+      state.err = "Thanksgiving games only. Pick a Bears, Lions, Eagles, Cowboys, Chiefs or Bills player, and check his team is set.";
+      state.msg = null; render(); return;
+    }
     try{
-      let clash = null;
+      let clash = null, teamClash = null;
       await updateSeason(s=>{
         s.weeks[w] = s.weeks[w] || {picks:{}};
         const picks = s.weeks[w].picks, k = tightName(player);
         for(const other in picks){ if(other !== id && tightName(picks[other].player) === k){ clash = other; return; } }
+        /* checked against the saved board, so two people grabbing the same team in the same second cannot both land */
+        if(isTG(w)) for(const other in picks){ if(other !== id && teamKey(picks[other].team) === teamKey(team)){ teamClash = other; return; } }
         const prev = picks[id] || {};
         picks[id] = {player, stat, line, side, team, note, ts:Date.now(), result: prev.result || null, actual: prev.actual==null?null:prev.actual};
       });
       if(clash){ state.err = memberName(clash)+" already took that player. Pick someone else."; state.msg = null; }
-      else { state.msg = "In. You can change it until Friday at 5."; state.err = null; }
+      else if(teamClash){ state.err = memberName(teamClash)+" already has the "+((teamOf(team)||{}).name||team)+". Pick from a team nobody has yet."; state.msg = null; }
+      else { state.msg = "In. You can change it until " + lockRule(w) + "."; state.err = null; }
     }catch(e){ state.err = "That did not save. Check your connection and try again."; state.msg = null; }
     render();
   };

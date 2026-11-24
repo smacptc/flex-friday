@@ -3,7 +3,7 @@
    so no binary file ever has to survive a copy and paste. */
 import { handleKv } from "./src/kv.js";
 import { handleFinals } from "./src/finals.js";
-import { handleLive, refreshLive } from "./src/live.js";
+import { handleLive, refreshLive, inThanksgivingWindow, TG_WEEK } from "./src/live.js";
 import { handleSlip } from "./src/slip.js";
 import { handleResearch, researchTick, inResearchWindow } from "./src/research.js";
 import { ICON_FILES, MANIFEST } from "./src/icons.js";
@@ -66,6 +66,13 @@ export default {
     if (inResearchWindow()) ctx.waitUntil(researchTick(env).then(
       d => console.log("research week " + (d.week + 1) + ": " + (d.done ? "all fresh" : "refreshed " + d.researched + ", " + d.left + " left")),
       e => console.error("research run failed: " + (e && e.message ? e.message : e))
+    ));
+    /* Thanksgiving Thursday is its own round, so its legs get their own refresh,
+       starting with the 1 PM game rather than the usual Thursday night window */
+    if (inThanksgivingWindow()) ctx.waitUntil(refreshLive(env, { week: TG_WEEK }).then(
+      d => console.log("live feed thanksgiving: fetched " + (d.fetched || 0) + ", reused " + (d.reused || 0)
+                       + (d.error ? ", error: " + d.error : "")),
+      e => console.error("thanksgiving live feed failed: " + (e && e.message ? e.message : e))
     ));
     if (!inGameWindow()) return;
     ctx.waitUntil(refreshLive(env).then(
