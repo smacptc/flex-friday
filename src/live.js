@@ -26,6 +26,13 @@ const ROLLOVERS = [
   "2026-12-08T07:00:00-05:00","2026-12-15T07:00:00-05:00","2026-12-22T07:00:00-05:00",
   "2026-12-29T07:00:00-05:00","2027-01-05T07:00:00-05:00","2027-01-12T07:00:00-05:00"
 ].map(s => new Date(s).getTime());
+/* Thanksgiving Thursday 2026 is an extra round the app saves at index 18, after the
+   18 regular weeks. Its games are NFL Week 12 on ESPN, not Week 19. */
+export const TG_WEEK = 18;
+export const espnWeekOf = w => w === TG_WEEK ? 12 : w + 1;
+/* noon ET Thursday (the lock) until the Thursday night game is surely over */
+export const inThanksgivingWindow = (now = Date.now()) =>
+  now >= Date.parse("2026-11-26T12:30:00-05:00") && now < Date.parse("2026-11-27T01:30:00-05:00");
 export const currentWeek = (now = Date.now()) => {
   for (let i = 0; i < ROLLOVERS.length; i++) if (ROLLOVERS[i] > now) return i;
   return ROLLOVERS.length - 1;
@@ -240,7 +247,7 @@ export async function refreshLive(env, opts = {}) {
 
     /* The bare scoreboard can come back with only part of the slate, which left a
        team looking like it had no game. Ask for the week explicitly. */
-    const board = await getJson("/scoreboard?seasontype=2&week=" + (week + 1) + "&limit=100", fetchFn, doc);
+    const board = await getJson("/scoreboard?seasontype=2&week=" + espnWeekOf(week) + "&limit=100", fetchFn, doc);
     const byTeam = gamesByTeam(board);
     doc.slate = ((board && board.events) || []).length;
 
