@@ -211,6 +211,11 @@
   .sliplist li:first-child{border-top:0}
   .slipow{display:flex;align-items:center;gap:8px;font-size:16px;font-weight:700}
   .slipow input{width:22px;height:22px;accent-color:var(--amber)}
+  .slipwho{font:inherit;color:inherit;background-color:transparent;border:0;border-bottom:2px dashed var(--dim);padding:0 18px 0 0;
+    -webkit-appearance:none;appearance:none;border-radius:0;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(-45deg,transparent 50%,currentColor 50%);
+    background-position:right 6px center,right 1px center;background-size:5px 5px;background-repeat:no-repeat}
+  .slipwho option{color:#000}
   .slipleg{font-size:16px;margin-top:4px}
   .slipleg em{font-style:normal;color:var(--dim)}
   .slipfin{font-family:var(--pix);font-size:8px;color:var(--green);margin-top:4px;line-height:1.6}
@@ -2096,11 +2101,16 @@ function slipPanel(){
   + '<ul class="sliplist">' + S.legs.map((L, i) => {
       const owner = L.owner ? memberName(L.owner) : null;
       const p = L.owner ? picks[L.owner] : null;
-      const mismatch = p && (Math.abs((num(p.line)||0) - (L.line||0)) > 0.001 || p.side !== L.side);
+      const swap = p && normName(p.player) !== normName(L.player);
+      const twice = L.owner && L.use && S.legs.some((o, j) => j !== i && o.use && o.owner === L.owner);
+      const mismatch = p && !swap && (Math.abs((num(p.line)||0) - (L.line||0)) > 0.001 || p.side !== L.side);
       return '<li>'
-        + '<label class="slipow"><input type="checkbox" data-slip="' + i + '"' + (L.use ? " checked" : "")
-          + (L.owner ? "" : " disabled") + '> '
-        + (owner ? esc(owner) : '<span class="dim">nobody on the board</span>') + '</label>'
+        + '<div class="slipow"><input type="checkbox" data-slip="' + i + '"' + (L.use ? " checked" : "")
+          + (L.owner ? "" : " disabled") + ' aria-label="Use this leg"> '
+        + '<select class="slipwho" data-slipown="' + i + '" aria-label="Whose leg is this">'
+          + '<option value=""' + (L.owner ? "" : " selected") + '>nobody</option>'
+          + state.roster.members.map(m => '<option value="' + esc(m.id) + '"' + (m.id === L.owner ? " selected" : "") + '>' + esc(m.name) + '</option>').join("")
+        + '</select></div>'
         + '<div class="slipleg">' + esc(L.player) + ' <em>' + esc(L.side) + ' ' + esc(String(L.line)) + ' ' + esc(L.stat) + '</em>'
           + (L.flavor !== "standard" ? ' <span class="flav ' + L.flavor + '">' + FLAVORS[L.flavor].label + '</span>' : "")
           + (L.confidence === "low" ? ' <span class="flav low">check this one</span>' : "") + '</div>'
@@ -2110,6 +2120,9 @@ function slipPanel(){
               + '</div>'
             : '<div class="slipfin dim">no result shown</div>')
         + ((L.fixes && L.fixes.length) ? '<div class="slipwarn">' + L.fixes.map(esc).join('. ') + '.</div>' : "")
+        + (L.owner && !p ? '<div class="slipwarn">' + esc(owner) + ' has no leg on the board. Applying adds this one.</div>' : "")
+        + (swap ? '<div class="slipwarn">' + esc(owner) + ' has ' + esc(p.player) + ' on the board. Applying replaces it with this one.</div>' : "")
+        + (twice ? '<div class="slipwarn">' + esc(owner) + ' is on more than one leg. Fix that before applying.</div>' : "")
         + (mismatch ? '<div class="slipwarn">the board has ' + esc(p.side) + ' ' + esc(p.line)
             + ', this says ' + esc(L.side) + ' ' + esc(String(L.line)) + '. Applying will update the board.</div>' : "")
         + '</li>';
@@ -2124,13 +2137,33 @@ async function applySlip(){
   if(!S || !S.legs) return;
   const chosen = S.legs.filter(L => L.use && L.owner);
   if(!chosen.length){ state.slip = null; render(); return; }
+  const seen = {};
+  for(const L of chosen){
+    if(seen[L.owner]){ state.err = memberName(L.owner) + " is on more than one leg. Fix that before applying."; render(); return; }
+    seen[L.owner] = true;
+  }
   const w = state.view;
+  let clash = null;
   try{
     await updateSeason(s => {
       const wk = s.weeks[w] || (s.weeks[w] = {picks:{}});
+      clash = null;
+      /* one player per week: stop if someone else already holds him and is not being moved off him here */
       for(const L of chosen){
-        const p = wk.picks[L.owner];
-        if(!p) continue;
+        const k = normName(L.player);
+        for(const other in wk.picks){
+          if(other === L.owner || normName(wk.picks[other].player) !== k) continue;
+          const moving = chosen.some(c => c.owner === other && normName(c.player) !== k);
+          if(!moving){ clash = memberName(other) + " already has " + L.player + " on the board. Change that leg first."; return; }
+        }
+      }
+      for(const L of chosen){
+        let p = wk.picks[L.owner];
+        if(!p || normName(p.player) !== normName(L.player)){
+          /* no leg yet, or a different player: write the leg from the screenshot */
+          p = wk.picks[L.owner] = { player:L.player, stat:L.stat || "", line:"", side:L.side || "More",
+                                    team:teamForPlayer(L.player) || "", note:"", ts:Date.now(), result:null, actual:null };
+        }
         p.flavor = L.flavor;
         if(L.line !== null) p.line = String(L.line);
         if(L.side) p.side = L.side;
@@ -2140,6 +2173,7 @@ async function applySlip(){
         p.fromSlip = true;
       }
     });
+    if(clash){ state.err = clash; render(); return; }
     state.msg = chosen.length + (chosen.length === 1 ? " leg updated." : " legs updated.");
   }catch(e){ state.err = "Could not save: " + errText(e); }
   state.slip = null;
@@ -3459,6 +3493,15 @@ function wireCard(){
   }
   if(q("slipclose")) q("slipclose").onclick = () => { state.slip = null; render(); };
   if(q("slipapply")) q("slipapply").onclick = applySlip;
+  document.querySelectorAll("[data-slipown]").forEach(b => {
+    b.onchange = () => {
+      const i = +b.dataset.slipown, L = state.slip && state.slip.legs[i];
+      if(!L) return;
+      L.owner = b.value || null;
+      L.use = !!L.owner;
+      render();
+    };
+  });
   document.querySelectorAll("[data-slip]").forEach(b => {
     b.onchange = () => { const i = +b.dataset.slip; if(state.slip && state.slip.legs[i]) state.slip.legs[i].use = b.checked; };
   });
