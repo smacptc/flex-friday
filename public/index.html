@@ -216,6 +216,12 @@
     background-image:linear-gradient(45deg,transparent 50%,currentColor 50%),linear-gradient(-45deg,transparent 50%,currentColor 50%);
     background-position:right 6px center,right 1px center;background-size:5px 5px;background-repeat:no-repeat}
   .slipwho option{color:#000}
+  .slipedit{margin-top:8px;font-family:var(--pix);font-size:8px;padding:6px 10px;border:3px solid var(--edge);
+    background:var(--panel2);color:var(--chalk);cursor:pointer}
+  .slipform label{margin:10px 0 4px}
+  .slipform select{width:100%;padding:11px 6px;border:4px solid var(--edge);background:#0F1926;color:var(--chalk);
+    font-family:var(--body);font-size:16px;border-radius:0}
+  .slipform .three{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
   .slipleg{font-size:16px;margin-top:4px}
   .slipleg em{font-style:normal;color:var(--dim)}
   .slipfin{font-family:var(--pix);font-size:8px;color:var(--green);margin-top:4px;line-height:1.6}
@@ -2083,6 +2089,37 @@ async function readSlip(file){
  }
 }
 
+/* every field the reader filled in can be fixed by hand before applying */
+function slipEditor(L, i){
+  const opt = (v, t, cur) => '<option value="' + v + '"' + (v === cur ? " selected" : "") + '>' + t + '</option>';
+  const res = L.result || "";
+  return '<div class="slipform">'
+    + '<label>Player</label><input type="text" maxlength="40" data-slipf="player" data-i="' + i + '" value="' + esc(L.player || "") + '">'
+    + '<label>Stat</label><input type="text" maxlength="30" list="slipstats" data-slipf="stat" data-i="' + i + '" value="' + esc(L.stat || "") + '">'
+    + '<datalist id="slipstats">' + STATS.map(x => '<option value="' + x + '">').join("") + '</datalist>'
+    + '<div class="three"><div><label>Side</label><select data-slipf="side" data-i="' + i + '">'
+      + opt("More", "MORE", L.side) + opt("Less", "LESS", L.side) + '</select></div>'
+    + '<div><label>Line</label><input type="text" inputmode="decimal" maxlength="6" data-slipf="line" data-i="' + i + '" value="' + esc(L.line === null || L.line === undefined ? "" : String(L.line)) + '"></div>'
+    + '<div><label>Type</label><select data-slipf="flavor" data-i="' + i + '">'
+      + opt("standard", "NORMAL", L.flavor) + opt("demon", "DEMON", L.flavor) + opt("goblin", "GOBLIN", L.flavor) + '</select></div></div>'
+    + '<div class="two"><div><label>Final</label><input type="text" inputmode="decimal" maxlength="7" data-slipf="final" data-i="' + i + '" value="' + esc(L.final === null || L.final === undefined ? "" : String(L.final)) + '"></div>'
+    + '<div><label>Result</label><select data-slipf="result" data-i="' + i + '">'
+      + opt("", "FROM FINAL", res) + opt("H", "HIT", res) + opt("M", "MISSED", res) + opt("V", "VOID", res) + '</select></div></div>'
+    + '</div>';
+}
+/* write a typed value back onto the leg without redrawing, so the keyboard stays up */
+function slipSet(i, f, v){
+  const L = state.slip && state.slip.legs && state.slip.legs[i];
+  if(!L) return;
+  v = String(v);
+  if(f === "line" || f === "final"){
+    const t = v.trim();
+    L[f] = t === "" ? null : (/^-?\d+(\.\d+)?$/.test(t) ? Number(t) : L[f]);
+  }else if(f === "result") L.result = v || null;
+  else if(f === "flavor") L.flavor = FLAVORS[v] ? v : "standard";
+  else L[f] = v.trim();
+}
+
 function slipPanel(){
   const S = state.slip;
   if(!S) return "";
@@ -2111,14 +2148,15 @@ function slipPanel(){
           + '<option value=""' + (L.owner ? "" : " selected") + '>nobody</option>'
           + state.roster.members.map(m => '<option value="' + esc(m.id) + '"' + (m.id === L.owner ? " selected" : "") + '>' + esc(m.name) + '</option>').join("")
         + '</select></div>'
-        + '<div class="slipleg">' + esc(L.player) + ' <em>' + esc(L.side) + ' ' + esc(String(L.line)) + ' ' + esc(L.stat) + '</em>'
+        + (L.editing ? slipEditor(L, i) : '<div class="slipleg">' + esc(L.player) + ' <em>' + esc(L.side) + ' ' + esc(String(L.line)) + ' ' + esc(L.stat) + '</em>'
           + (L.flavor !== "standard" ? ' <span class="flav ' + L.flavor + '">' + FLAVORS[L.flavor].label + '</span>' : "")
-          + (L.confidence === "low" ? ' <span class="flav low">check this one</span>' : "") + '</div>'
+          + (L.confidence === "low" ? ' <span class="flav low">check this one</span>' : "") + '</div>')
         + (L.final !== null || L.result
             ? '<div class="slipfin">' + (L.final !== null ? "final " + trim1(L.final) : "")
               + (L.result ? (L.final !== null ? ", " : "") + (L.result === "H" ? "hit" : L.result === "M" ? "missed" : "void") : "")
               + '</div>'
             : '<div class="slipfin dim">no result shown</div>')
+        + '<button type="button" class="slipedit" data-slipedit="' + i + '">' + (L.editing ? "DONE" : "EDIT") + '</button>'
         + ((L.fixes && L.fixes.length) ? '<div class="slipwarn">' + L.fixes.map(esc).join('. ') + '.</div>' : "")
         + (L.owner && !p ? '<div class="slipwarn">' + esc(owner) + ' has no leg on the board. Applying adds this one.</div>' : "")
         + (swap ? '<div class="slipwarn">' + esc(owner) + ' has ' + esc(p.player) + ' on the board. Applying replaces it with this one.</div>' : "")
@@ -2137,6 +2175,9 @@ async function applySlip(){
   if(!S || !S.legs) return;
   const chosen = S.legs.filter(L => L.use && L.owner);
   if(!chosen.length){ state.slip = null; render(); return; }
+  for(const L of chosen){
+    if(!L.player || L.line === null || L.line === undefined){ state.err = "Every checked leg needs a player and a line."; render(); return; }
+  }
   const seen = {};
   for(const L of chosen){
     if(seen[L.owner]){ state.err = memberName(L.owner) + " is on more than one leg. Fix that before applying."; render(); return; }
@@ -2165,6 +2206,7 @@ async function applySlip(){
                                     team:teamForPlayer(L.player) || "", note:"", ts:Date.now(), result:null, actual:null };
         }
         p.flavor = L.flavor;
+        if(L.stat) p.stat = L.stat;
         if(L.line !== null) p.line = String(L.line);
         if(L.side) p.side = L.side;
         if(L.final !== null) p.actual = L.final;
@@ -2401,7 +2443,8 @@ async function boot(){
    chosen in the picker then comes back to an element that no longer exists. The
    live feed refreshes every minute during games, which is exactly when this bit. */
 function holdRenders(){
-  return Date.now() < (state.pickingUntil || 0) || !!(state.slip && state.slip.busy);
+  return Date.now() < (state.pickingUntil || 0) || !!(state.slip && state.slip.busy)
+    || !!(state.slip && state.slip.legs && state.slip.legs.some(L => L.editing));
 }
 async function quietRefresh(){
   if(!(state.screen === "card" || state.screen === "main")) return;
@@ -3493,6 +3536,18 @@ function wireCard(){
   }
   if(q("slipclose")) q("slipclose").onclick = () => { state.slip = null; render(); };
   if(q("slipapply")) q("slipapply").onclick = applySlip;
+  document.querySelectorAll("[data-slipedit]").forEach(b => {
+    b.onclick = () => {
+      const L = state.slip && state.slip.legs[+b.dataset.slipedit];
+      if(!L) return;
+      L.editing = !L.editing;
+      render();
+    };
+  });
+  document.querySelectorAll("[data-slipf]").forEach(el => {
+    const set = () => slipSet(+el.dataset.i, el.dataset.slipf, el.value);
+    el.oninput = set; el.onchange = set;
+  });
   document.querySelectorAll("[data-slipown]").forEach(b => {
     b.onchange = () => {
       const i = +b.dataset.slipown, L = state.slip && state.slip.legs[i];
